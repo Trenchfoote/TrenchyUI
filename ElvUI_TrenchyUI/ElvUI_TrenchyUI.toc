@@ -1,8 +1,10 @@
 ## Interface: 110200
-## Author: Trenchfoote
-## Version: 0.1
-## Title: |cff1784d1ElvUI|r |cffff2f3dTrenchyUI|r
-## Notes: TrenchyUI - An ElvUI Plugin.
+## Title: TrenchyUI
+## Author: Trenchy
+## Notes: ElvUI plugin with a layout installer (DPS/Tank + WIP Healer)
+## Version: 1.0.0
 ## RequiredDeps: ElvUI
+## DefaultState: enabled
 
-ElvUI_TrenchyUI.lua
+Core.lua
+Install.lua
