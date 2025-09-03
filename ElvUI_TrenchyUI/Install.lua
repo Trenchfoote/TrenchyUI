@@ -74,9 +74,11 @@ local function Page_Choose()
   f.Desc3:SetText("You can also revert to your snapshot if you change your mind.")
   f.Desc4:SetText("")
 
+  -- Ensure snapshot exists as soon as we enter this page
+  NS._snapshot = NS._snapshot or SnapshotProfile()
+
   f.Option1:Show(); f.Option1:SetText(BRAND.." – Apply DPS/Tank")
   f.Option1:SetScript("OnClick", function()
-    NS._snapshot = NS._snapshot or SnapshotProfile()
     ApplyDPSTank()
     Commit()
   end)
@@ -90,7 +92,7 @@ local function Page_Choose()
       RestoreSnapshot(NS._snapshot); Commit()
       print(BRAND..": Snapshot restored.")
     else
-      print(BRAND..": No snapshot yet (apply a layout first).")
+      print(BRAND..": No snapshot yet (open this page to create one).")
     end
   end)
 

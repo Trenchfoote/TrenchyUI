@@ -16,7 +16,7 @@ SlashCmdList.TRENCHYUI = function(msg)
   msg = trim((msg or ""):lower())
   if msg == "install" then
     if NS.ShowInstaller then
-      NS.ShowInstaller(true)
+      NS.ShowInstaller()
     else
       print(BRAND..": Installer not ready. Is ElvUI loaded?")
     end
@@ -44,7 +44,7 @@ end
 -- ===== Options Injection (ElvUI -> Plugins + Top-Level) =====
 local function BuildOptions()
   local function OpenInstaller()
-    if NS.ShowInstaller then NS.ShowInstaller(true)
+    if NS.ShowInstaller then NS.ShowInstaller()
     else print(BRAND..": Installer not ready. Is ElvUI loaded?") end
   end
 
@@ -73,23 +73,24 @@ local function BuildOptions()
     type  = "group",
     name  = BRAND,  -- colored in the tree
     args  = groupArgs,
-  }, groupArgs
+  }
 end
 
 local function InsertOptions()
   if not (E and E.Options and E.Options.args) then return end
 
-  local pluginGroup, sharedArgs = BuildOptions()
+  -- Build distinct tables to avoid sharing/mirroring state
+  local pluginGroupForPlugins = BuildOptions()
+  local pluginGroupForTopLevel = BuildOptions()
+  pluginGroupForTopLevel.order = 95
 
   -- Under Plugins category (if present)
   if E.Options.args.plugins and E.Options.args.plugins.args then
-    E.Options.args.plugins.args.trenchyui = pluginGroup
+    E.Options.args.plugins.args.trenchyui = pluginGroupForPlugins
   end
 
   -- Also add a top-level entry (like AddOnSkins / PA / Tinker Toolbox)
-  E.Options.args.trenchyui = {
-    order = 95, type = "group", name = BRAND, args = sharedArgs
-  }
+  E.Options.args.trenchyui = pluginGroupForTopLevel
 
   -- Ensure Estatus list shows our colored name
   ColorStatusPluginName()
@@ -108,8 +109,9 @@ local function OnElvUIReady()
   local EP = _G.LibStub and _G.LibStub("LibElvUIPlugin-1.0", true)
   if EP then
     EP:RegisterPlugin(AddonName, InsertOptions)
-    -- In case the lib populates after a tiny delay, recolor shortly after
+    -- Recolor shortly after, and again a bit later for safety
     C_Timer.After(0.1, ColorStatusPluginName)
+    C_Timer.After(1, ColorStatusPluginName)
   else
     -- Fallback if the lib isn't ready: wait for ElvUI_Options to load
     local waiter = CreateFrame("Frame")
@@ -118,7 +120,10 @@ local function OnElvUIReady()
       if name == "ElvUI_Options" then
         InsertOptions()
         ColorStatusPluginName()
+        C_Timer.After(0.1, ColorStatusPluginName)
+        C_Timer.After(1, ColorStatusPluginName)
         waiter:UnregisterAllEvents()
+        waiter:SetScript("OnEvent", nil)
       end
     end)
   end
@@ -127,7 +132,7 @@ local function OnElvUIReady()
   E.global.TrenchyUI = E.global.TrenchyUI or {}
   if not E.global.TrenchyUI.installed then
     C_Timer.After(1, function()
-      if NS.ShowInstaller then NS.ShowInstaller(true) end
+      if NS.ShowInstaller then NS.ShowInstaller() end
     end)
   end
 end
