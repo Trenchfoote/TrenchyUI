@@ -1,5 +1,5 @@
 ## Interface: 110200
-## Title: TrenchyUI
+## Title: ElvUI_TrenchyUI
 ## Author: Trenchy
 ## Notes: ElvUI plugin with a layout installer (DPS/Tank + WIP Healer)
 ## Version: 1.0.0
