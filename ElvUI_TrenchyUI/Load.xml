@@ -1,0 +1,12 @@
+<Ui>
+	<!-- Init: shared metadata and branding -->
+	<Script file='Init.lua'/>
+	<!-- Core wiring and options -->
+	<Include file='Core\\Core.xml'/>
+
+	<!-- Media (fonts, textures) -->
+	<Include file='Media\\Media.xml'/>
+
+	<!-- Profiles for external addons (placeholder, add scripts later) -->
+	<Include file='Profiles\\Profiles.xml'/>
+</Ui>
