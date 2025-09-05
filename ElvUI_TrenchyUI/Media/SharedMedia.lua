@@ -1,5 +1,5 @@
-local LSM = LibStub and LibStub('LibSharedMedia-3.0', true)
-if not LSM then return end
+local E = unpack(ElvUI)
+local LSM = E.Libs.LSM
 
 -- Statusbar Textures
 LSM:Register('statusbar', 'TrenchyBlank', [[Interface\AddOns\ElvUI_TrenchyUI\Media\statusbar\TrenchyBlank.tga]])
