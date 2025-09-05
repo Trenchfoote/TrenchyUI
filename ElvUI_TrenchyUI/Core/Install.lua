@@ -31,6 +31,11 @@ ElvUI_TrenchyUI.InstallerData = {
 			PluginInstallFrame.Option1:Show()
 			PluginInstallFrame.Option1:SetScript("OnClick", function()
 				ElvUI_TrenchyUI:GeneralSetup()
+				if (E.Mists or E.Retail or E.ClassicSOD) and E.data:IsDualSpecEnabled() then
+					E.data:SetDualSpecProfile('TUI OnlyPlates ('..E.mynameRealm..')', E.Libs.DualSpec.currentSpec)
+				else
+					E.data:SetProfile('TUI OnlyPlates ('..E.mynameRealm..')')
+				end
 				ElvUI_TrenchyUI:ApplyOnlyPlatesDB("general")
 			end)
 			PluginInstallFrame.Option1:SetText("OnlyPlates")
