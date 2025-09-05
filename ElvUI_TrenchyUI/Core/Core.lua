@@ -34,7 +34,7 @@ local function WD_GetClassRGB()
 end
 
 local function WD_Colorize()
-	local cfg = E.db.ElvUI_TrenchyUI and E.db.ElvUI_TrenchyUI.warpdeplete
+	local cfg = E.db and E.db.ElvUI_TrenchyUI and E.db.ElvUI_TrenchyUI.warpdeplete
 	if not (cfg and cfg.forceClassColors) then return end
 	local WD = _G and rawget(_G, 'WarpDeplete'); if not WD then return end
 	local r, g2, b = WD_GetClassRGB()
@@ -105,16 +105,16 @@ do
 end
 
 -- ================= OmniCD inline extras (class colors + padding) =================
-local OCCD_pending = {}
-local OCCD_backup
+local TUI_OmniCD_pending = {}
+local TUI_OmniCD_backup
 
-local function OCCD_CopyCustomToRaid()
+local function TUI_OmniCD_CopyCustomToRaid()
 	local ccc = _G and rawget(_G, 'CUSTOM_CLASS_COLORS')
 	local rcc = _G and rawget(_G, 'RAID_CLASS_COLORS')
 	if not (ccc and rcc) then return end
-	if not OCCD_backup then
-		OCCD_backup = {}
-		for class, c in pairs(rcc) do OCCD_backup[class] = { r = c.r, g = c.g, b = c.b } end
+	if not TUI_OmniCD_backup then
+		TUI_OmniCD_backup = {}
+		for class, c in pairs(rcc) do TUI_OmniCD_backup[class] = { r = c.r, g = c.g, b = c.b } end
 	end
 	for class, c in pairs(ccc) do
 		local dest = rcc[class]
@@ -122,88 +122,88 @@ local function OCCD_CopyCustomToRaid()
 	end
 end
 
-local function OCCD_RestoreRaid()
+local function TUI_OmniCD_RestoreRaid()
 	local rcc = _G and rawget(_G, 'RAID_CLASS_COLORS')
-	if not (rcc and OCCD_backup) then return end
-	for class, c in pairs(OCCD_backup) do
+	if not (rcc and TUI_OmniCD_backup) then return end
+	for class, c in pairs(TUI_OmniCD_backup) do
 		if rcc[class] then rcc[class].r, rcc[class].g, rcc[class].b = c.r, c.g, c.b end
 	end
 end
 
-local function OCCD_Reanchor(icon, sb)
+local function TUI_OmniCD_Reanchor(icon, sb)
 	if not sb or not icon or type(sb.ClearAllPoints) ~= 'function' or type(sb.SetPoint) ~= 'function' then return end
-	local cfg = E.db.ElvUI_TrenchyUI and E.db.ElvUI_TrenchyUI.omnicd
-	local dx = cfg.gapX or 0
+	local cfg = E.db and E.db.ElvUI_TrenchyUI and E.db.ElvUI_TrenchyUI.omnicd
+	local dx = (cfg and cfg.gapX) or 0
 	sb:ClearAllPoints()
 	sb:SetPoint('TOPLEFT', icon, 'TOPRIGHT', dx, 0)
 	sb:SetPoint('BOTTOMLEFT', icon, 'BOTTOMRIGHT', dx, 0)
 	-- ensure left border exists and matches OmniCD border color
-	if ElvUI_TrenchyUI.OCCD_UpdateLeftBorder then ElvUI_TrenchyUI.OCCD_UpdateLeftBorder(icon, sb) end
+	if ElvUI_TrenchyUI.TUI_OmniCD_UpdateLeftBorder then ElvUI_TrenchyUI.TUI_OmniCD_UpdateLeftBorder(icon, sb) end
 end
 
-local function OCCD_isFromPool(sb, P)
+local function TUI_OmniCD_isFromPool(sb, P)
 	if not P or not P.StatusBarPool or not sb then return false end
 	for x in P.StatusBarPool:EnumerateActive() do if x == sb then return true end end
 	return false
 end
 
-local function OCCD_queueOrApply(icon, sb, P)
+local function TUI_OmniCD_queueOrApply(icon, sb, P)
 	if not icon or not sb then return end
-	if not OCCD_isFromPool(sb, P) then return end
-	if InCombatLockdown and InCombatLockdown() then OCCD_pending[sb] = icon; return end
-	if C_Timer and C_Timer.After then C_Timer.After(0, function() if OCCD_isFromPool(sb, P) then OCCD_Reanchor(icon, sb) end end) else OCCD_Reanchor(icon, sb) end
+	if not TUI_OmniCD_isFromPool(sb, P) then return end
+	if InCombatLockdown and InCombatLockdown() then TUI_OmniCD_pending[sb] = icon; return end
+	if C_Timer and C_Timer.After then C_Timer.After(0, function() if TUI_OmniCD_isFromPool(sb, P) then TUI_OmniCD_Reanchor(icon, sb) end end) else TUI_OmniCD_Reanchor(icon, sb) end
 end
 
-local OCCD_hooked
-local function OCCD_EnsureHook()
+local TUI_OmniCD_hooked
+local function TUI_OmniCD_EnsureHook()
 	local Omni = _G and rawget(_G, 'OmniCD')
 	local OE = Omni and Omni[1]
 	local P = OE and OE.Party
 	if not OE or not P or not P.StatusBarPool then
-		if C_Timer and C_Timer.After then C_Timer.After(0.25, OCCD_EnsureHook) end
+		if C_Timer and C_Timer.After then C_Timer.After(0.25, TUI_OmniCD_EnsureHook) end
 		return
 	end
-	if not OCCD_hooked then
-		OCCD_hooked = true
+	if not TUI_OmniCD_hooked then
+		TUI_OmniCD_hooked = true
 		if type(P.GetStatusBarFrame) == 'function' then
 			hooksecurefunc(P, 'GetStatusBarFrame', function(_, icon)
-				if icon and icon.statusBar then OCCD_queueOrApply(icon, icon.statusBar, P) end
+				if icon and icon.statusBar then TUI_OmniCD_queueOrApply(icon, icon.statusBar, P) end
 			end)
 		elseif type(P.UpdateAllBars) == 'function' then
 			hooksecurefunc(P, 'UpdateAllBars', function()
 				if not (P and P.StatusBarPool) then return end
 				for sb in P.StatusBarPool:EnumerateActive() do
 					local icon = sb and (sb.parent or (type(sb.GetParent) == 'function' and sb:GetParent()))
-					if icon then OCCD_queueOrApply(icon, sb, P) end
+					if icon then TUI_OmniCD_queueOrApply(icon, sb, P) end
 				end
 			end)
 		end
 	end
 	for sb in P.StatusBarPool:EnumerateActive() do
 		local icon = sb and (sb.parent or (type(sb.GetParent) == 'function' and sb:GetParent())) or nil
-		if icon then OCCD_queueOrApply(icon, sb, P) end
+		if icon then TUI_OmniCD_queueOrApply(icon, sb, P) end
 	end
 end
 
-local function OCCD_UpdateAll(tries)
+local function TUI_OmniCD_UpdateAll(tries)
 	tries = (tries or 0) + 1
 	local Omni = _G and rawget(_G, 'OmniCD')
 	local OE = Omni and Omni[1]
 	local P = OE and OE.Party
 	if OE and OE.isEnabled and P and P.enabled and P.UpdateAllBars then P:UpdateAllBars(); return end
-	if tries < 50 and C_Timer and C_Timer.After then C_Timer.After(0.2, function() OCCD_UpdateAll(tries) end) end
+	if tries < 50 and C_Timer and C_Timer.After then C_Timer.After(0.2, function() TUI_OmniCD_UpdateAll(tries) end) end
 end
 
 function ElvUI_TrenchyUI:OmniCD_ApplyExtras(now)
  local cfg = E.db and E.db.ElvUI_TrenchyUI and E.db.ElvUI_TrenchyUI.omnicd
     local forceCCC = cfg and cfg.forceCCC
     if forceCCC == false then
-        OCCD_RestoreRaid()
+        TUI_OmniCD_RestoreRaid()
     else
-        OCCD_CopyCustomToRaid()
+        TUI_OmniCD_CopyCustomToRaid()
     end
-    OCCD_EnsureHook()
-    OCCD_UpdateAll(0)
+    TUI_OmniCD_EnsureHook()
+    TUI_OmniCD_UpdateAll(0)
 end
 
 -- Create/refresh a 1px left-edge border on the status bar matching OmniCD's border color
@@ -229,7 +229,7 @@ do
 		return 0,0,0,1
 	end
 
-	function ElvUI_TrenchyUI.OCCD_UpdateLeftBorder(icon, sb)
+	function ElvUI_TrenchyUI.TUI_OmniCD_UpdateLeftBorder(icon, sb)
 		if not sb then return end
 		local tex = sb.__TrenchyLeftBorder
 		if not tex and type(sb.CreateTexture) == 'function' then
@@ -267,14 +267,14 @@ ocEv:SetScript('OnEvent', function(_, evt, arg1)
 		local OE = Omni and Omni[1]
 		local P = OE and OE.Party
 		if OE and P and P.StatusBarPool then
-			for sb, icon in pairs(OCCD_pending) do
+			for sb, icon in pairs(TUI_OmniCD_pending) do
 				local inPool = false
 				for x in P.StatusBarPool:EnumerateActive() do if x == sb then inPool = true; break end end
-				if inPool then OCCD_Reanchor(icon, sb) end
-				OCCD_pending[sb] = nil
+				if inPool then TUI_OmniCD_Reanchor(icon, sb) end
+				TUI_OmniCD_pending[sb] = nil
 			end
 		else
-			for k in pairs(OCCD_pending) do OCCD_pending[k] = nil end
+			for k in pairs(TUI_OmniCD_pending) do TUI_OmniCD_pending[k] = nil end
 		end
 	end
 end)
