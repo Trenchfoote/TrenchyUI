@@ -240,8 +240,8 @@ end
 local function Page_Nameplates()
 	local f = _G and rawget(_G, "PluginInstallFrame")
 	f.SubTitle:SetText("Nameplates")
-	f.Desc1:SetText("Optional: import Style Filters now.")
-	f.Desc2:SetText("")
+	f.Desc1:SetText("Optional: Import ElvUI Style Filters now.")
+	f.Desc2:SetText("Style Filter Status: TWW Season 3")
 	f.Desc3:SetText("")
 	f.Desc4:SetText("")
 
@@ -292,13 +292,14 @@ local function Page_Finish()
 			if NS.ImportProfileStrings then
 				-- Prefer OnlyPlates export strings if present
 				local only = NS.OnlyPlatesStrings
-				if only and (only.profile ~= "" or only.private ~= "" or only.global ~= "" or only.nameplatefilters ~= "") then
+				if only and (only.profile ~= "" or only.private ~= "" or only.global ~= "" or only.nameplatefilters ~= "" or only.aurafilters ~= "") then
 					-- If style filters already applied on the Nameplates page, skip re-importing them here
 					local overrides = {
 						profile = only.profile,
 						private = only.private,
 						global = only.global,
 						nameplatefilters = NS._choices.styleFiltersApplied and "" or only.nameplatefilters,
+						aurafilters = only.aurafilters,
 					}
 					imported = NS.ImportProfileStrings(overrides)
 				else
@@ -309,12 +310,17 @@ local function Page_Finish()
 			end
 			if not imported then
 				ApplyDPSTank()
+				-- Force UIScale even on the Lua fallback path
+				if NS.ApplyUIScaleAfterImport then NS.ApplyUIScaleAfterImport(NS.UIScale) end
 			end
 		elseif layout == 'healer' then
 			HealerWIPNotice()
 		end
 
 	-- External addon profiles are applied immediately on button press
+
+		-- Always enforce UIScale before finalizing
+		if NS.ApplyUIScaleAfterImport then NS.ApplyUIScaleAfterImport(NS.UIScale) end
 
 		-- Commit and finalize
 		Commit()

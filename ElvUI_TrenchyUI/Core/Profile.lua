@@ -1,5 +1,5 @@
 -- TrenchyUI/Core/Profile.lua
--- Purpose: Centralize ElvUI Distributor imports (profile/private/global/nameplate filters)
+-- Purpose: Centralize ElvUI Distributor imports (profile/private/global/nameplate filters/aura filters)
 -- This helps future-proof the installer if ElvUI changes import sequencing.
 
 local AddonName, NS = ...
@@ -18,10 +18,11 @@ NS.ProfileStrings = NS.ProfileStrings or {
 	private           = "",
 	global            = "",
 	nameplatefilters  = "",
+	aurafilters       = "",
 }
 
 -- Contract:
--- inputs: optional table with overrides { profile, private, global, nameplatefilters }
+-- inputs: optional table with overrides { profile, private, global, nameplatefilters, aurafilters }
 -- returns: true if any import succeeded, false if Distributor missing or all empty
 function NS.ImportProfileStrings(overrides)
 	local engine = _G and rawget(_G, "ElvUI")
@@ -34,20 +35,30 @@ function NS.ImportProfileStrings(overrides)
 		return false
 	end
 
-	local S = NS.ProfileStrings
+	-- Build a safe copy of source strings so overrides don't mutate originals
+	local source = NS.OnlyPlatesStrings or NS.ProfileStrings or {}
+	local S = {
+		profile = source.profile or "",
+		private = source.private or "",
+		global = source.global or "",
+		nameplatefilters = source.nameplatefilters or "",
+		aurafilters = source.aurafilters or "",
+	}
 	if overrides then
 		if overrides.profile ~= nil          then S.profile = overrides.profile end
 		if overrides.private ~= nil          then S.private = overrides.private end
 		if overrides.global ~= nil           then S.global = overrides.global end
 		if overrides.nameplatefilters ~= nil then S.nameplatefilters = overrides.nameplatefilters end
+		if overrides.aurafilters ~= nil      then S.aurafilters = overrides.aurafilters end
 	end
 
 	local any = false
-	-- Import order typically: private -> nameplate filters -> profile -> global
-	if S.private and S.private ~= ""          then D:ImportProfile(S.private); any = true end
+	-- Import order: private -> aura filters -> nameplate filters -> profile -> global
+	if S.private and S.private ~= ""            then D:ImportProfile(S.private); any = true end
+	if S.aurafilters and S.aurafilters ~= ""    then D:ImportProfile(S.aurafilters); any = true end
 	if S.nameplatefilters and S.nameplatefilters ~= "" then D:ImportProfile(S.nameplatefilters); any = true end
-	if S.profile and S.profile ~= ""          then D:ImportProfile(S.profile); any = true end
-	if S.global and S.global ~= ""            then D:ImportProfile(S.global); any = true end
+	if S.profile and S.profile ~= ""            then D:ImportProfile(S.profile); any = true end
+	if S.global and S.global ~= ""              then D:ImportProfile(S.global); any = true end
 
 	return any
 end
@@ -59,5 +70,7 @@ function NS.ApplyUIScaleAfterImport(scale)
 	E = engine[1]
 	E.global = E.global or {}
 	E.global.general = E.global.general or {}
+	-- Disable ElvUI autoscale to respect forced UIScale
+	E.global.general.autoScale = false
 	E.global.general.UIScale = scale
 end
