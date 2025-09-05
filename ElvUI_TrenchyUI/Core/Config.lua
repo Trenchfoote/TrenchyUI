@@ -43,7 +43,7 @@ local function BuildOptions()
     local ok = NS.ImportProfileStrings(overrides)
     if ok and NS.OnlyPlates_PostImport then NS.OnlyPlates_PostImport() end
     if NS.ApplyUIScaleAfterImport and NS.UIScale then NS.ApplyUIScaleAfterImport(NS.UIScale) end
-  print(BRAND..(ok and ": TrenchyUI layout reinstalled." or ": Failed to reinstall TrenchyUI layout."))
+  print(BRAND..(ok and ": OnlyPlates layout reinstalled." or ": Failed to reinstall OnlyPlates layout."))
   end
 
   local function ReinstallUnnamed()
@@ -98,7 +98,7 @@ local function BuildOptions()
     layoutsHeader = { order = 6, type = "header", name = "|cff"..BRAND_HEX.."Layouts|r" },
     reinstallOnly = {
       order = 7, type = "execute", width = "full",
-      name = "Reinstall TrenchyUI Layout",
+  name = "Reinstall OnlyPlates Layout",
       func = ReinstallOnlyPlates,
     },
     reinstallUnnamed = {
