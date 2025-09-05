@@ -44,28 +44,51 @@ NS.RegisterExternalProfile("OmniCD", function()
   if profileTbl then
     local DB = rawget(_G, "OmniCDDB")
     if type(DB) ~= "table" then
-      -- Attempt to initialize the global DB table safely
+      -- Attempt to initialize the global DB table safely with required subkeys
       local okSet = pcall(function()
-        _G["OmniCDDB"] = {}
+        _G["OmniCDDB"] = { profiles = {}, global = {}, cooldowns = {}, profileKeys = {}, namespaces = {} }
       end)
       DB = okSet and rawget(_G, "OmniCDDB") or {}
     end
-    DB.profiles = DB.profiles or {}
-    DB.global = DB.global or {}
-    DB.cooldowns = DB.cooldowns or {}
+    DB.profiles    = DB.profiles    or {}
+    DB.global      = DB.global      or {}
+    DB.cooldowns   = DB.cooldowns   or {}
+    DB.profileKeys = DB.profileKeys or {}
+    DB.namespaces  = DB.namespaces  or {}
     DB.version = DB.version or 4
     DB.global.disableElvMsg = true
 
+    -- Write/replace the profile data
     DB.profiles[profileName] = profileTbl
+
+    -- Disable LibDualSpec so SetProfile sticks (Retail pattern from Luckyone)
+  local engine = _G and rawget(_G, "ElvUI")
+  local E = (engine and engine[1]) or NS.E
+    if E and E.Retail then
+      DB.namespaces['LibDualSpec-1.0'] = DB.namespaces['LibDualSpec-1.0'] or {}
+      DB.namespaces['LibDualSpec-1.0'].char = DB.namespaces['LibDualSpec-1.0'].char or {}
+      DB.namespaces['LibDualSpec-1.0'].char[E.mynameRealm] = DB.namespaces['LibDualSpec-1.0'].char[E.mynameRealm] or {}
+      DB.namespaces['LibDualSpec-1.0'].char[E.mynameRealm].enabled = false
+    end
+
+    -- Map current character to the new profile (AceDB fallback)
+    local charKey
+    if E and E.mynameRealm then charKey = E.mynameRealm
+    else
+      local name = (type(UnitName) == 'function' and UnitName('player')) or 'Player'
+      local realm = (type(GetRealmName) == 'function' and GetRealmName()) or 'Realm'
+      charKey = string.format('%s - %s', name or 'Player', realm or 'Realm')
+    end
+    DB.profileKeys[charKey] = profileName
+
     ok = true
   end
 
   -- Activate the profile for the current character via AceDB if available
-  local OmniCDArr = rawget(_G, "OmniCD")
-  local OCE = (type(OmniCDArr) == "table" and OmniCDArr[1]) or nil
-  if ok and OCE and OCE.db and type(OCE.db.SetProfile) == "function" then
-    pcall(function() OCE.db:SetProfile(profileName) end)
-    applied = true
+  local OC = rawget(_G, "OmniCD")
+  if ok and type(OC) == "table" and OC.db and type(OC.db.SetProfile) == "function" then
+    local okSet = pcall(function() OC.db:SetProfile(profileName) end)
+    applied = okSet or applied
   end
 
   -- Integrate OmniCD_CustomColors reanchor hook if present
@@ -75,9 +98,10 @@ NS.RegisterExternalProfile("OmniCD", function()
   end
 
   -- Refresh OmniCD bars to reflect changes
-  if OCE and OCE.Party and type(OCE.Party.UpdateAllBars) == "function" then
-    pcall(function() OCE.Party:UpdateAllBars() end)
+  if type(OC) == "table" and OC.Party and type(OC.Party.UpdateAllBars) == "function" then
+    pcall(function() OC.Party:UpdateAllBars() end)
   end
 
-  return applied
+  -- Consider success if we wrote the DB and mapped the profile, even if SetProfile couldn't run
+  return ok or applied
 end)
