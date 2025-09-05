@@ -5,12 +5,12 @@ P.ElvUI_TrenchyUI = {
 	StyleFiltersSeasonal = {
 		Expansion = "TWW",
 		Season = 3,
-		Version = 1.1,
+		Version = 20250905,
 	},
 	StyleFiltersCommon = {
 		Expansion = "TWW",
 		Season = 3,
-		Version = 1.1,
+		Version = 20250905,
 	},
 	install_version = nil,
 	warpdeplete = {
@@ -18,6 +18,6 @@ P.ElvUI_TrenchyUI = {
 	},
 	omnicd = {
 		forceCCC = true,
-		gapX = 0,
+		gapX = 2,
 	},
 }

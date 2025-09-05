@@ -132,7 +132,7 @@ end
 
 local function OCCD_Reanchor(icon, sb)
 	if not sb or not icon or type(sb.ClearAllPoints) ~= 'function' or type(sb.SetPoint) ~= 'function' then return end
-	local cfg = E.db.TrenchyUI and E.db.TrenchyUI and E.db.TrenchyUI.omnicd
+	local cfg = E.db.ElvUI_TrenchyUI and E.db.ElvUI_TrenchyUI.omnicd
 	local dx = cfg.gapX or 0
 	sb:ClearAllPoints()
 	sb:SetPoint('TOPLEFT', icon, 'TOPRIGHT', dx, 0)
@@ -195,10 +195,15 @@ local function OCCD_UpdateAll(tries)
 end
 
 function ElvUI_TrenchyUI:OmniCD_ApplyExtras(now)
-	local cfg = E.db.TrenchyUI and E.db.TrenchyUI and E.db.TrenchyUI.omnicd
-	if cfg.forceCCC ~= false then OCCD_CopyCustomToRaid() else OCCD_RestoreRaid() end
-	OCCD_EnsureHook()
-	OCCD_UpdateAll(0)
+ local cfg = E.db and E.db.ElvUI_TrenchyUI and E.db.ElvUI_TrenchyUI.omnicd
+    local forceCCC = cfg and cfg.forceCCC
+    if forceCCC == false then
+        OCCD_RestoreRaid()
+    else
+        OCCD_CopyCustomToRaid()
+    end
+    OCCD_EnsureHook()
+    OCCD_UpdateAll(0)
 end
 
 -- Create/refresh a 1px left-edge border on the status bar matching OmniCD's border color
