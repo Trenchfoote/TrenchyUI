@@ -148,11 +148,11 @@ local function Page_Choose()
 	local f = _G and rawget(_G, "PluginInstallFrame")
 	f.SubTitle:SetText("Choose a layout")
 	f.Desc1:SetText("Select a layout to apply on the final step.")
-	f.Desc2:SetText("|cff00ff88OnlyPlates|r is ready. |cffff4444Unnamed|r is currently inactive.")
+	f.Desc2:SetText("|cff00ff88TrenchyUI|r is ready. |cffff4444Unnamed|r is currently inactive.")
 	f.Desc3:SetText("")
 	f.Desc4:SetText("")
 
-	f.Option1:Show(); f.Option1:SetText("OnlyPlates")
+	f.Option1:Show(); f.Option1:SetText("TrenchyUI")
 	f.Option1:SetScript("OnClick", function()
 		NS._choices.layout = 'dps'
 		print(BRAND..": Layout set to DPS/Tank. It will apply on Finish.")
@@ -240,32 +240,25 @@ end
 local function Page_Nameplates()
 	local f = _G and rawget(_G, "PluginInstallFrame")
 	f.SubTitle:SetText("Nameplates")
-	f.Desc1:SetText("Optional: Import ElvUI Style Filters now.")
-	f.Desc2:SetText("Style Filter Status: TWW Season 3")
+	local ver = (NS and NS.StyleFiltersVersion) or ""
+	f.Desc1:SetText("Optional: Apply TrenchyUI ElvUI Style Filters now.")
+	f.Desc2:SetText("Version: "..ver)
 	f.Desc3:SetText("")
 	f.Desc4:SetText("")
 
-	f.Option1:Show(); f.Option1:SetText("Style Filters")
+	-- Single option: Apply TrenchyUI filters
+	f.Option1:Show(); f.Option1:SetText("Apply TrenchyUI Filters")
 	f.Option1:SetScript("OnClick", function()
-		local only = NS.OnlyPlatesStrings
-		if only and only.nameplatefilters and only.nameplatefilters ~= "" then
-			if NS.ApplyOnlyPlatesStyleFilters then
-				local ok = NS.ApplyOnlyPlatesStyleFilters()
-				if ok ~= false then
-					NS._choices.styleFiltersApplied = true
-					ShowToast("Style Filters applied", true)
-				else
-					ShowToast("Failed to apply Style Filters", false)
-				end
-			else
-				ShowToast("Importer unavailable", false)
-			end
+		local ok = NS.ApplyOnlyPlatesStyleFilters and NS.ApplyOnlyPlatesStyleFilters() or false
+		if ok then
+			NS._choices.styleFiltersApplied = true
+			ShowToast("TrenchyUI filters applied ("..ver..")", true)
 		else
-			ShowToast("No Style Filters export found", false)
+			ShowToast("Failed to apply TrenchyUI filters ("..ver..")", false)
 		end
 	end)
 
-	-- Ensure button enabled
+	-- Ensure buttons enabled
 	if f.Option1.Enable then f.Option1:Enable() elseif f.Option1.SetEnabled then f.Option1:SetEnabled(true) end
 
 	f.Option2:Hide(); f.Option3:Hide(); f.Option4:Hide()
@@ -292,13 +285,13 @@ local function Page_Finish()
 			if NS.ImportProfileStrings then
 				-- Prefer OnlyPlates export strings if present
 				local only = NS.OnlyPlatesStrings
-				if only and (only.profile ~= "" or only.private ~= "" or only.global ~= "" or only.nameplatefilters ~= "" or only.aurafilters ~= "") then
+				if only and (only.profile ~= "" or only.private ~= "" or only.global ~= "" or only.aurafilters ~= "" or only.nameplatefilters ~= "") then
 					-- If style filters already applied on the Nameplates page, skip re-importing them here
 					local overrides = {
 						profile = only.profile,
 						private = only.private,
 						global = only.global,
-						nameplatefilters = NS._choices.styleFiltersApplied and "" or only.nameplatefilters,
+						nameplatefilters = NS._choices.styleFiltersApplied and "" or (only.nameplatefilters or ""),
 						aurafilters = only.aurafilters,
 					}
 					imported = NS.ImportProfileStrings(overrides)

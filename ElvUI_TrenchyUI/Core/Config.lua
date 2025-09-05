@@ -32,7 +32,7 @@ local function BuildOptions()
   local function ReinstallOnlyPlates()
     if not NS.ImportProfileStrings then print(BRAND..": Importer not available.") return end
     local only = NS.OnlyPlatesStrings
-    if not only then print(BRAND..": No OnlyPlates export available.") return end
+  if not only then print(BRAND..": No TrenchyUI export available.") return end
     local overrides = {
       profile = only.profile or "",
       private = only.private or "",
@@ -43,7 +43,7 @@ local function BuildOptions()
     local ok = NS.ImportProfileStrings(overrides)
     if ok and NS.OnlyPlates_PostImport then NS.OnlyPlates_PostImport() end
     if NS.ApplyUIScaleAfterImport and NS.UIScale then NS.ApplyUIScaleAfterImport(NS.UIScale) end
-    print(BRAND..(ok and ": OnlyPlates layout reinstalled." or ": Failed to reinstall OnlyPlates layout."))
+  print(BRAND..(ok and ": TrenchyUI layout reinstalled." or ": Failed to reinstall TrenchyUI layout."))
   end
 
   local function ReinstallUnnamed()
@@ -62,17 +62,15 @@ local function BuildOptions()
     print(BRAND..": Profile applier for '"..name.."' not found.")
   end
 
-  local function ReinstallStyleFilters()
-    if NS.ApplyOnlyPlatesStyleFilters then
-      local ok = NS.ApplyOnlyPlatesStyleFilters()
-      print(BRAND..(ok and ": Nameplate Style Filters applied." or ": Failed to apply Style Filters."))
-    else
-      print(BRAND..": Style Filter importer unavailable.")
-    end
+  -- Version stamp for TrenchyUI Nameplate Style Filters
+  local STYLE_VERSION = NS.StyleFiltersVersion or "TrenchyUI"
+
+  local function ApplyOnlyPlatesStyleFilters()
+    local ver = STYLE_VERSION or ""
+    local ok = NS.ApplyOnlyPlatesStyleFilters and NS.ApplyOnlyPlatesStyleFilters() or false
+  print(BRAND..(ok and (": TrenchyUI Style Filters applied ("..ver..")") or (": Failed to apply TrenchyUI Style Filters ("..ver..")")))
   end
 
-  -- Version stamp for Nameplate Style Filters (shown on the button only)
-  local STYLE_VERSION = "TWW S3 Version 1.0"
 
   local groupArgs = {
     header  = { order = 1, type = "header", name = BRAND },
@@ -93,7 +91,7 @@ local function BuildOptions()
     layoutsHeader = { order = 6, type = "header", name = "|cff"..BRAND_HEX.."Layouts|r" },
     reinstallOnly = {
       order = 7, type = "execute", width = "full",
-      name = "Reinstall OnlyPlates Layout",
+      name = "Reinstall TrenchyUI Layout",
       func = ReinstallOnlyPlates,
     },
     reinstallUnnamed = {
@@ -105,11 +103,12 @@ local function BuildOptions()
     spacer3 = { order = 9, type = "description", name = " " },
     -- Move Style Filters above Other Addons
     styleHeader = { order = 9.1, type = "header", name = "|cff"..BRAND_HEX.."ElvUI Nameplate Style Filters|r" },
-    reinstallStyle = {
+    applyOnlyPlatesStyle = {
       order = 9.2, type = "execute", width = "full",
-      name = "Reinstall Style Filters (|cff40ff40"..STYLE_VERSION.."|r)",
-      func = ReinstallStyleFilters,
+      name = "Apply TrenchyUI Filters (|cff40ff40"..STYLE_VERSION.."|r)",
+      func = ApplyOnlyPlatesStyleFilters,
     },
+  -- compare/purge buttons removed per request
     addonsHeader = { order = 10, type = "header", name = "|cff"..BRAND_HEX.."Other Addons|r" },
   applyBigWigs = {
       order = 11, type = "execute", width = "full",
@@ -262,8 +261,16 @@ function NS.InsertOptions()
   end
 
   -- Also add a top-level entry
+  local function deepCopy(tbl)
+    local out = {}
+    for k, v in pairs(tbl) do
+      out[k] = (type(v) == 'table') and deepCopy(v) or v
+    end
+    return out
+  end
+  local topArgs = deepCopy(sharedArgs)
   E.Options.args.trenchyui = {
-    order = 95, type = "group", name = BRAND, args = sharedArgs
+    order = 95, type = "group", name = BRAND, args = topArgs
   }
 end
 

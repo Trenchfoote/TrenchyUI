@@ -143,7 +143,8 @@ end
 			private = only.private or "",
 			global = only.global or "",
 			aurafilters = only.aurafilters or "",
-			nameplatefilters = "", -- keep Style Filters separate
+			-- Re-enable importing OnlyPlates nameplate Style Filters as requested
+			nameplatefilters = only.nameplatefilters or "",
 		}
 		local ok = NS.ImportProfileStrings(overrides)
 		if ok and NS.OnlyPlates_PostImport then NS.OnlyPlates_PostImport() end
@@ -167,18 +168,6 @@ end
 		end
 		print(BRAND..": Profile applier for '"..name.."' not found.")
 	end
-
-	local function ReinstallStyleFilters()
-		if NS.ApplyOnlyPlatesStyleFilters then
-			local ok = NS.ApplyOnlyPlatesStyleFilters()
-			print(BRAND..(ok and ": Nameplate Style Filters applied." or ": Failed to apply Style Filters."))
-		else
-			print(BRAND..": Style Filter importer unavailable.")
-		end
-	end
-
-		-- Version stamp for Nameplate Style Filters
-		local STYLE_VERSION = "TWW S3 Version 1.0"
 
 	local groupArgs = {
 		header  = { order = 1, type = "header", name = BRAND },
@@ -239,13 +228,6 @@ end
 				func = function() ApplyExternal('ProjectAzilroka') end,
 			},
 			spacer4 = { order = 17, type = "description", name = " " },
-				styleHeader = { order = 18, type = "header", name = "|cff"..BRAND_HEX.."Nameplate Style Filters|r" },
-			reinstallStyle = {
-				order = 19, type = "execute", width = "full",
-					name = "Reinstall Style Filters (|cff40ff40"..STYLE_VERSION.."|r)",
-				func = ReinstallStyleFilters,
-			},
-			spacer5 = { order = 20, type = "description", name = " " },
 	}
 
 	-- InsertOptions is now provided by Core/Config.lua as NS.InsertOptions()

@@ -7,6 +7,68 @@ local _G = _G or getfenv and getfenv(0) or {}
 local BRAND_HEX = "ff2f3d"
 local BRAND     = "|cff"..BRAND_HEX.."TrenchyUI|r"
 
+-- Shared version label for Style Filters (used in Config and Installer prints)
+NS.StyleFiltersVersion = NS.StyleFiltersVersion or "TWW S3 Version 1.0"
+-- Optional: structured nameplates DB you can maintain in Lua instead of strings
+-- Example shape:
+-- NS.OnlyPlatesNameplatesDB = {
+--   nameplates = { plateSize = { enemyWidth = 135, enemyHeight = 18 } },
+--   filters = { /* tables keyed by filter name */ },
+-- }
+NS.OnlyPlatesNameplatesDB = NS.OnlyPlatesNameplatesDB or nil
+
+-- Apply the table-based Nameplates config if provided; returns true if applied
+function NS.ApplyOnlyPlatesNameplatesDB()
+	local engine = _G and rawget(_G, "ElvUI"); if not (engine and engine[1]) then return false end
+	local E = engine[1]
+	local tbl = NS.OnlyPlatesNameplatesDB
+	if type(tbl) ~= 'table' then return false end
+
+	-- Merge into E.db.nameplates
+	if type(tbl.nameplates) == 'table' then
+		E.db = E.db or {}
+		E.db.nameplates = E.db.nameplates or {}
+		E:CopyTable(E.db.nameplates, tbl.nameplates)
+	end
+
+	-- Copy filters tables directly, with versioned cleanup just like string importer
+	if type(tbl.filters) == 'table' then
+		E.global = E.global or {}; E.global.nameplate = E.global.nameplate or {}
+		E.global.nameplate.filters = E.global.nameplate.filters or {}
+		local filtersTbl = E.global.nameplate.filters
+
+		-- Cleanup previously applied keys on version bump
+		E.global.TrenchyUI = E.global.TrenchyUI or {}
+		local meta = E.global.TrenchyUI
+		meta.styleFilters = meta.styleFilters or { version = nil, keys = {} }
+		local sfMeta = meta.styleFilters
+		local currentVersion = NS.StyleFiltersVersion or 'v?'
+		if sfMeta.version and sfMeta.version ~= currentVersion then
+			for _, key in ipairs(sfMeta.keys or {}) do filtersTbl[key] = nil end
+		end
+
+		-- Snapshot existing keys
+		local before = {}
+		for k in pairs(filtersTbl) do before[k] = true end
+
+		-- Copy provided filters
+		for k, v in pairs(tbl.filters) do filtersTbl[k] = v end
+
+		-- Track added keys
+		local added = {}
+		for k in pairs(filtersTbl) do if not before[k] then table.insert(added, k) end end
+		sfMeta.version = currentVersion
+		sfMeta.keys = added
+	end
+
+	-- Ensure Nameplates module enabled
+	E.private = E.private or {}; E.private.nameplate = E.private.nameplate or {}
+	E.private.nameplate.enable = true
+
+	return true
+end
+
+
 -- Paste your Distributor export strings below when ready.
 -- Keep empty by default so the installer falls back to the Lua builder.
 NS.OnlyPlatesStrings = NS.OnlyPlatesStrings or {
@@ -26,7 +88,59 @@ function NS.ApplyOnlyPlatesStyleFilters()
 	if not D or not D.ImportProfile then return false end
 	local only = NS.OnlyPlatesStrings
 	if not (only and only.nameplatefilters and only.nameplatefilters ~= "") then return false end
+
+	-- Determine DB tables where ElvUI stores Nameplate Style Filters
+	local function getFiltersTable()
+		-- Prefer E.global.nameplate.filters (common in recent ElvUI)
+		local g = E.global and E.global.nameplate and E.global.nameplate.filters
+		if type(g) == 'table' then return g, 'global' end
+		-- Fallbacks (older variants)
+		local d = E.db and E.db.nameplates and E.db.nameplates.filters
+		if type(d) == 'table' then return d, 'db' end
+		-- Last resort: ElvDB global
+		local ElvDB = rawget(_G, 'ElvDB')
+		local eg = ElvDB and ElvDB.global and ElvDB.global.nameplate and ElvDB.global.nameplate.filters
+		if type(eg) == 'table' then return eg, 'ElvDB' end
+		return nil, nil
+	end
+
+	-- Pre-clean if upgrading version: remove previously applied filters
+	local meta = E.global and (E.global.TrenchyUI or (E.global.TrenchyUI == nil and (E.global.TrenchyUI or {})))
+	E.global = E.global or {}
+	E.global.TrenchyUI = E.global.TrenchyUI or {}
+	E.global.TrenchyUI.styleFilters = E.global.TrenchyUI.styleFilters or { version = nil, keys = {} }
+	local sfMeta = E.global.TrenchyUI.styleFilters
+	local currentVersion = NS.StyleFiltersVersion or 'v?'
+
+	local filtersTbl = select(1, getFiltersTable())
+	if filtersTbl and sfMeta.version and sfMeta.version ~= currentVersion then
+		-- Remove previously recorded keys
+		for _, key in ipairs(sfMeta.keys or {}) do
+			if filtersTbl[key] ~= nil then filtersTbl[key] = nil end
+		end
+	end
+
+	-- Snapshot keys before import to detect newly added ones
+	local before = {}
+	filtersTbl = select(1, getFiltersTable()) or {}
+	for k in pairs(filtersTbl) do before[k] = true end
+
+	-- Import new style filters
 	D:ImportProfile(only.nameplatefilters)
+
+	-- Collect newly added keys after import
+	local after = select(1, getFiltersTable()) or {}
+	local added = {}
+	for k in pairs(after) do if not before[k] then table.insert(added, k) end end
+
+	-- Store metadata for future cleanup
+	E.global.TrenchyUI.styleFilters.version = currentVersion
+	E.global.TrenchyUI.styleFilters.keys = added
+
+	-- Ensure Nameplates module is enabled in ElvUI config
+	E.private = E.private or {}; E.private.nameplate = E.private.nameplate or {}
+	E.private.nameplate.enable = true
+
 	return true
 end
 
