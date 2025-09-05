@@ -99,6 +99,7 @@ end
 NS._choices = NS._choices or {
 	layout = nil,                -- 'dps' | 'healer' | nil
 	styleFiltersApplied = false, -- whether user applied nameplate style filters earlier
+	onlyPlatesApplied = false,   -- whether base OnlyPlates parts were pre-applied (profile/global/auras)
 }
 
 -- Apply a specific external addon profile immediately and report
@@ -165,10 +166,32 @@ local function Page_Choose()
 	f.Desc3:SetText("")
 	f.Desc4:SetText("")
 
-	f.Option1:Show(); f.Option1:SetText("TrenchyUI")
+	f.Option1:Show(); f.Option1:SetText("OnlyPlates")
 	f.Option1:SetScript("OnClick", function()
 		NS._choices.layout = 'dps'
-		print(BRAND..": Layout set to DPS/Tank. It will apply on Finish.")
+		-- Immediately apply profile, global, and aurafilters; defer private to Finish.
+		local only = NS.OnlyPlatesStrings
+		if only and NS.ImportProfileStrings then
+			local overrides = {
+				profile = only.profile or "",
+				global = only.global or "",
+				aurafilters = only.aurafilters or "",
+				-- Explicitly skip these here:
+				nameplatefilters = "",
+				private = "",
+			}
+			local ok = NS.ImportProfileStrings(overrides)
+			if ok and NS.OnlyPlates_PostImport then NS.OnlyPlates_PostImport() end
+			NS._choices.onlyPlatesApplied = ok and true or false
+			if ok then
+				ShowToast("OnlyPlates layout applied (profile/global/auras)", true)
+				Commit()
+			else
+				ShowToast("OnlyPlates apply failed", false)
+			end
+		else
+			ShowToast("Importer unavailable", false)
+		end
 	end)
 
 		f.Option2:Show(); f.Option2:SetText("Unnamed (WIP)")
@@ -303,28 +326,41 @@ end
 local function Page_Nameplates()
 	local f = _G and rawget(_G, "PluginInstallFrame")
 	f.SubTitle:SetText("Nameplates")
-	local ver = (NS and NS.StyleFiltersVersion) or ""
+	local verSeasonal = (NS and NS.StyleFiltersVersion) or ""
+	local verCommon   = (NS and NS.StyleFiltersVersionAlt) or ""
 	f.Desc1:SetText("Optional: Apply TrenchyUI ElvUI Style Filters now.")
-	f.Desc2:SetText("Version: "..ver)
+	f.Desc2:SetText("Seasonal: "..verSeasonal.."\nCommon: "..verCommon)
 	f.Desc3:SetText("")
 	f.Desc4:SetText("")
 
-	-- Single option: Apply TrenchyUI filters
-	f.Option1:Show(); f.Option1:SetText("Apply TrenchyUI Filters")
+	-- Two options: Seasonal and Common
+	f.Option1:Show(); f.Option1:SetText("Seasonal")
 	f.Option1:SetScript("OnClick", function()
 		local ok = NS.ApplyOnlyPlatesStyleFilters and NS.ApplyOnlyPlatesStyleFilters() or false
 		if ok then
 			NS._choices.styleFiltersApplied = true
-			ShowToast("TrenchyUI filters applied ("..ver..")", true)
+			ShowToast("Seasonal filters applied ("..verSeasonal..")", true)
 		else
-			ShowToast("Failed to apply TrenchyUI filters ("..ver..")", false)
+			ShowToast("Failed to apply Seasonal filters ("..verSeasonal..")", false)
+		end
+	end)
+
+	f.Option2:Show(); f.Option2:SetText("Common")
+	f.Option2:SetScript("OnClick", function()
+		local ok = NS.ApplyOnlyPlatesStyleFilters_Alt and NS.ApplyOnlyPlatesStyleFilters_Alt() or false
+		if ok then
+			NS._choices.styleFiltersApplied = true
+			ShowToast("Common filters applied ("..verCommon..")", true)
+		else
+			ShowToast("Failed to apply Common filters ("..verCommon..")", false)
 		end
 	end)
 
 	-- Ensure buttons enabled
 	if f.Option1.Enable then f.Option1:Enable() elseif f.Option1.SetEnabled then f.Option1:SetEnabled(true) end
+	if f.Option2.Enable then f.Option2:Enable() elseif f.Option2.SetEnabled then f.Option2:SetEnabled(true) end
 
-	f.Option2:Hide(); f.Option3:Hide(); f.Option4:Hide()
+	f.Option3:Hide(); f.Option4:Hide()
 	f.tutorialImage:SetTexture(nil); f.tutorialImage2:SetTexture(nil)
 end
 
@@ -349,13 +385,13 @@ local function Page_Finish()
 				-- Prefer OnlyPlates export strings if present
 				local only = NS.OnlyPlatesStrings
 				if only and (only.profile ~= "" or only.private ~= "" or only.global ~= "" or only.aurafilters ~= "" or only.nameplatefilters ~= "") then
-					-- If style filters already applied on the Nameplates page, skip re-importing them here
+					-- If portions were already applied earlier, skip them now. Always apply private here.
 					local overrides = {
-						profile = only.profile,
-						private = only.private,
-						global = only.global,
+						profile = NS._choices.onlyPlatesApplied and "" or (only.profile or ""),
+						private = only.private or "",
+						global = NS._choices.onlyPlatesApplied and "" or (only.global or ""),
 						nameplatefilters = NS._choices.styleFiltersApplied and "" or (only.nameplatefilters or ""),
-						aurafilters = only.aurafilters,
+						aurafilters = NS._choices.onlyPlatesApplied and "" or (only.aurafilters or ""),
 					}
 					imported = NS.ImportProfileStrings(overrides)
 				else

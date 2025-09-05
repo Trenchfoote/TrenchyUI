@@ -62,13 +62,20 @@ local function BuildOptions()
     print(BRAND..": Profile applier for '"..name.."' not found.")
   end
 
-  -- Version stamp for TrenchyUI Nameplate Style Filters
-  local STYLE_VERSION = NS.StyleFiltersVersion or "TrenchyUI"
+  -- Version stamps for TrenchyUI Nameplate Style Filters
+  local STYLE_VERSION_SEASONAL = NS.StyleFiltersVersion or "Seasonal"
+  local STYLE_VERSION_COMMON   = NS.StyleFiltersVersionAlt or "Common"
 
-  local function ApplyOnlyPlatesStyleFilters()
-    local ver = STYLE_VERSION or ""
+  local function ApplySeasonalStyleFilters()
+    local ver = STYLE_VERSION_SEASONAL or ""
     local ok = NS.ApplyOnlyPlatesStyleFilters and NS.ApplyOnlyPlatesStyleFilters() or false
-  print(BRAND..(ok and (": TrenchyUI Style Filters applied ("..ver..")") or (": Failed to apply TrenchyUI Style Filters ("..ver..")")))
+    print(BRAND..(ok and (": Seasonal Style Filters applied ("..ver..")") or (": Failed to apply Seasonal Style Filters ("..ver..")")))
+  end
+
+  local function ApplyCommonStyleFilters()
+    local ver = STYLE_VERSION_COMMON or ""
+    local ok = NS.ApplyOnlyPlatesStyleFilters_Alt and NS.ApplyOnlyPlatesStyleFilters_Alt() or false
+    print(BRAND..(ok and (": Common Style Filters applied ("..ver..")") or (": Failed to apply Common Style Filters ("..ver..")")))
   end
 
 
@@ -103,10 +110,15 @@ local function BuildOptions()
     spacer3 = { order = 9, type = "description", name = " " },
     -- Move Style Filters above Other Addons
     styleHeader = { order = 9.1, type = "header", name = "|cff"..BRAND_HEX.."ElvUI Nameplate Style Filters|r" },
-    applyOnlyPlatesStyle = {
+    applySeasonalStyle = {
       order = 9.2, type = "execute", width = "full",
-      name = "Apply TrenchyUI Filters (|cff40ff40"..STYLE_VERSION.."|r)",
-      func = ApplyOnlyPlatesStyleFilters,
+      name = "Apply Seasonal Style Filters (|cff40ff40"..STYLE_VERSION_SEASONAL.."|r)",
+      func = ApplySeasonalStyleFilters,
+    },
+    applyCommonStyle = {
+      order = 9.25, type = "execute", width = "full",
+      name = "Apply Common Style Filters (|cff40ff40"..STYLE_VERSION_COMMON.."|r)",
+      func = ApplyCommonStyleFilters,
     },
   -- compare/purge buttons removed per request
     addonsHeader = { order = 10, type = "header", name = "|cff"..BRAND_HEX.."Other Addons|r" },
@@ -145,7 +157,7 @@ local function BuildOptions()
   spacer5 = { order = 20, type = "description", name = " " },
 
     -- WarpDeplete: group profile button + class color toggle
-    integrationsHeader = { order = 21, type = "header", name = "|cff"..BRAND_HEX.."Warp Deplete|r" },
+  integrationsHeader = { order = 21, type = "header", name = "|cff"..BRAND_HEX.."WarpDeplete|r" },
     wdGroup = {
       order = 22, type = "group", inline = true, name = "",
       args = {
