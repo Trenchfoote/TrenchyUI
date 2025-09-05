@@ -180,6 +180,56 @@ local function Page_Choose()
 	f.tutorialImage:SetTexture(nil); f.tutorialImage2:SetTexture(nil)
 end
 
+-- New: explicit ElvUI Chat setup page
+local function Page_SetupChat()
+	local f = _G and rawget(_G, "PluginInstallFrame")
+	f.SubTitle:SetText("Setup Chat")
+	f.Desc1:SetText("Run ElvUI's chat setup to configure your chat panels.")
+	f.Desc2:SetText("Recommended before applying profiles.")
+	f.Desc3:SetText("Left/Right panels and channels will be arranged by ElvUI.")
+	f.Desc4:SetText("")
+
+	f.Option1:Show(); f.Option1:SetText("Setup Chat")
+	f.Option1:SetScript("OnClick", function()
+		if E and type(E.SetupChat) == 'function' then
+			local ok = pcall(function() E:SetupChat() end)
+			ShowToast(ok and "Chat setup applied" or "Chat setup failed", ok)
+		else
+			ShowToast("ElvUI SetupChat unavailable", false)
+		end
+	end)
+
+	-- Hide other buttons for this simple step
+	f.Option2:Hide(); f.Option3:Hide(); f.Option4:Hide()
+	if f.tutorialImage then f.tutorialImage:SetTexture(nil) end
+	if f.tutorialImage2 then f.tutorialImage2:SetTexture(nil) end
+end
+
+-- New: explicit ElvUI CVars setup page
+local function Page_SetupCVars()
+	local f = _G and rawget(_G, "PluginInstallFrame")
+	f.SubTitle:SetText("Setup CVars")
+	f.Desc1:SetText("Run ElvUI's CVars setup to configure Blizzard console variables.")
+	f.Desc2:SetText("Recommended before applying profiles.")
+	f.Desc3:SetText("Examples: camera distance, screenshot quality, tutorials.")
+	f.Desc4:SetText("")
+
+	f.Option1:Show(); f.Option1:SetText("Setup CVars")
+	f.Option1:SetScript("OnClick", function()
+		if E and type(E.SetupCVars) == 'function' then
+			local ok = pcall(function() E:SetupCVars() end)
+			ShowToast(ok and "CVars setup applied" or "CVars setup failed", ok)
+		else
+			ShowToast("ElvUI SetupCVars unavailable", false)
+		end
+	end)
+
+	-- Hide other buttons for this simple step
+	f.Option2:Hide(); f.Option3:Hide(); f.Option4:Hide()
+	if f.tutorialImage then f.tutorialImage:SetTexture(nil) end
+	if f.tutorialImage2 then f.tutorialImage2:SetTexture(nil) end
+end
+
 local function Page_Addons1()
 	local f = _G and rawget(_G, "PluginInstallFrame")
 	f.SubTitle:SetText("Addons (1/2)")
@@ -366,8 +416,8 @@ function NS.SetupInstaller()
 		Title = BRAND,         -- colored title in installer
 		Name  = "TrenchyUI",   -- plain internal name
 		tutorialImage = SPLASH,
-	StepTitles = { "Welcome", "Layout", "Addons 1", "Addons 2", "Nameplates", "Finish" },
-	Pages = { Page_Welcome, Page_Choose, Page_Addons1, Page_Addons2, Page_Nameplates, Page_Finish },
+	StepTitles = { "Welcome", "Setup Chat", "Setup CVars", "Layout", "Addons 1", "Addons 2", "Nameplates", "Finish" },
+	Pages = { Page_Welcome, Page_SetupChat, Page_SetupCVars, Page_Choose, Page_Addons1, Page_Addons2, Page_Nameplates, Page_Finish },
 	}
 
 	NS.ShowInstaller = function()
