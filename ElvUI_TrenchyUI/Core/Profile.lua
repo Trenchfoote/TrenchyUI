@@ -9,6 +9,9 @@ local E
 local BRAND_HEX = "ff2f3d"
 local BRAND     = "|cff"..BRAND_HEX.."TrenchyUI|r"
 
+-- Desired UI scale for TrenchyUI
+NS.UIScale = NS.UIScale or 0.53
+
 -- Import strings can be populated later (e.g., generated exports). Keep empty by default.
 NS.ProfileStrings = NS.ProfileStrings or {
 	profile           = "",

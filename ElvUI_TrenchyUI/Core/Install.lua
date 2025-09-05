@@ -85,6 +85,7 @@ end
 -- ---------- choices state ----------
 NS._choices = NS._choices or {
 	layout = nil,                -- 'dps' | 'healer' | nil
+	styleFiltersApplied = false, -- whether user applied nameplate style filters earlier
 }
 
 -- Apply a specific external addon profile immediately and report
@@ -107,7 +108,7 @@ end
 -- ---------- page builders ----------
 local function Page_Welcome()
 	local f = _G and rawget(_G, "PluginInstallFrame")
-	f.SubTitle:SetText("Welcome")
+	f.SubTitle:SetText("")
 	-- Remove all descriptive text on the welcome page
 	f.Desc1:SetText("")
 	f.Desc2:SetText("")
@@ -236,10 +237,45 @@ local function Page_Addons2()
 	f.tutorialImage:SetTexture(nil); f.tutorialImage2:SetTexture(nil)
 end
 
+local function Page_Nameplates()
+	local f = _G and rawget(_G, "PluginInstallFrame")
+	f.SubTitle:SetText("Nameplates")
+	f.Desc1:SetText("Optional: import Style Filters now.")
+	f.Desc2:SetText("")
+	f.Desc3:SetText("")
+	f.Desc4:SetText("")
+
+	f.Option1:Show(); f.Option1:SetText("Style Filters")
+	f.Option1:SetScript("OnClick", function()
+		local only = NS.OnlyPlatesStrings
+		if only and only.nameplatefilters and only.nameplatefilters ~= "" then
+			if NS.ApplyOnlyPlatesStyleFilters then
+				local ok = NS.ApplyOnlyPlatesStyleFilters()
+				if ok ~= false then
+					NS._choices.styleFiltersApplied = true
+					ShowToast("Style Filters applied", true)
+				else
+					ShowToast("Failed to apply Style Filters", false)
+				end
+			else
+				ShowToast("Importer unavailable", false)
+			end
+		else
+			ShowToast("No Style Filters export found", false)
+		end
+	end)
+
+	-- Ensure button enabled
+	if f.Option1.Enable then f.Option1:Enable() elseif f.Option1.SetEnabled then f.Option1:SetEnabled(true) end
+
+	f.Option2:Hide(); f.Option3:Hide(); f.Option4:Hide()
+	f.tutorialImage:SetTexture(nil); f.tutorialImage2:SetTexture(nil)
+end
+
 local function Page_Finish()
 	local f = _G and rawget(_G, "PluginInstallFrame")
-	f.SubTitle:SetText("Finish")
-	f.Desc1:SetText("Click |cffffff00Apply & Reload|r to apply selections and finalize "..BRAND..".")
+	f.SubTitle:SetText("")
+	f.Desc1:SetText("Click |cff"..BRAND_HEX.."Finish|r to apply selections and finalize "..BRAND..".")
 	f.Desc2:SetText("Reopen anytime with |cffffff00/trenchyui install|r.")
 	f.Desc3:SetText("")
 	f.Desc4:SetText("")
@@ -254,7 +290,21 @@ local function Page_Finish()
 		if layout == 'dps' then
 			local imported = false
 			if NS.ImportProfileStrings then
-				imported = NS.ImportProfileStrings()
+				-- Prefer OnlyPlates export strings if present
+				local only = NS.OnlyPlatesStrings
+				if only and (only.profile ~= "" or only.private ~= "" or only.global ~= "" or only.nameplatefilters ~= "") then
+					-- If style filters already applied on the Nameplates page, skip re-importing them here
+					local overrides = {
+						profile = only.profile,
+						private = only.private,
+						global = only.global,
+						nameplatefilters = NS._choices.styleFiltersApplied and "" or only.nameplatefilters,
+					}
+					imported = NS.ImportProfileStrings(overrides)
+				else
+					imported = NS.ImportProfileStrings()
+				end
+				if imported and NS.OnlyPlates_PostImport then NS.OnlyPlates_PostImport() end
 				if NS.ApplyUIScaleAfterImport then NS.ApplyUIScaleAfterImport(NS.UIScale) end
 			end
 			if not imported then
@@ -304,8 +354,8 @@ function NS.SetupInstaller()
 		Title = BRAND,         -- colored title in installer
 		Name  = "TrenchyUI",   -- plain internal name
 		tutorialImage = SPLASH,
-	StepTitles = { "Welcome", "Layout", "Addons 1", "Addons 2", "Finish" },
-	Pages = { Page_Welcome, Page_Choose, Page_Addons1, Page_Addons2, Page_Finish },
+	StepTitles = { "Welcome", "Layout", "Addons 1", "Addons 2", "Nameplates", "Finish" },
+	Pages = { Page_Welcome, Page_Choose, Page_Addons1, Page_Addons2, Page_Nameplates, Page_Finish },
 	}
 
 	NS.ShowInstaller = function()

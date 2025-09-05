@@ -2,6 +2,9 @@
 	<!-- Common helpers -->
 	<Script file='Common.lua'/>
 
+	<!-- ElvUI profile for OnlyPlates layout (paste exports here) -->
+	<Script file='ElvUI_OnlyPlates.lua'/>
+
 	<!-- External addon profiles -->
 	<Script file='BigWigs.lua'/>
 	<Script file='Details.lua'/>
