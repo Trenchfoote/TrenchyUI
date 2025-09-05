@@ -6,7 +6,7 @@
 	<Include file='Settings\load_settings.xml'/>
 
 	<!-- Core wiring and options -->
-	<Include file='Core\Core.xml'/>
+	<Include file='Core\load_core.xml'/>
 
 	<!-- Media (fonts, textures) -->
 	<Include file='Media\Media.xml'/>

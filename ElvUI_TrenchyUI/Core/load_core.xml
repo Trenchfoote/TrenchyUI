@@ -2,4 +2,5 @@
 	<Script file='Core.lua'/>
 	<Script file='Install.lua'/>
 	<Script file='Tags.lua'/>
+	<Script file='Options.lua'/>
 </Ui>

@@ -2,6 +2,11 @@
 local E = unpack(ElvUI)
 local ElvUI_TrenchyUI = E:GetModule('ElvUI_TrenchyUI')
 
+-- ElvUI_TrenchyUI print
+function ElvUI_TrenchyUI:Print(msg)
+	print(ElvUI_TrenchyUI.Title..': '..msg)
+end
+
 function ElvUI_TrenchyUI:LoadCommands()
 	self:RegisterChatCommand('trenchyui', 'RunCommands')
 end
