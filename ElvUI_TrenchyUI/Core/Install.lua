@@ -9,6 +9,19 @@ local OK_COLOR  = "|cff00ff88"
 local BAD_COLOR = "|cffff4444"
 local SPLASH    = "Interface\\AddOns\\ElvUI_TrenchyUI\\Media\\TrenchyUI_Splash.tga"
 
+-- Read addon metadata from TOC safely
+local function GetTOCMetadata(field)
+	local CA = _G and rawget(_G, 'C_AddOns')
+	local v
+	if CA and CA.GetAddOnMetadata then
+		v = CA.GetAddOnMetadata(AddonName, field)
+	else
+		local get = _G and rawget(_G, 'GetAddOnMetadata')
+		if type(get) == 'function' then v = get(AddonName, field) end
+	end
+	return v
+end
+
 -- ---------- helpers ----------
 local function SnapshotProfile() if not E then return end return E:CopyTable({}, E.db) end
 local function RestoreSnapshot(snap) if not (E and snap) then return end E:CopyTable(E.db, snap) end
