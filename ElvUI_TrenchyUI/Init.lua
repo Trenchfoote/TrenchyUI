@@ -15,9 +15,7 @@ ElvUI_TrenchyUI.Config = {}
 
 --This function will handle initialization of the addon
 function ElvUI_TrenchyUI:Initialize()
-
-	--Initiate installation process if ElvUI install is complete and our plugin install has not yet been run
-	if E.private.install_complete and E.db.ElvUI_TrenchyUI.install_version == nil then
+	if not E.db.ElvUI_TrenchyUI.install_version then
 		E:GetModule("PluginInstaller"):Queue(ElvUI_TrenchyUI.InstallerData)
 	end
 
