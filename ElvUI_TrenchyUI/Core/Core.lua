@@ -34,7 +34,7 @@ local function WD_GetClassRGB()
 end
 
 local function WD_Colorize()
-	local cfg = ElvUI_TrenchyUI.TrenchyUI and ElvUI_TrenchyUI.TrenchyUI.warpdeplete
+	local cfg = E.db.ElvUI_TrenchyUI and E.db.ElvUI_TrenchyUI.warpdeplete
 	if not (cfg and cfg.forceClassColors) then return end
 	local WD = _G and rawget(_G, 'WarpDeplete'); if not WD then return end
 	local r, g2, b = WD_GetClassRGB()
@@ -54,20 +54,8 @@ local function WD_Colorize()
 	end
 end
 
--- Public: apply now or when ready
 function ElvUI_TrenchyUI:WarpDeplete_ApplyClassColors(now)
-	local function doApply()
-		if C_Timer and C_Timer.After then C_Timer.After(0, WD_Colorize) else WD_Colorize() end
-	end
-	if now then doApply(); return end
-	local tries = 0
-	local function wait()
-		tries = tries + 1
-		local WD = _G and rawget(_G, 'WarpDeplete')
-		if WD and (WD.bars or WD.forces) then doApply(); return end
-		if tries < 50 and C_Timer and C_Timer.After then C_Timer.After(0.2, wait) end
-	end
-	wait()
+	WD_Colorize()
 end
 
 -- Events to keep colors applied
@@ -144,7 +132,7 @@ end
 
 local function OCCD_Reanchor(icon, sb)
 	if not sb or not icon or type(sb.ClearAllPoints) ~= 'function' or type(sb.SetPoint) ~= 'function' then return end
-	local cfg = E.global and E.global.TrenchyUI and E.global.TrenchyUI.omnicd or {}
+	local cfg = E.db.TrenchyUI and E.db.TrenchyUI and E.db.TrenchyUI.omnicd
 	local dx = cfg.gapX or 0
 	sb:ClearAllPoints()
 	sb:SetPoint('TOPLEFT', icon, 'TOPRIGHT', dx, 0)
@@ -207,7 +195,7 @@ local function OCCD_UpdateAll(tries)
 end
 
 function ElvUI_TrenchyUI:OmniCD_ApplyExtras(now)
-	local cfg = E.global and E.global.TrenchyUI and E.global.TrenchyUI.omnicd or {}
+	local cfg = E.db.TrenchyUI and E.db.TrenchyUI and E.db.TrenchyUI.omnicd
 	if cfg.forceCCC ~= false then OCCD_CopyCustomToRaid() else OCCD_RestoreRaid() end
 	OCCD_EnsureHook()
 	OCCD_UpdateAll(0)
