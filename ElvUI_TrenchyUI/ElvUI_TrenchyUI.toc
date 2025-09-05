@@ -1,8 +1,8 @@
 ## Interface: 110200
-## Title: ElvUI_TrenchyUI
+## Title: |cff1784d1ElvUI|r |cffff2f3dTrenchyUI|r
 ## Author: Trenchy
-## Notes: ElvUI plugin with a layout installer (DPS/Tank + WIP Healer)
-## Version: 1.0.0
+## Notes: Trenchy's ElvUI Edit, includes OnlyPlates and Unnamed UIs.
+## Version: 1.0
 ## RequiredDeps: ElvUI
 ## DefaultState: enabled
 ## IconTexture: Media\\TrenchyUI_Splash.tga
