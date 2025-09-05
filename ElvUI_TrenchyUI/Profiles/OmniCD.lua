@@ -85,10 +85,37 @@ NS.RegisterExternalProfile("OmniCD", function()
   end
 
   -- Activate the profile for the current character via AceDB if available
-  local OC = rawget(_G, "OmniCD")
-  if ok and type(OC) == "table" and OC.db and type(OC.db.SetProfile) == "function" then
-    local okSet = pcall(function() OC.db:SetProfile(profileName) end)
-    applied = okSet or applied
+  local AceAddon = LibStub and LibStub("AceAddon-3.0", true)
+  local function getOC()
+    return (AceAddon and AceAddon:GetAddon("OmniCD", true)) or rawget(_G, "OmniCD")
+  end
+  local OC = getOC()
+  do
+    local db = (type(OC) == "table") and rawget(OC, "db") or nil
+    local setProfile = (type(db) == "table") and rawget(db, "SetProfile") or nil
+    if ok and type(setProfile) == "function" then
+      local okSet = pcall(function() setProfile(db, profileName) end)
+      applied = okSet or applied
+    end
+  end
+  -- In case AceDB initializes a tad later, retry setting the profile and refreshing
+  local function trySet()
+    local oc = getOC()
+    local db = (type(oc) == "table") and rawget(oc, "db") or nil
+    local setProfile = (type(db) == "table") and rawget(db, "SetProfile") or nil
+    if type(setProfile) == "function" then
+      pcall(function() setProfile(db, profileName) end)
+    end
+    local party = (type(oc) == "table") and rawget(oc, "Party") or nil
+    local updateAll = (type(party) == "table") and rawget(party, "UpdateAllBars") or nil
+    if type(updateAll) == "function" then
+      pcall(function() updateAll(party) end)
+    end
+  end
+  if _G.C_Timer and _G.C_Timer.After then
+    _G.C_Timer.After(0.25, trySet)
+    _G.C_Timer.After(0.75, trySet)
+    _G.C_Timer.After(1.50, trySet)
   end
 
   -- Integrate OmniCD_CustomColors reanchor hook if present
@@ -98,8 +125,23 @@ NS.RegisterExternalProfile("OmniCD", function()
   end
 
   -- Refresh OmniCD bars to reflect changes
-  if type(OC) == "table" and OC.Party and type(OC.Party.UpdateAllBars) == "function" then
-    pcall(function() OC.Party:UpdateAllBars() end)
+  do
+    local party = (type(OC) == "table") and rawget(OC, "Party") or nil
+    local updateAll = (type(party) == "table") and rawget(party, "UpdateAllBars") or nil
+    if type(updateAll) == "function" then
+      pcall(function() updateAll(party) end)
+    end
+  end
+
+  -- Final safety: explicitly set the profile for this character key like Lucky does
+  do
+    local engine = _G and rawget(_G, "ElvUI")
+    local E = (engine and engine[1]) or NS.E
+    local DB = rawget(_G, "OmniCDDB")
+    if E and E.mynameRealm and type(DB) == "table" then
+      DB.profileKeys = DB.profileKeys or {}
+      DB.profileKeys[E.mynameRealm] = profileName
+    end
   end
 
   -- Consider success if we wrote the DB and mapped the profile, even if SetProfile couldn't run
