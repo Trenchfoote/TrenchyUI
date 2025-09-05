@@ -142,6 +142,133 @@ local function BuildOptions()
       func = ReinstallStyleFilters,
     },
     spacer5 = { order = 20, type = "description", name = " " },
+
+    -- Integrations (WarpDeplete & OmniCD)
+    integrationsHeader = { order = 21, type = "header", name = "|cff"..BRAND_HEX.."Integrations|r" },
+    wdGroup = {
+      order = 22, type = "group", inline = true, name = "Warp Deplete: Extra Options",
+      args = {
+        wdEnabled = {
+          order = 1, type = "toggle", width = 1.0,
+          name = "Enable",
+          desc = "Force bar colors to follow Custom Class colors.",
+          get = function()
+            local E = NS.E; if not E then return false end
+            local db = E.global.TrenchyUI and E.global.TrenchyUI.integrations and E.global.TrenchyUI.integrations.wd
+            return db and db.enabled or false
+          end,
+          set = function(_, v)
+            local E = NS.E; if not E then return end
+            local db = E.global.TrenchyUI.integrations.wd; db.enabled = not not v
+            if NS.Integrations and NS.Integrations.WD then NS.Integrations.WD:ApplyWhenReady(0) end
+          end,
+        },
+        wdTimers = {
+          order = 2, type = "toggle", width = 1.2,
+          name = "+1/+2/+3 Timers",
+          get = function()
+            local E = NS.E; if not E then return true end
+            local db = E.global.TrenchyUI.integrations.wd; return db.applyTimers ~= false
+          end,
+          set = function(_, v)
+            local E = NS.E; if not E then return end
+            local db = E.global.TrenchyUI.integrations.wd; db.applyTimers = not not v
+            if NS.Integrations and NS.Integrations.WD then NS.Integrations.WD:ApplyOverrides() end
+          end,
+        },
+        wdForces = {
+          order = 3, type = "toggle", width = 0.8,
+          name = "Forces",
+          get = function()
+            local E = NS.E; if not E then return true end
+            local db = E.global.TrenchyUI.integrations.wd; return db.applyForces ~= false
+          end,
+          set = function(_, v)
+            local E = NS.E; if not E then return end
+            local db = E.global.TrenchyUI.integrations.wd; db.applyForces = not not v
+            if NS.Integrations and NS.Integrations.WD then NS.Integrations.WD:ApplyOverrides() end
+          end,
+        },
+        wdTexture = {
+          order = 4, type = "select", width = 0.7,
+          name = "Bar texture",
+          desc = "Force all bars to follow this texture",
+          dialogControl = (NS.E and NS.E.Libs and NS.E.Libs.LSM) and "LSM30_Statusbar" or nil,
+          values = (NS.E and NS.E.Libs and NS.E.Libs.LSM) and NS.E.Libs.LSM:HashTable("statusbar") or {},
+          get = function()
+            local E = NS.E; if not E then return nil end
+            local db = E.global.TrenchyUI.integrations.wd; return db.textureName
+          end,
+          set = function(_, v)
+            local E = NS.E; if not E then return end
+            local db = E.global.TrenchyUI.integrations.wd; db.textureName = v
+            if NS.Integrations and NS.Integrations.WD then NS.Integrations.WD:ApplyOverrides() end
+          end,
+        },
+        wdFont = {
+          order = 5, type = "select", width = 0.7,
+          name = "Bar font",
+          desc = "Force all fonts to follow this font",
+          dialogControl = (NS.E and NS.E.Libs and NS.E.Libs.LSM) and "LSM30_Font" or nil,
+          values = (NS.E and NS.E.Libs and NS.E.Libs.LSM) and NS.E.Libs.LSM:HashTable("font") or {},
+          get = function()
+            local E = NS.E; if not E then return nil end
+            local db = E.global.TrenchyUI.integrations.wd; return db.fontName
+          end,
+          set = function(_, v)
+            local E = NS.E; if not E then return end
+            local db = E.global.TrenchyUI.integrations.wd; db.fontName = v
+            if NS.Integrations and NS.Integrations.WD then NS.Integrations.WD:ApplyOverrides() end
+          end,
+        },
+      }
+    },
+    occdGroup = {
+      order = 23, type = "group", inline = true, name = "OmniCD: Extra Options",
+      args = {
+        occdCustomClass = {
+          order = 0, type = "toggle", width = 1.5,
+          name = "Use Custom Class Colors",
+          get = function()
+            local E = NS.E; if not E then return true end
+            local db = E.global.TrenchyUI.integrations.occd; return db.customClassColorsEnabled ~= false
+          end,
+          set = function(_, v)
+            local E = NS.E; if not E then return end
+            local db = E.global.TrenchyUI.integrations.occd; db.customClassColorsEnabled = not not v
+            if NS.Integrations and NS.Integrations.OCCD then NS.Integrations.OCCD:ApplyNow() end
+          end,
+        },
+        occdEnable = {
+          order = 1, type = "toggle", width = 1.0,
+          name = "Enable",
+          desc = "Increase the padding between extra bars and their icons",
+          get = function()
+            local E = NS.E; if not E then return true end
+            local db = E.global.TrenchyUI.integrations.occd; return db.gapEnabled ~= false
+          end,
+          set = function(_, v)
+            local E = NS.E; if not E then return end
+            local db = E.global.TrenchyUI.integrations.occd; db.gapEnabled = not not v
+            if NS.Integrations and NS.Integrations.OCCD then NS.Integrations.OCCD:ApplyNow() end
+          end,
+        },
+        occdGap = {
+          order = 2, type = "range", width = 0.9,
+          name = "Padding X",
+          min = 0, max = 40, step = 1,
+          get = function()
+            local E = NS.E; if not E then return 0 end
+            local db = E.global.TrenchyUI.integrations.occd; return db.gapX or 0
+          end,
+          set = function(_, v)
+            local E = NS.E; if not E then return end
+            local db = E.global.TrenchyUI.integrations.occd; db.gapX = math.floor(tonumber(v) or 0)
+            if NS.Integrations and NS.Integrations.OCCD then NS.Integrations.OCCD:ApplyNow() end
+          end,
+        },
+      }
+    },
   }
 
   return {
@@ -158,6 +285,16 @@ function NS.InsertOptions()
   if engine and engine[1] then NS.E = engine[1] end
   local E = NS.E
   if not (E and E.Options and E.Options.args) then return end
+
+  -- Match Luckyone's approach: brand the ElvUI options window title itself
+  do
+    local current = E.Options.name or "ElvUI"
+    if not string.find(current, "TrenchyUI", 1, true) then
+      local version = GetTOCMetadata('Version') or ""
+      local stamp = version ~= "" and (" |cff40ff40v"..version.."|r") or ""
+      E.Options.name = string.format("%s + %s%s", current, BRAND, stamp)
+    end
+  end
 
   local pluginGroup, sharedArgs = BuildOptions()
 

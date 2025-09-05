@@ -5,6 +5,7 @@ local _G = _G
 
 local BRAND_HEX = "ff2f3d"
 local BRAND     = "|cff"..BRAND_HEX.."TrenchyUI|r"
+local EnsureOptionsBranding -- forward declaration
 
 -- TOC metadata helper (shared)
 local function GetTOCVersion()
@@ -34,6 +35,7 @@ local function OpenTrenchyOptions()
 	local CA = _G and rawget(_G, 'C_AddOns')
 	if CA and CA.LoadAddOn then pcall(CA.LoadAddOn, 'ElvUI_Options') end
 	if E and E.ToggleOptions then E:ToggleOptions() elseif E and E.ToggleOptionsUI then E:ToggleOptionsUI() end
+		EnsureOptionsBranding()
 
 	-- After the options UI is loaded, select our group safely
 	local attempts, maxAttempts = 0, 20 -- ~1s total with 0.05s steps
@@ -81,34 +83,32 @@ local function ColorStatusPluginName()
 
 
 -- Add a brand/version label to the ElvUI options top bar
-local function EnsureOptionsBranding()
-	local f = _G.ElvUIOptionsUI
+EnsureOptionsBranding = function()
+	local f = _G and rawget(_G, 'ElvUIOptionsUI')
 	if not f then return end
 	local E = NS.E
 	if not E then return end
 
-	if not f.TrenchyBrand then
-		local fs = f:CreateFontString(nil, "OVERLAY")
-		local font
-		if E.LSM and E.LSM.Fetch then
-			font = E.LSM:Fetch("font", "Geist Bold") or E.LSM:Fetch("font", "Geist-Bold")
-		end
-		font = font or (E.media and E.media.normFont)
-		if fs.FontTemplate then
-			fs:FontTemplate(font, 12, "OUTLINE")
-		elseif fs.SetFont then
-			fs:SetFont(font or "Fonts\FRIZQT__.TTF", 12, "OUTLINE")
-		end
-		fs:SetJustifyH("RIGHT")
-		fs:SetPoint("TOPRIGHT", f, "TOPRIGHT", -48, -6)
-		f.TrenchyBrand = fs
+	-- If we've already branded the title via E.Options.name, skip overlay label
+	if E.Options and type(E.Options.name) == "string" and string.find(E.Options.name, "TrenchyUI", 1, true) then
+		if f.TrenchyBrand then f.TrenchyBrand:Hide() end
+		return
 	end
+
+		if not f.TrenchyBrand then
+			local fs = f:CreateFontString(nil, "OVERLAY")
+			-- Keep default UI font; apply only size/outline if available
+			if fs.FontTemplate then fs:FontTemplate(nil, 12, "OUTLINE") end
+			fs:SetJustifyH("RIGHT")
+			fs:SetPoint("TOPRIGHT", f, "TOPRIGHT", -48, -6)
+			f.TrenchyBrand = fs
+		end
 
 	local version = GetTOCVersion()
 	local text = BRAND.." |cff40ff40v"..version.."|r"
 	f.TrenchyBrand:SetText(text)
-	f.TrenchyBrand:Show()
-end
+		f.TrenchyBrand:Show()
+	end
 
 	-- Lib registry (commonly used for the Plugins list)
 	if EP and EP.plugins and EP.plugins[AddonName] then
@@ -260,12 +260,16 @@ local function OnElvUIReady()
 	-- Prepare installer wiring (defined in Install.lua)
 	if NS.SetupInstaller then NS.SetupInstaller() end
 
+	-- Prepare integrations (WarpDeplete & OmniCD)
+	if NS.SetupIntegrations then NS.SetupIntegrations() end
+
 	-- Register via LibElvUIPlugin so timing is correct for options
 	local EP = _G.LibStub and _G.LibStub("LibElvUIPlugin-1.0", true)
 	if EP then
 			EP:RegisterPlugin(AddonName, function()
 				if NS.InsertOptions then NS.InsertOptions() end
 				ColorStatusPluginName()
+				EnsureOptionsBranding()
 			end)
 		-- In case the lib populates after a tiny delay, recolor shortly after
 		C_Timer.After(0.1, ColorStatusPluginName)
@@ -277,6 +281,7 @@ local function OnElvUIReady()
 			if name == "ElvUI_Options" then
 				if NS.InsertOptions then NS.InsertOptions() end
 				ColorStatusPluginName()
+				EnsureOptionsBranding()
 				waiter:UnregisterAllEvents()
 			end
 		end)
