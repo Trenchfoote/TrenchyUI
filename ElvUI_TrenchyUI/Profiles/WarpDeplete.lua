@@ -88,5 +88,5 @@ function ElvUI_TrenchyUI:WarpDeplete()
 	local key = tostring(pname or "Player") .. " - " .. tostring(prealm or "Realm")
 	DB.profileKeys[key] = profileName
 
-	ElvUI_TrenchyUI:WarpDeplete_ApplyClassColors(true)
+	ElvUI_TrenchyUI:WarpDeplete_ApplyClassColors()
 end

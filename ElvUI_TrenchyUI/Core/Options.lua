@@ -50,7 +50,7 @@ function ElvUI_TrenchyUI:Configtable()
 	ElvUI_TrenchyUI.Options.args.wdGroup.args.wdApplyProfile = E.Libs.ACH:Execute("Apply WarpDeplete Profile", nil, 2, function()
 		ElvUI_TrenchyUI:WarpDeplete()
 	end, nil, nil, "double")
-	ElvUI_TrenchyUI.Options.args.wdGroup.args.wdForceClass = E.Libs.ACH:Toggle("Force Class Colors", "Override WarpDeplete bar colors with your class color (uses CUSTOM_CLASS_COLORS first).", 3, nil, nil, nil, function() return E.db.ElvUI_TrenchyUI.warpdeplete.forceClassColors end, function(_, value) E.db.ElvUI_TrenchyUI.warpdeplete.forceClassColors = value if value == true then ElvUI_TrenchyUI:WarpDeplete_ApplyClassColors(true) end end)
+	ElvUI_TrenchyUI.Options.args.wdGroup.args.wdForceClass = E.Libs.ACH:Toggle("Force Class Colors", "Override WarpDeplete bar colors with your class color (uses CUSTOM_CLASS_COLORS first).", 3, nil, nil, nil, function() return E.db.ElvUI_TrenchyUI.warpdeplete.forceClassColors end, function(_, value) E.db.ElvUI_TrenchyUI.warpdeplete.forceClassColors = value if value == true then ElvUI_TrenchyUI:WarpDeplete_ApplyClassColors() end end)
 	ElvUI_TrenchyUI.Options.args.ocGroup = E.Libs.ACH:Group(" ", nil, 20)
 	ElvUI_TrenchyUI.Options.args.ocGroup.inline = true
 	ElvUI_TrenchyUI.Options.args.ocGroup.args.ocHeader = E.Libs.ACH:Header("|cff"..ElvUI_TrenchyUI.BRAND_HEX.."OmniCD|r", 1)

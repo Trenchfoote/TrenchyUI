@@ -33,7 +33,7 @@ local function WD_GetClassRGB()
 	return 1, 1, 1
 end
 
-local function WD_Colorize()
+function ElvUI_TrenchyUI:WarpDeplete_ApplyClassColors()
 	local cfg = E.db and E.db.ElvUI_TrenchyUI and E.db.ElvUI_TrenchyUI.warpdeplete
 	if not (cfg and cfg.forceClassColors) then return end
 	local WD = _G and rawget(_G, 'WarpDeplete'); if not WD then return end
@@ -52,10 +52,6 @@ local function WD_Colorize()
 		if forces.bar and forces.bar.SetStatusBarColor then forces.bar:SetStatusBarColor(r, g2, b, 1) end
 		if forces.overlayBar and forces.overlayBar.SetStatusBarColor then forces.overlayBar:SetStatusBarColor(r, g2, b, 0.7) end
 	end
-end
-
-function ElvUI_TrenchyUI:WarpDeplete_ApplyClassColors(now)
-	WD_Colorize()
 end
 
 -- Events to keep colors applied
