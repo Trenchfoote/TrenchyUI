@@ -43,11 +43,8 @@ local function OpenTrenchyOptions()
 		attempts = attempts + 1
 		local ACD = E and E.Libs and (E.Libs.AceConfigDialog or E.Libs.ACD)
 		if E and E.Options and E.Options.args and ACD and ACD.SelectGroup then
-			if E.Options.args.trenchyui then
-				ACD:SelectGroup("ElvUI", "trenchyui")
-			else
-				ACD:SelectGroup("ElvUI", "plugins", "trenchyui")
-			end
+			-- Select our top-level group; we no longer add an entry under Plugins
+			if E.Options.args.trenchyui then ACD:SelectGroup("ElvUI", "trenchyui") end
 			return
 		end
 		if attempts < maxAttempts and _G and C_Timer and C_Timer.After then

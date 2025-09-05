@@ -266,12 +266,7 @@ function NS.InsertOptions()
   end
 
   local pluginGroup, sharedArgs = BuildOptions()
-
-  -- Under Plugins category (if present)
-  if E.Options.args.plugins and E.Options.args.plugins.args then
-    E.Options.args.plugins.args.trenchyui = pluginGroup
-  end
-
+  -- Only add a top-level entry for TrenchyUI (do not populate ElvUI's Plugins section)
   -- Also add a top-level entry
   local function deepCopy(tbl)
     local out = {}
