@@ -1,12 +1,16 @@
-<Ui>
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
 	<!-- Init: shared metadata and branding -->
 	<Script file='Init.lua'/>
+
+	<!-- Load Addon Settings -->
+	<Include file='Settings\load_settings.xml'/>
+
 	<!-- Core wiring and options -->
-	<Include file='Core\\Core.xml'/>
+	<Include file='Core\load_core.xml'/>
 
 	<!-- Media (fonts, textures) -->
-	<Include file='Media\\Media.xml'/>
+	<Include file='Media\Media.xml'/>
 
 	<!-- Profiles for external addons (placeholder, add scripts later) -->
-	<Include file='Profiles\\Profiles.xml'/>
+	<Include file='Profiles\Profiles.xml'/>
 </Ui>

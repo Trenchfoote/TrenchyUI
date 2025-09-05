@@ -1,28 +1,33 @@
 -- TrenchyUI/Init.lua
-local AddonName, NS = ...
-local _G = _G or getfenv and getfenv(0) or {}
+local E = unpack(ElvUI)
+local _G = _G
+local addon = ...
+local ElvUI_TrenchyUI = E:NewModule("ElvUI_TrenchyUI", 'AceHook-3.0', 'AceEvent-3.0', 'AceTimer-3.0', 'AceConsole-3.0')
+local GetAddOnMetadata = _G.C_AddOns and _G.C_AddOns.GetAddOnMetadata or _G.GetAddOnMetadata
 
--- Basic addon metadata helpers
-local function GetMeta(field)
-  local CA = _G and rawget(_G, 'C_AddOns')
-  if CA and type(CA.GetAddOnMetadata) == 'function' then
-    local v = CA.GetAddOnMetadata(AddonName, field)
-    if v ~= nil then return v end
-  end
-  local GAM = _G and rawget(_G, 'GetAddOnMetadata')
-  if type(GAM) == 'function' then
-    return GAM(AddonName, field)
-  end
+--Constants
+ElvUI_TrenchyUI.Title = '|cffff2f3dTrenchyUI|r'
+ElvUI_TrenchyUI.Version = GetAddOnMetadata(addon, 'Version')
+ElvUI_TrenchyUI.Author = GetAddOnMetadata(addon, 'Author')
+ElvUI_TrenchyUI.Notes = GetAddOnMetadata(addon, 'Notes')
+ElvUI_TrenchyUI.BRAND_HEX = "ff2f3d"
+ElvUI_TrenchyUI.Config = {}
+
+--This function will handle initialization of the addon
+function ElvUI_TrenchyUI:Initialize()
+
+	--Initiate installation process if ElvUI install is complete and our plugin install has not yet been run
+	if E.private.install_complete and E.db.ElvUI_TrenchyUI.install_version == nil then
+		E:GetModule("PluginInstaller"):Queue(ElvUI_TrenchyUI.InstallerData)
+	end
+
+	--Insert our options table when ElvUI config is loaded
+	local EP = LibStub("LibElvUIPlugin-1.0")
+	EP:RegisterPlugin(addon, ElvUI_TrenchyUI.Configtable)
 end
 
-NS.AddonName = AddonName
-NS.Title = GetMeta('Title') or AddonName
-NS.Version = GetMeta('Version') or '1.0.0'
-NS.Author = GetMeta('Author') or 'Unknown'
-
--- Centralized branding (used elsewhere if not already set)
-NS.BRAND_HEX = NS.BRAND_HEX or 'ff2f3d'
-NS.BRAND = NS.BRAND or ('|cff' .. NS.BRAND_HEX .. 'TrenchyUI|r')
-
--- Optional: shared LibSharedMedia handle
-NS.LSM = _G.LibStub and _G.LibStub('LibSharedMedia-3.0', true) or nil
+--Register module with callback so it gets initialized when ready
+local function CallbackInitialize()
+	ElvUI_TrenchyUI:Initialize()
+end
+E:RegisterModule(addon,CallbackInitialize)

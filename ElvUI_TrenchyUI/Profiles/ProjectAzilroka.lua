@@ -1,13 +1,13 @@
 -- TrenchyUI/Profiles/ProjectAzilroka.lua
-local AddonName, NS = ...
-local _G = _G or getfenv and getfenv(0) or {}
+local E = unpack(ElvUI)
+local ElvUI_TrenchyUI = E:GetModule('ElvUI_TrenchyUI')
+local IsAddOnLoaded = _G.C_AddOns and _G.C_AddOns.IsAddOnLoaded
 
-NS.RegisterExternalProfile("ProjectAzilroka", function()
-  if not NS.IsAddonLoaded("ProjectAzilroka") then return false end
-  local PAgw = _G and rawget(_G, "ProjectAzilroka")
-  if type(PAgw) ~= "table" then return false end
-  local PA = unpack(PAgw)
-  if type(PA) ~= "table" or not PA.data or not PA.db then return false end
+function ElvUI_TrenchyUI:ProjectAzilroka()
+  if not IsAddOnLoaded("ProjectAzilroka") then return end
+
+  local PA = _G.ProjectAzilroka
+  if not PA.db then return end
 
   local name = "TrenchyUI"
   if PA.data and PA.data.SetProfile then PA.data:SetProfile(name) end
@@ -15,7 +15,7 @@ NS.RegisterExternalProfile("ProjectAzilroka", function()
   -- General/Modules per SavedVariables (Default profile)
   PA.db.EnhancedShadows = PA.db.EnhancedShadows or {}
   PA.db.EnhancedShadows.Enable = false
-  
+
   PA.db.AuraReminder = PA.db.AuraReminder or {}
   PA.db.AuraReminder.Enable = false
 
@@ -129,6 +129,4 @@ NS.RegisterExternalProfile("ProjectAzilroka", function()
 
   PA.db.ReputationReward = PA.db.ReputationReward or {}
   PA.db.ReputationReward.Enable = false
-
-  return true
-end)
+end

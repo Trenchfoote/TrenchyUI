@@ -1,7 +1,4 @@
-<Ui>
-	<!-- Common helpers -->
-	<Script file='Common.lua'/>
-
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
 
 	<!-- ElvUI profile for OnlyPlates layout (paste exports here) -->
 	<Script file='ElvUI_OnlyPlates.lua'/>

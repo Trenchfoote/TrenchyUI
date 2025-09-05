@@ -5,6 +5,6 @@
 ## Version: 1.0
 ## RequiredDeps: ElvUI
 ## DefaultState: enabled
-## IconTexture: Media\\TrenchyUI_Splash.tga
+## IconTexture: Interface\AddOns\ElvUI_TrenchyUI\Media\TrenchyUI_Tiny
 
 Load.xml
