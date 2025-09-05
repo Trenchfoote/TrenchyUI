@@ -144,6 +144,8 @@ NS.RegisterExternalProfile("OmniCD", function()
     end
   end
 
+  -- No auto-reload or chat prints to avoid taint and noise
+
   -- Consider success if we wrote the DB and mapped the profile, even if SetProfile couldn't run
   return ok or applied
 end)
