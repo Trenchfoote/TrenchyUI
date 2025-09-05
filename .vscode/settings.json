@@ -1,0 +1,35 @@
+{
+    "Lua.type.weakUnionCheck": true,
+    "wowAPI.luals.frameXML": true,
+    "Lua.diagnostics.globals": [
+        "ElvUI_TrenchyUI",
+        "ElvDB",
+        "ElvUI",
+        "PluginInstallFrame",
+    ],
+    "wowAPI.luals.configurationScope": "Workspace",
+    "wowAPI.luals.defineKnownGlobals": true,
+    "Lua.runtime.version": "Lua 5.1",
+    "Lua.runtime.builtin": {
+        "basic": "disable",
+        "debug": "disable",
+        "io": "disable",
+        "math": "disable",
+        "os": "disable",
+        "package": "disable",
+        "string": "disable",
+        "table": "disable",
+        "utf8": "disable"
+    },
+    "Lua.workspace.library": [
+        "~\\.vscode\\extensions\\ketho.wow-api-0.21.0\\Annotations\\Core",
+        "~\\.vscode\\extensions\\ketho.wow-api-0.21.0\\Annotations\\FrameXML"
+    ],
+    "Lua.diagnostics.disable": [
+        "undefined-global",
+        "undefined-field",
+        "redundant-parameter",
+        "inject-field"
+    ],
+    "Lua.type.weakNilCheck": true,
+}
