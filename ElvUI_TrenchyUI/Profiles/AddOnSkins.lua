@@ -8,11 +8,6 @@ function ElvUI_TrenchyUI:AddOnSkins()
 
 	local AS = unpack(_G.AddOnSkins)
 
-	if AS.data and AS.data.SetProfile then
-		AS.data:SetProfile("TrenchyUI")
-	end
-
-	-- Apply settings based on provided SavedVariables (Default profile)
 	AS.db.Font = "Expressway"
 	AS.db.FontSize = 14
 	AS.db.Shadows = false
