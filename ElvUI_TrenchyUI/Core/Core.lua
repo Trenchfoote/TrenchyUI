@@ -260,9 +260,6 @@ local function OnElvUIReady()
 	-- Prepare installer wiring (defined in Install.lua)
 	if NS.SetupInstaller then NS.SetupInstaller() end
 
-	-- Prepare integrations (WarpDeplete & OmniCD)
-	if NS.SetupIntegrations then NS.SetupIntegrations() end
-
 	-- Register via LibElvUIPlugin so timing is correct for options
 	local EP = _G.LibStub and _G.LibStub("LibElvUIPlugin-1.0", true)
 	if EP then
