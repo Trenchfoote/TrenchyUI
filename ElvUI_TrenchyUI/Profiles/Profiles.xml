@@ -1,7 +1,7 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/">
 
 	<!-- ElvUI profile for OnlyPlates layout (paste exports here) -->
-	<Script file='ElvUI_OnlyPlates.lua'/>
+	<Script file='ElvUI.lua'/>
 
 	<!-- External addon profiles -->
 	<Script file='BigWigs.lua'/>

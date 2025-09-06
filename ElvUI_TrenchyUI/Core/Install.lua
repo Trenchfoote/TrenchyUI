@@ -36,7 +36,7 @@ ElvUI_TrenchyUI.InstallerData = {
 				else
 					E.data:SetProfile('TUI OnlyPlates ('..E.mynameRealm..')')
 				end
-				ElvUI_TrenchyUI:ApplyOnlyPlatesDB("onlyplates")
+				ElvUI_TrenchyUI:ApplyProfileDB("onlyplates")
 			end)
 			PluginInstallFrame.Option1:SetText("OnlyPlates")
 			PluginInstallFrame.Option1:Enable()
@@ -49,7 +49,7 @@ ElvUI_TrenchyUI.InstallerData = {
                 else
                     E.data:SetProfile('TUI Unnamed ('..E.mynameRealm..')')
                 end
-                ElvUI_TrenchyUI:ApplyUnnamedDB("unnamed")
+                ElvUI_TrenchyUI:ApplyProfileDB("unnamed")
             end)
 			PluginInstallFrame.Option2:SetText("Unnamed (WIP)")
 			PluginInstallFrame.Option2:Enable()
@@ -123,7 +123,7 @@ ElvUI_TrenchyUI.InstallerData = {
 		[5] = function()
 			_G.PluginInstallTutorialImage:Hide()
 			PluginInstallFrame.Desc1:SetText("Optional: Apply TrenchyUI ElvUI Style Filters now.")
-			PluginInstallFrame.Desc2:SetText("Seasonal: "..E.db.ElvUI_TrenchyUI.StyleFiltersSeasonal.Version.."\nCommon: "..E.db.ElvUI_TrenchyUI.StyleFiltersCommon.Version)
+			PluginInstallFrame.Desc2:SetText("Seasonal: "..E.db.ElvUI_TrenchyUI.StyleFilters.Seasonal.Version.."\nCommon: "..E.db.ElvUI_TrenchyUI.StyleFilters.Common.Version)
 			PluginInstallFrame.Desc3:SetText("")
 			PluginInstallFrame.Desc4:SetText("")
 
@@ -131,16 +131,16 @@ ElvUI_TrenchyUI.InstallerData = {
 			PluginInstallFrame.Option1:Show()
 			PluginInstallFrame.Option1:SetText("Seasonal")
 			PluginInstallFrame.Option1:SetScript("OnClick", function()
-				ElvUI_TrenchyUI:ApplyTrenchyStyleFiltersDB("nameplatefilters")
-				ElvUI_TrenchyUI:Print("Seasonal filters applied ("..E.db.ElvUI_TrenchyUI.StyleFiltersSeasonal.Version..")")
+				ElvUI_TrenchyUI:ApplyTrenchyStyleFiltersDB("Seasonal")
+				ElvUI_TrenchyUI:Print("Seasonal filters applied ("..E.db.ElvUI_TrenchyUI.StyleFilters.Seasonal.Version..")")
 			end)
 
 			PluginInstallFrame.Option2:Enable()
 			PluginInstallFrame.Option2:Show()
 			PluginInstallFrame.Option2:SetText("Common")
 			PluginInstallFrame.Option2:SetScript("OnClick", function()
-				ElvUI_TrenchyUI:ApplyTrenchyStyleFiltersDB("nameplatefilters_alt")
-				ElvUI_TrenchyUI:Print("Common filters applied ("..E.db.ElvUI_TrenchyUI.StyleFiltersCommon.Version..")")
+				ElvUI_TrenchyUI:ApplyTrenchyStyleFiltersDB("Common")
+				ElvUI_TrenchyUI:Print("Common filters applied ("..E.db.ElvUI_TrenchyUI.StyleFilters.Common.Version..")")
 			end)
 
 			PluginInstallFrame.Option3:Hide()
