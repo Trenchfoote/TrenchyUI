@@ -277,18 +277,3 @@ ocEv:SetScript('OnEvent', function(_, evt, arg1)
 		end
 	end
 end)
-
--- Re-apply on custom class color changes
-do
-	local function tryRegisterCCC_OC()
-		local CCC = _G and rawget(_G, 'CUSTOM_CLASS_COLORS')
-		if CCC and CCC.RegisterCallback and not ElvUI_TrenchyUI.__OC_CCC_CB then
-			ElvUI_TrenchyUI.__OC_CCC_CB = true
-			CCC:RegisterCallback(function()
-				ElvUI_TrenchyUI.OmniCD_ApplyExtras(true)
-			end, 'TrenchyUI_OC')
-		end
-	end
-	tryRegisterCCC_OC()
-	if _G and _G.C_Timer and _G.C_Timer.After then _G.C_Timer.After(1, tryRegisterCCC_OC) end
-end
