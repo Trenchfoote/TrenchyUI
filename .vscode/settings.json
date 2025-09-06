@@ -5,7 +5,7 @@
         "ElvUI_TrenchyUI",
         "ElvDB",
         "ElvUI",
-        "PluginInstallFrame",
+        "PluginInstallFrame"
     ],
     "wowAPI.luals.configurationScope": "Workspace",
     "wowAPI.luals.defineKnownGlobals": true,
