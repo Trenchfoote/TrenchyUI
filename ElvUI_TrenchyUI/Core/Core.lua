@@ -25,6 +25,7 @@ end
 
 -- Inline, minimal WarpDeplete color override
 local function WD_GetClassRGB()
+	if InCombatLockdown() then return end
 	local classFile = select(2, UnitClass('player'))
 	local ccc = _G and rawget(_G, 'CUSTOM_CLASS_COLORS') or nil
 	local rcc = _G and rawget(_G, 'RAID_CLASS_COLORS') or nil
@@ -55,13 +56,11 @@ function ElvUI_TrenchyUI:WarpDeplete_ApplyClassColors()
 end
 
 -- Events to keep colors applied
-local ev
+local ev = false
 local function ensureWDHooks()
 	local WD = _G and rawget(_G, 'WarpDeplete'); if not WD then return end
-	if ev and ev.hooked then return end
-	ev = ev or CreateFrame('Frame')
-	if not ev.hooked then
-		ev.hooked = true
+	if not ev then
+		ev = true
 		if type(WD.RenderLayout) == 'function' then hooksecurefunc(WD, 'RenderLayout', function() ElvUI_TrenchyUI.WarpDeplete_ApplyClassColors(true) end) end
 		if type(WD.RenderForces) == 'function' then hooksecurefunc(WD, 'RenderForces', function() ElvUI_TrenchyUI.WarpDeplete_ApplyClassColors(true) end) end
 		if type(WD.OnProfileChanged) == 'function' then hooksecurefunc(WD, 'OnProfileChanged', function() ElvUI_TrenchyUI.WarpDeplete_ApplyClassColors(true) end) end
@@ -88,6 +87,7 @@ end)
 -- Re-apply when CUSTOM_CLASS_COLORS change (prefer these over RAID_CLASS_COLORS)
 do
 	local function tryRegisterCCC()
+		if InCombatLockdown() then return end
 		local CCC = _G and rawget(_G, 'CUSTOM_CLASS_COLORS')
 		if CCC and CCC.RegisterCallback and not ElvUI_TrenchyUI.__WD_CCC_CB then
 			ElvUI_TrenchyUI.__WD_CCC_CB = true
@@ -105,6 +105,7 @@ local TUI_OmniCD_pending = {}
 local TUI_OmniCD_backup
 
 local function TUI_OmniCD_CopyCustomToRaid()
+	if InCombatLockdown() then return end
 	local ccc = _G and rawget(_G, 'CUSTOM_CLASS_COLORS')
 	local rcc = _G and rawget(_G, 'RAID_CLASS_COLORS')
 	if not (ccc and rcc) then return end
@@ -119,6 +120,7 @@ local function TUI_OmniCD_CopyCustomToRaid()
 end
 
 local function TUI_OmniCD_RestoreRaid()
+	if InCombatLockdown() then return end
 	local rcc = _G and rawget(_G, 'RAID_CLASS_COLORS')
 	if not (rcc and TUI_OmniCD_backup) then return end
 	for class, c in pairs(TUI_OmniCD_backup) do
