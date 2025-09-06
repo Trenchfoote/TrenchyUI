@@ -83,13 +83,19 @@ ElvUI_TrenchyUI.InstallerData = {
 
 			PluginInstallFrame.Option3:Enable()
 			PluginInstallFrame.Option3:Show()
-			PluginInstallFrame.Option3:SetText("OmniCD")
+			PluginInstallFrame.Option3:SetText("OmniCD\nOnlyPlates")
 			PluginInstallFrame.Option3:SetScript("OnClick", function()
-				ElvUI_TrenchyUI:OmniCD()
+				ElvUI_TrenchyUI:OmniCD("OnlyPlates")
 				ElvUI_TrenchyUI:Print("OmniCD applied")
 			end)
 
-			PluginInstallFrame.Option4:Hide()
+			PluginInstallFrame.Option4:Enable()
+			PluginInstallFrame.Option4:Show()
+			PluginInstallFrame.Option4:SetText("OmniCD\nUnnamed")
+			PluginInstallFrame.Option4:SetScript("OnClick", function()
+				ElvUI_TrenchyUI:OmniCD("Unnamed")
+				ElvUI_TrenchyUI:Print("OmniCD applied")
+			end)
 		end,
 		[4] = function()
 			_G.PluginInstallTutorialImage:Hide()
