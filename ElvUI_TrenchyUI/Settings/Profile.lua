@@ -10,7 +10,7 @@ P.ElvUI_TrenchyUI = {
 	StyleFiltersCommon = {
 		Expansion = "TWW",
 		Season = 3,
-		Version = 20250905,
+		Version = 20250906,
 	},
 	install_version = nil,
 	warpdeplete = {
