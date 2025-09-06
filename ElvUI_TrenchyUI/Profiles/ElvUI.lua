@@ -29,21 +29,22 @@ function ElvUI_TrenchyUI:ApplyTrenchyStyleFiltersDB(key)
 	if TrenchyStyleFilterStrings[key] then
 		D:ImportProfile(TrenchyStyleFilterStrings[key])
 
-        --set the version they have
+		--set the version they have
 		E.db.ElvUI_TrenchyUI.StyleFilters.Installed.type = key
-        E.db.ElvUI_TrenchyUI.StyleFilters.Installed.Version =  E.db.ElvUI_TrenchyUI.StyleFilters[key]["Version"]
-        E.db.ElvUI_TrenchyUI.StyleFilters.Installed.Season =  E.db.ElvUI_TrenchyUI.StyleFilters[key]["Season"]
+		E.db.ElvUI_TrenchyUI.StyleFilters.Installed.Version =  E.db.ElvUI_TrenchyUI.StyleFilters[key]["Version"]
+		E.db.ElvUI_TrenchyUI.StyleFilters.Installed.Season =  E.db.ElvUI_TrenchyUI.StyleFilters[key]["Season"]
 	end
 end
 
 -- Function to install profile
 function ElvUI_TrenchyUI:ApplyProfileDB(profileType)
-	if profileType == "onlyplates" then
 
-		-- import core TrenchyUI strings (private/global/aurafilters) if present
-		for _, profile in pairs(GeneralStrings) do
-			D:ImportProfile(profile)
-        end
+	-- import core TrenchyUI strings (private/global/aurafilters) if present
+	for _, profile in pairs(GeneralStrings) do
+		D:ImportProfile(profile)
+	end
+
+	if profileType == "onlyplates" then
 
 		-- import OnlyPlates profile
 		D:ImportProfile(ProfileStrings.OnlyPlates)
@@ -51,18 +52,14 @@ function ElvUI_TrenchyUI:ApplyProfileDB(profileType)
 		ElvUI_TrenchyUI:Print("OnlyPlates layout applied (profile/global/auras)")
 	elseif profileType == "unnamed" then
 
-        -- import core TrenchyUI strings (private/global/aurafilters) if present
-        for _, profile in pairs(GeneralStrings) do
-			D:ImportProfile(profile)
-        end
+		-- import Unnamed profile
+		D:ImportProfile(ProfileStrings.Unnamed)
 
-        -- import Unnamed profile
-        D:ImportProfile(ProfileStrings.Unnamed)
+		ElvUI_TrenchyUI:Print("Unnamed layout applied (profile/global/auras)")
+	end
 
-        E.db.general.font = "Expressway"
-        E.global.general.UIScale = 0.53
-        E.db.unitframe.statusbar = "TrenchyBlank"
+	E.db.general.font = "Expressway"
+	E.global.general.UIScale = 0.53
+	E.db.unitframe.statusbar = "TrenchyBlank"
 
-        ElvUI_TrenchyUI:Print("Unnamed layout applied (profile/global/auras)")
-    end
 end
