@@ -16,7 +16,7 @@ end)
 E:AddTagInfo("trenchy:health", ElvUI_TrenchyUI.Title, "Health percent including absorbs (no % sign)")
 
 -- trenchy:name - last name only, truncated to 16 characters (status replaces name when present)
-E:AddTag("trenchy:name", "UNIT_NAME_UPDATE INSTANCE_ENCOUNTER_ENGAGE_UNIT UNIT_FLAGS UNIT_HEALTH", function(unit)
+E:AddTag("trenchy:name", "UNIT_NAME_UPDATE INSTANCE_ENCOUNTER_ENGAGE_UNIT UNIT_FLAGS PLAYER_FLAGS_CHANGED UNIT_HEALTH UNIT_CONNECTION", function(unit)
     local red = '|cffff2f3d' -- brand/red color
 
     if UnitIsAFK(unit) then
@@ -43,7 +43,7 @@ end)
 E:AddTagInfo("trenchy:name", ElvUI_TrenchyUI.Title, "Last name only, truncated to 16 characters (status replaces name when present)")
 
 -- trenchy:class:name - last name only, truncated to 16 characters, colored by class (status replaces name when present)
-E:AddTag("trenchy:class:name", "UNIT_NAME_UPDATE INSTANCE_ENCOUNTER_ENGAGE_UNIT UNIT_CLASSIFICATION_CHANGED UNIT_FLAGS UNIT_HEALTH", function(unit)
+E:AddTag("trenchy:class:name", "UNIT_NAME_UPDATE INSTANCE_ENCOUNTER_ENGAGE_UNIT UNIT_CLASSIFICATION_CHANGED UNIT_FLAGS PLAYER_FLAGS_CHANGED UNIT_HEALTH UNIT_CONNECTION", function(unit)
     local red = '|cffff2f3d' -- brand/red color
 
     if UnitIsAFK(unit) then
