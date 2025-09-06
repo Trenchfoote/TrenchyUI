@@ -17,4 +17,5 @@ function ElvUI_TrenchyUI:Details()
 	-- Pin the profile so Details keeps using it
 	_G.Details.always_use_profile = true
 	_G.Details.always_use_profile_name = name
+	ElvUI_TrenchyUI:Print("Details profile applied.")
 end

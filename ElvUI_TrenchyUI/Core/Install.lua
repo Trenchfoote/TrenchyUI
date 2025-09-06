@@ -5,6 +5,13 @@ local ElvUI_TrenchyUI = E:GetModule('ElvUI_TrenchyUI')
 function ElvUI_TrenchyUI:GeneralSetup()
 	E:SetupChat()
 	E:SetupCVars()
+	FCF_ResetChatWindows()
+	local loot = FCF_OpenNewWindow(_G.LOOT)
+	local chatGroup = { E.Retail and 'PING' or nil, 'CHANNEL', 'COMBAT_XP_GAIN', 'COMBAT_HONOR_GAIN', 'COMBAT_FACTION_CHANGE', 'SKILL', 'LOOT', 'CURRENCY', 'MONEY' }
+	for _, v in next, chatGroup do
+		ChatFrame_AddMessageGroup(loot, v)
+	end
+	ChatFrame_AddChannel(loot, _G.TRADE)
 end
 
 ElvUI_TrenchyUI.InstallerData = {
@@ -70,7 +77,6 @@ ElvUI_TrenchyUI.InstallerData = {
 			PluginInstallFrame.Option1:SetText("BigWigs\nOnlyPlates")
 			PluginInstallFrame.Option1:SetScript("OnClick", function()
 				ElvUI_TrenchyUI:BigWigs("OnlyPlates")
-				ElvUI_TrenchyUI:Print("BigWigs applied")
 			end)
 
 			PluginInstallFrame.Option2:Enable()
@@ -78,7 +84,6 @@ ElvUI_TrenchyUI.InstallerData = {
 			PluginInstallFrame.Option2:SetText("BigWigs\nUnnamed")
 			PluginInstallFrame.Option2:SetScript("OnClick", function()
 				ElvUI_TrenchyUI:BigWigs("Unnamed")
-				ElvUI_TrenchyUI:Print("BigWigs applied")
 			end)
 
 			PluginInstallFrame.Option3:Enable()
@@ -86,7 +91,6 @@ ElvUI_TrenchyUI.InstallerData = {
 			PluginInstallFrame.Option3:SetText("OmniCD\nOnlyPlates")
 			PluginInstallFrame.Option3:SetScript("OnClick", function()
 				ElvUI_TrenchyUI:OmniCD("OnlyPlates")
-				ElvUI_TrenchyUI:Print("OmniCD applied")
 			end)
 
 			PluginInstallFrame.Option4:Enable()
@@ -94,7 +98,6 @@ ElvUI_TrenchyUI.InstallerData = {
 			PluginInstallFrame.Option4:SetText("OmniCD\nUnnamed")
 			PluginInstallFrame.Option4:SetScript("OnClick", function()
 				ElvUI_TrenchyUI:OmniCD("Unnamed")
-				ElvUI_TrenchyUI:Print("OmniCD applied")
 			end)
 		end,
 		[4] = function()
@@ -109,29 +112,20 @@ ElvUI_TrenchyUI.InstallerData = {
 			PluginInstallFrame.Option1:SetText("WarpDeplete")
 			PluginInstallFrame.Option1:SetScript("OnClick", function()
 				ElvUI_TrenchyUI:WarpDeplete()
-				ElvUI_TrenchyUI:Print("WarpDeplete applied")
 			end)
 
 			PluginInstallFrame.Option2:Show()
-			PluginInstallFrame.Option2:SetText("AddOnSkins")
+			PluginInstallFrame.Option2:SetText("|cFF16C3F2Project|r|cFFFFFFFFAzilroka|r")
 			PluginInstallFrame.Option2:SetScript("OnClick", function()
-				ElvUI_TrenchyUI:AddOnSkins()
-				ElvUI_TrenchyUI:Print("AddOnSkins applied")
-			end)
-
-			PluginInstallFrame.Option3:Show()
-			PluginInstallFrame.Option3:SetText("ProjectAzilroka")
-			PluginInstallFrame.Option3:SetScript("OnClick", function()
 				ElvUI_TrenchyUI:ProjectAzilroka()
-				ElvUI_TrenchyUI:Print("ProjectAzilroka applied")
 			end)
 
-			PluginInstallFrame.Option4:Enable()
-			PluginInstallFrame.Option4:Show()
-			PluginInstallFrame.Option4:SetText("Details")
-			PluginInstallFrame.Option4:SetScript("OnClick", function()
+			PluginInstallFrame.Option3:Enable()
+			PluginInstallFrame.Option3:Show()
+			PluginInstallFrame.Option3:SetText("Details!")
+			PluginInstallFrame.Option3:SetScript("OnClick", function()
 				ElvUI_TrenchyUI:Details()
-				ElvUI_TrenchyUI:Print("Details applied")
+
 			end)
 		end,
 		[5] = function()

@@ -131,4 +131,5 @@ function ElvUI_TrenchyUI:ProjectAzilroka()
 
 	--set the profile
 	ProjectAzilrokaDB["profileKeys"][E.mynameRealm] = "TrenchyUI"
+	ElvUI_TrenchyUI:Print("|cFF16C3F2Project|r|cFFFFFFFFAzilroka|r profile applied.")
 end

@@ -89,4 +89,5 @@ function ElvUI_TrenchyUI:WarpDeplete()
 	DB.profileKeys[key] = profileName
 
 	ElvUI_TrenchyUI:WarpDeplete_ApplyClassColors()
+	ElvUI_TrenchyUI:Print("WarpDeplete profile applied.")
 end
