@@ -15,25 +15,66 @@ E:AddTag("trenchy:health", "UNIT_HEALTH UNIT_MAXHEALTH UNIT_ABSORB_AMOUNT_CHANGE
 end)
 E:AddTagInfo("trenchy:health", ElvUI_TrenchyUI.Title, "Health percent including absorbs (no % sign)")
 
--- trenchy:name - last name only, truncated to 16 characters
-E:AddTag("trenchy:name", "UNIT_NAME_UPDATE INSTANCE_ENCOUNTER_ENGAGE_UNIT", function(unit)
-	local name = UnitName(unit) or UNKNOWN
-	local last = string.match(name, '%S+$') or name
-	return E:ShortenString(last, 16)
-end)
-E:AddTagInfo("trenchy:name", ElvUI_TrenchyUI.Title, "Last name only, truncated to 16 characters")
+-- trenchy:name - last name only, truncated to 16 characters (status replaces name when present)
+E:AddTag("trenchy:name", "UNIT_NAME_UPDATE INSTANCE_ENCOUNTER_ENGAGE_UNIT UNIT_FLAGS UNIT_HEALTH", function(unit)
+    local red = '|cffff2f3d' -- brand/red color
 
--- trenchy:class:name - last name only, truncated to 16 characters, colored by class
-E:AddTag("trenchy:class:name", "UNIT_NAME_UPDATE INSTANCE_ENCOUNTER_ENGAGE_UNIT UNIT_CLASSIFICATION_CHANGED", function(unit)
-	local name = UnitName(unit) or UNKNOWN
-	local last = string.match(name, '%S+$') or name
-	local class = select(2, UnitClass(unit)) or E.myclass or 'PRIEST'
-	local color = E:ClassColor(class) or E.Class or { r = 1, g = 1, b = 1 }
-    local hex = (E.RGBToHex and E:RGBToHex(color.r, color.g, color.b)) or ('|cff' .. string.format('%02x%02x%02x', color.r*255, color.g*255, color.b*255))
+    if UnitIsAFK(unit) then
+        return string.format('%s[%s]|r', red, 'AFK')
+    end
+    if (UnitIsDND and UnitIsDND(unit)) then
+        return string.format('%s%s|r', red, 'DND')
+    end
+    if UnitIsGhost(unit) or UnitIsDead(unit) then
+        local status = UnitIsGhost(unit) and 'GHOST' or 'DEAD'
+        local class = select(2, UnitClass(unit))
+        local color = class and E:ClassColor(class)
+        if color then
+            local hex = (E.RGBToHex and E:RGBToHex(color.r, color.g, color.b)) or ('|cff' .. string.format('%02x%02x%02x', color.r*255, color.g*255, color.b*255))
+            return string.format('%s[%s]|r', hex, status)
+        end
+        return string.format('[%s]', status)
+    end
 
-    return string.format('%s%s|r', hex, E:ShortenString(last, 16))
+    local name = UnitName(unit) or UNKNOWN
+    local last = string.match(name, '%S+$') or name
+    return E:ShortenString(last, 16)
 end)
-E:AddTagInfo("trenchy:class:name", ElvUI_TrenchyUI.Title, "Last name only, truncated to 16 characters, colored by class")	
+E:AddTagInfo("trenchy:name", ElvUI_TrenchyUI.Title, "Last name only, truncated to 16 characters (status replaces name when present)")
+
+-- trenchy:class:name - last name only, truncated to 16 characters, colored by class (status replaces name when present)
+E:AddTag("trenchy:class:name", "UNIT_NAME_UPDATE INSTANCE_ENCOUNTER_ENGAGE_UNIT UNIT_CLASSIFICATION_CHANGED UNIT_FLAGS UNIT_HEALTH", function(unit)
+    local red = '|cffff2f3d' -- brand/red color
+
+    if UnitIsAFK(unit) then
+        return string.format('%s[%s]|r', red, 'AFK')
+    end
+    if (UnitIsDND and UnitIsDND(unit)) then
+        return string.format('%s%s|r', red, 'DND')
+    end
+    if UnitIsGhost(unit) or UnitIsDead(unit) then
+        local status = UnitIsGhost(unit) and 'GHOST' or 'DEAD'
+        local class = select(2, UnitClass(unit))
+        local color = class and E:ClassColor(class)
+        if color then
+            local hex = (E.RGBToHex and E:RGBToHex(color.r, color.g, color.b)) or ('|cff' .. string.format('%02x%02x%02x', color.r*255, color.g*255, color.b*255))
+            return string.format('%s[%s]|r', hex, status)
+        end
+        return string.format('[%s]', status)
+    end
+
+    local name = UnitName(unit) or UNKNOWN
+    local last = string.match(name, '%S+$') or name
+    local short = E:ShortenString(last, 16)
+    local class = select(2, UnitClass(unit))
+    local color = class and E:ClassColor(class)
+    if color then
+        local hex = (E.RGBToHex and E:RGBToHex(color.r, color.g, color.b)) or ('|cff' .. string.format('%02x%02x%02x', color.r*255, color.g*255, color.b*255))
+        return string.format('%s%s|r', hex, short)
+    end
+    return short
+end)
+E:AddTagInfo("trenchy:class:name", ElvUI_TrenchyUI.Title, "Last name only, truncated to 16 characters, colored by class (status replaces name when present)")
 
 -- trenchy:mana - healer-only mana percent, color by thresholds, no % sign
 E:AddTag("trenchy:mana", "UNIT_MAXPOWER UNIT_POWER_FREQUENT UNIT_DISPLAYPOWER PLAYER_ROLES_ASSIGNED GROUP_ROSTER_UPDATE", function(unit)

@@ -101,7 +101,7 @@ function ElvUI_TrenchyUI:ProjectAzilroka()
 	}) do iF.Cooldowns.SpellCDs[spellID] = enabled end
 
 	ProjectAzilrokaDB["profiles"]["TrenchyUI"].SquareMinimapButtons = ProjectAzilrokaDB["profiles"]["TrenchyUI"].SquareMinimapButtons or {}
-	ProjectAzilrokaDB["profiles"]["TrenchyUI"].SquareMinimapButtons.Enable = false
+	ProjectAzilrokaDB["profiles"]["TrenchyUI"].SquareMinimapButtons.Enable = true
 	ProjectAzilrokaDB["profiles"]["TrenchyUI"].SquareMinimapButtons.ReverseDirection = true
 	ProjectAzilrokaDB["profiles"]["TrenchyUI"].SquareMinimapButtons.MoveMail = false
 	ProjectAzilrokaDB["profiles"]["TrenchyUI"].SquareMinimapButtons.MoveQueue = false
