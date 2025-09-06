@@ -3,4 +3,5 @@
 	<Script file='Install.lua'/>
 	<Script file='Tags.lua'/>
 	<Script file='Options.lua'/>
+	<Script file='Dev.lua'/>
 </Ui>
