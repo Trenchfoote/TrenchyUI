@@ -36,14 +36,23 @@ ElvUI_TrenchyUI.InstallerData = {
 				else
 					E.data:SetProfile('TUI OnlyPlates ('..E.mynameRealm..')')
 				end
-				ElvUI_TrenchyUI:ApplyOnlyPlatesDB("general")
+				ElvUI_TrenchyUI:ApplyOnlyPlatesDB("onlyplates")
 			end)
 			PluginInstallFrame.Option1:SetText("OnlyPlates")
 			PluginInstallFrame.Option1:Enable()
 
 			PluginInstallFrame.Option2:Show()
+			PluginInstallFrame.Option2:SetScript("OnClick", function()
+                ElvUI_TrenchyUI:GeneralSetup()
+                if (E.Mists or E.Retail or E.ClassicSOD) and E.data:IsDualSpecEnabled() then
+                    E.data:SetDualSpecProfile('TUI Unnamed ('..E.mynameRealm..')', E.Libs.DualSpec.currentSpec)
+                else
+                    E.data:SetProfile('TUI Unnamed ('..E.mynameRealm..')')
+                end
+                ElvUI_TrenchyUI:ApplyUnnamedDB("unnamed")
+            end)
 			PluginInstallFrame.Option2:SetText("Unnamed (WIP)")
-			PluginInstallFrame.Option2:Disable()
+			PluginInstallFrame.Option2:Enable()
 
 			PluginInstallFrame.Option3:Hide()
 			PluginInstallFrame.Option4:Hide()
@@ -122,7 +131,7 @@ ElvUI_TrenchyUI.InstallerData = {
 			PluginInstallFrame.Option1:Show()
 			PluginInstallFrame.Option1:SetText("Seasonal")
 			PluginInstallFrame.Option1:SetScript("OnClick", function()
-				ElvUI_TrenchyUI:ApplyOnlyPlatesDB("nameplatefilters")
+				ElvUI_TrenchyUI:ApplyTrenchyStyleFiltersDB("nameplatefilters")
 				ElvUI_TrenchyUI:Print("Seasonal filters applied ("..E.db.ElvUI_TrenchyUI.StyleFiltersSeasonal.Version..")")
 			end)
 
@@ -130,7 +139,7 @@ ElvUI_TrenchyUI.InstallerData = {
 			PluginInstallFrame.Option2:Show()
 			PluginInstallFrame.Option2:SetText("Common")
 			PluginInstallFrame.Option2:SetScript("OnClick", function()
-				ElvUI_TrenchyUI:ApplyOnlyPlatesDB("nameplatefilters_alt")
+				ElvUI_TrenchyUI:ApplyTrenchyStyleFiltersDB("nameplatefilters_alt")
 				ElvUI_TrenchyUI:Print("Common filters applied ("..E.db.ElvUI_TrenchyUI.StyleFiltersCommon.Version..")")
 			end)
 
