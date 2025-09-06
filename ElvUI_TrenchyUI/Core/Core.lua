@@ -191,15 +191,16 @@ local function TUI_OmniCD_UpdateAll(tries)
 end
 
 function ElvUI_TrenchyUI:OmniCD_ApplyExtras(now)
- local cfg = E.db and E.db.ElvUI_TrenchyUI and E.db.ElvUI_TrenchyUI.omnicd
-    local forceCCC = cfg and cfg.forceCCC
-    if forceCCC == false then
-        TUI_OmniCD_RestoreRaid()
-    else
-        TUI_OmniCD_CopyCustomToRaid()
-    end
-    TUI_OmniCD_EnsureHook()
-    TUI_OmniCD_UpdateAll(0)
+	if InCombatLockdown() then return end
+	local cfg = E.db and E.db.ElvUI_TrenchyUI and E.db.ElvUI_TrenchyUI.omnicd
+	local forceCCC = cfg and cfg.forceCCC
+	if forceCCC == false then
+		TUI_OmniCD_RestoreRaid()
+	else
+		TUI_OmniCD_CopyCustomToRaid()
+	end
+	TUI_OmniCD_EnsureHook()
+	TUI_OmniCD_UpdateAll(0)
 end
 
 -- Create/refresh a 1px left-edge border on the status bar matching OmniCD's border color
