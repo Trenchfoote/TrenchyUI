@@ -61,5 +61,5 @@ function ElvUI_TrenchyUI:ApplyProfileDB(profileType)
 	E.db.general.font = "Expressway"
 	E.global.general.UIScale = 0.53
 	E.db.unitframe.statusbar = "TrenchyBlank"
-
+	E.db["chat"]["hideVoiceButtons"] = true
 end
