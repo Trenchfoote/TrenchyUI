@@ -124,7 +124,7 @@ function ElvUI_TrenchyUI:ProjectAzilroka()
 	ProjectAzilrokaDB["profiles"]["TrenchyUI"].MasterExperience.ColorByClass = true
 
 	ProjectAzilrokaDB["profiles"]["TrenchyUI"].FasterLoot = ProjectAzilrokaDB["profiles"]["TrenchyUI"].FasterLoot or {}
-	ProjectAzilrokaDB["profiles"]["TrenchyUI"].FasterLoot.Enable = false
+	ProjectAzilrokaDB["profiles"]["TrenchyUI"].FasterLoot.Enable = true
 
 	ProjectAzilrokaDB["profiles"]["TrenchyUI"].ReputationReward = ProjectAzilrokaDB["profiles"]["TrenchyUI"].ReputationReward or {}
 	ProjectAzilrokaDB["profiles"]["TrenchyUI"].ReputationReward.Enable = false
