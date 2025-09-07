@@ -33,7 +33,7 @@ ElvUI_TrenchyUI.InstallerData = {
 			_G.PluginInstallTutorialImage:Hide()
 			PluginInstallFrame.SubTitle:SetText("Choose a layout")
 			PluginInstallFrame.Desc1:SetText("Select a layout to apply on the final step.")
-			PluginInstallFrame.Desc2:SetText("|cffff2f3dTrenchyUI|r is ready. |cffff4444Unnamed|r is currently inactive.")
+			PluginInstallFrame.Desc2:SetText("|cffff2f3dTrenchyUI|r is ready. |cffff4444Unnamed|r is a WIP.")
 
 			PluginInstallFrame.Option1:Show()
 			PluginInstallFrame.Option1:SetScript("OnClick", function()

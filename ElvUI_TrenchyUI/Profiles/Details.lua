@@ -11,7 +11,7 @@ function ElvUI_TrenchyUI:Details()
 	_G.Details:ImportProfile(profileString, "TrenchyUI")
 
 	if "TrenchyUI" ~= _G.Details:GetCurrentProfileName() then
-		_G.Details:ApplyProfile("Eltreum Dual v1")
+		_G.Details:ApplyProfile("TrenchyUI")
 	end
 
 	-- Pin the profile so Details keeps using it
