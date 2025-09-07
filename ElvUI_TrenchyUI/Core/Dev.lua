@@ -253,72 +253,99 @@ end
 -- WarpDeplete Custom Class Colors
 -- ===================================================================================================
 
+-- ensure writable config path
+local function WD_Cfg()
+    E.db.ElvUI_TrenchyUI = E.db.ElvUI_TrenchyUI or {}
+    E.db.ElvUI_TrenchyUI.warpdeplete = E.db.ElvUI_TrenchyUI.warpdeplete or {}
+    return E.db.ElvUI_TrenchyUI.warpdeplete
+end
+
 local function WD_GetClassRGB()
-	local class = select(2, UnitClass("player"))
-	local ccc = _G and rawget(_G, "CUSTOM_CLASS_COLORS")
-	local rcc = _G and rawget(_G, "RAID_CLASS_COLORS")
-	local t = (ccc and ccc[class]) or (rcc and rcc[class])
-	if t then return t.r, t.g, t.b end
-	return 1, 1, 1
+    local class = select(2, UnitClass("player"))
+    local ccc = _G and rawget(_G, "CUSTOM_CLASS_COLORS")
+    local rcc = _G and rawget(_G, "RAID_CLASS_COLORS")
+    local t = (ccc and ccc[class]) or (rcc and rcc[class])
+    if t then return t.r, t.g, t.b end
+    return 1, 1, 1
 end
 
 function ElvUI_TrenchyUI:WarpDeplete_ApplyClassColors()
-	-- respect your toggle
-	local cfg = E.db and E.db.ElvUI_TrenchyUI and E.db.ElvUI_TrenchyUI.warpdeplete
-	if not (cfg and cfg.forceClassColors) then return end
+    -- respect your toggle
+    local cfg = WD_Cfg()
+    if not cfg.forceClassColors then return end
 
-	local WD = _G and rawget(_G, "WarpDeplete"); if not WD then return end
-	local r, g, b = WD_GetClassRGB()
+    local WD = _G and rawget(_G, "WarpDeplete"); if not WD then return end
+    local r, g, b = WD_GetClassRGB()
 
-	-- Color main timer/segment/status bars
-	local bars = WD.bars
-	if type(bars) == "table" then
-		for _, barObj in pairs(bars) do
-			local sb = barObj and barObj.bar
-			if sb and sb.SetStatusBarColor then
-				sb:SetStatusBarColor(r, g, b, 1)
-			end
-		end
-	end
+    -- Color main timer/segment/status bars
+    local bars = WD.bars
+    if type(bars) == "table" then
+        for _, barObj in pairs(bars) do
+            local sb = barObj and barObj.bar
+            if sb and sb.SetStatusBarColor then
+                sb:SetStatusBarColor(r, g, b, 1)
+            end
+        end
+    end
 
-	-- Color the enemy forces main bar, but NOT the current pull overlay
-	local forces = WD.forces
-	if type(forces) == "table" then
-		if forces.bar and forces.bar.SetStatusBarColor then
-			forces.bar:SetStatusBarColor(r, g, b, 1)  -- main forces bar
-		end
-		-- leave forces.overlayBar untouched (this is the "current pull" display)
-	end
+    -- Color the enemy forces main bar, but NOT the current pull overlay
+    local forces = WD.forces
+    if type(forces) == "table" then
+        if forces.bar and forces.bar.SetStatusBarColor then
+            forces.bar:SetStatusBarColor(r, g, b, 1)  -- main forces bar
+        end
+        -- leave forces.overlayBar untouched (this is the "current pull" display)
+    end
+end
+
+-- Rebuild WD UI to restore its own colors (used when disabling our override)
+function ElvUI_TrenchyUI:WarpDeplete_ClearOverride()
+    local WD = _G and rawget(_G, "WarpDeplete"); if not WD then return end
+    if type(WD.RenderLayout)  == "function" then pcall(WD.RenderLayout, WD) end
+    if type(WD.RenderForces)  == "function" then pcall(WD.RenderForces, WD) end
+    if type(WD.OnProfileChanged) == "function" then pcall(WD.OnProfileChanged, WD) end
+end
+
+-- Toggle setter called from Options.lua
+function ElvUI_TrenchyUI:WarpDeplete_SetUseClassColors(enabled)
+    local cfg = WD_Cfg()
+    cfg.forceClassColors = not not enabled
+    if cfg.forceClassColors then
+        self:WarpDeplete_ApplyClassColors()
+    else
+        self:WarpDeplete_ClearOverride()
+    end
 end
 
 -- Keep colors applied whenever WD builds/updates its UI
-local hooked
+local WD_hooked
 local function EnsureWDHooks()
-	if hooked then return end
-	local WD = _G and rawget(_G, "WarpDeplete"); if not WD then return end
-	hooked = true
-	local function repaint()
-		if ElvUI_TrenchyUI and ElvUI_TrenchyUI.WarpDeplete_ApplyClassColors then
-			ElvUI_TrenchyUI:WarpDeplete_ApplyClassColors()
-		end
-	end
-	for _, fname in ipairs({ "RenderLayout", "RenderForces", "OnProfileChanged" }) do
-		if type(WD[fname]) == "function" then hooksecurefunc(WD, fname, repaint) end
-	end
-	-- first paint
-	repaint()
+    if WD_hooked then return end
+    local WD = _G and rawget(_G, "WarpDeplete"); if not WD then return end
+    WD_hooked = true
+    local function repaint()
+        if ElvUI_TrenchyUI and ElvUI_TrenchyUI.WarpDeplete_ApplyClassColors then
+            ElvUI_TrenchyUI:WarpDeplete_ApplyClassColors()
+        end
+    end
+    for _, fname in ipairs({ "RenderLayout", "RenderForces", "OnProfileChanged" }) do
+        if type(WD[fname]) == "function" then hooksecurefunc(WD, fname, repaint) end
+    end
+    -- first paint
+    repaint()
 end
 
 local f = CreateFrame("Frame")
 f:RegisterEvent("PLAYER_LOGIN")
 f:RegisterEvent("ADDON_LOADED")
 f:SetScript("OnEvent", function(_, evt, arg1)
-	if evt == "PLAYER_LOGIN" then
-		EnsureWDHooks()
-		if ElvUI_TrenchyUI and ElvUI_TrenchyUI.WarpDeplete_ApplyClassColors then
-			ElvUI_TrenchyUI:WarpDeplete_ApplyClassColors()
-		end
-	elseif evt == "ADDON_LOADED" and arg1 == "WarpDeplete" then
-		EnsureWDHooks()
-	end
+    if evt == "PLAYER_LOGIN" then
+        -- defaults so Options get() has values
+        local cfg = WD_Cfg()
+        if cfg.forceClassColors == nil then cfg.forceClassColors = false end
+        EnsureWDHooks()
+        ElvUI_TrenchyUI:WarpDeplete_ApplyClassColors()
+    elseif evt == "ADDON_LOADED" and arg1 == "WarpDeplete" then
+        EnsureWDHooks()
+    end
 end)
