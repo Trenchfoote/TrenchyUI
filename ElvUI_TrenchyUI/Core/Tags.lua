@@ -76,25 +76,25 @@ E:AddTag("trenchy:mana", "UNIT_MAXPOWER UNIT_POWER_FREQUENT UNIT_DISPLAYPOWER PL
 end)
 E:AddTagInfo("trenchy:mana", ElvUI_TrenchyUI.Title, "Healer mana percent with threshold colors (no % sign)")
 
--- trenchy:role - leader and/or role letters (L/T/H) with custom colors
-E:AddTag("trenchy:role", "GROUP_ROSTER_UPDATE RAID_ROSTER_UPDATE PARTY_LEADER_CHANGED PLAYER_ROLES_ASSIGNED UNIT_NAME_UPDATE PLAYER_ENTERING_WORLD", function(unit)
+-- trenchy:leader - L if leader (gold), empty otherwise
+E:AddTag("trenchy:leader", "GROUP_ROSTER_UPDATE RAID_ROSTER_UPDATE PARTY_LEADER_CHANGED UNIT_NAME_UPDATE PLAYER_ENTERING_WORLD", function(unit)
     if not unit then return '' end
-    -- only show for units in your current group/raid
     if not IsInGroup() and not IsInRaid() then return '' end
+    return UnitIsGroupLeader(unit) and "|cffffc948L|r" or ''
+end)
+E:AddTagInfo("trenchy:leader", ElvUI_TrenchyUI.Title, "L if leader (gold). Empty otherwise")
 
-    local out = {}
-
-    if UnitIsGroupLeader(unit) then
-        out[#out+1] = "|cffffc948L|r"
-    end
+-- trenchy:role - T (brown) or H (green); empty for DPS/none
+E:AddTag("trenchy:role", "GROUP_ROSTER_UPDATE RAID_ROSTER_UPDATE PLAYER_ROLES_ASSIGNED UNIT_NAME_UPDATE PLAYER_ENTERING_WORLD", function(unit)
+    if not unit then return '' end
+    if not IsInGroup() and not IsInRaid() then return '' end
 
     local role = UnitGroupRolesAssigned(unit)
     if role == "TANK" then
-        out[#out+1] = "|cff684932T|r"
+        return "|cff684932T|r"
     elseif role == "HEALER" then
-        out[#out+1] = "|cff2a6824H|r"
+        return "|cff2a6824H|r"
     end
-
-    return table.concat(out)
+    return ''
 end)
-E:AddTagInfo("trenchy:role", ElvUI_TrenchyUI.Title, "Leader (L, gold) and/or role: T (brown) / H (green). Empty for DPS/none.")
+E:AddTagInfo("trenchy:role", ElvUI_TrenchyUI.Title, "Role letter: T (brown) / H (green). Empty for DPS/none.")
