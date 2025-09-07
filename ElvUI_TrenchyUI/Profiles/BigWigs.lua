@@ -17,12 +17,10 @@ local function CallbackFunction(accepted)
 	--optout of the nameplate stuff
 	if _G.BigWigs3DB then
 		if _G.BigWigs3DB["profiles"][bwProfileName] then
-			print("exists",bwProfileName)
 			_G.BigWigs3DB["profiles"][bwProfileName]["bossModNameplatesDisabled"] = true
 		else
-			for k,v in pairs(_G.BigWigs3DB["profiles"]) do
-				print("table inspect:",k,v)
-			end
+			_G.BigWigs3DB["profiles"][bwProfileName] = {}
+			_G.BigWigs3DB["profiles"][bwProfileName]["bossModNameplatesDisabled"] = true
 		end
 	end
 end
