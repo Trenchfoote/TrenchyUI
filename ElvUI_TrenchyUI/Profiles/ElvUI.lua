@@ -4,6 +4,7 @@ local E = unpack(ElvUI)
 local ElvUI_TrenchyUI = E:GetModule('ElvUI_TrenchyUI')
 local D = E:GetModule('Distributor')
 
+--===============================ELVUI PROFILE STRINGS==================================--
 -- Strings for both profiles
 local GeneralStrings = {
 	["private"] = "!E1!fsvxZPToq0FrPJ(wY5ncfs6mGHPMEZBEIalanxzlQSCAZ9H(BVRKH0MYntbMXshTA3Z5SRPgxVPUAOZg3h0TM0Mjdb9D6WuVZh6bGsfIYPPt2LGslc1LOpqvmkMkfeSswiQRoKalGGlieSuqfyCD12miegHZ5ScgfPQJW3sCHqkrPKz60BDM67(J8Ns4CjvrOsSujfqEfQ693aujLv8yAikc)AQ9NSitnGQmjsq4meIZotn64hgLiKm2zQPuKI3NAZffekwHjq6OeSaDMuaDvmPKkyCjbKSqitNisvAUcxWKkUuviqYcA(e(fNGbg47xooHaoLcrGFcLcNUklxoMaudhXeygMZaJy8KF5oGKlqY)QjxGjeKeHeueSq9kRVKgoMiXVFwgny8VDJ03QgDuhnFp2N7pd9rF7ADNXL3V5Mn2XXT9(UXq(vYtq1vZ((PGPV)B6xgrQS)Nj1Wh3TAi6SDM6QQhM8XvpU6lBw8PYzP62LMJVuGQUH21EBQeLeGH6D)BtWFQElS2hAmH0QVzBIhHZ5OrM3BIrB3HmR(i82WwRZgFjT7KjSBZrGwh9UM6sgyGL(f6TghWB4MpO7Jzv9g07hSq0a6iw1Ij3F)T)4P0rFkAA)Xtlmpd4qa(o3lZ(6G90jtZ4DVtpYdB3o3qJ5Zg9btsn5dN6B3QJz)ee78bNdKdGx9cqJ23YJkh0n62bM5dRwMnQ5bRPRP)3i2uDaW6pZTjhEv3VroqJXKU6USstT45(qlWJQ1Z(80zLBYA2pk5dWZPqdOFKzltgu46C(pMqVo()xVPbB8kWlJpr4jHLXY9oWDmbD2m7B1oNj8Op4AwQZ9896gdSm1uJwFx6FaG52lrm1dJe2oWNYMYjFVnhv1MvRxmBEwxT6ttCNoQF8OPBP)zymjLeb)QYvTtdtZNFHO(2Bp48B1UFc",
@@ -25,10 +26,13 @@ local TrenchyStyleFilterStrings = {
 	["Common"] = "!E1!fAvtVnYnm0FrPqF)rU1SBt2EOzrH9TfDqghRypftSn0mZ21x8V9sjskNnPaf5qOLjPE8r(OCNSBD3Qd9VMon2pNMkF6LHX5uUAU(M7p(8s1S)55HJhQMtp3pM6Eu(lkB3Q9P(X59LJNt)yEjNkMPd9BaxU76HRwNthEE)zmFZWF)p()6FK2o0VUF3LN(vdfqEy3oczdtyMGqoLhoMhMp39Oc9B9nFDZFNa8(907q(C)UjUG7w9TY)UTFZMC67)vjWNpoEmx(ESO(e)XDD37vcR3jeMGq7dHy3l3ynDR209OOejXc39g71u(MAwfJnD3BvXG2Q8kDWQ1sjLk4scwi9IOYf8g4)o8BMFd)m)FXe)5sAA(NzclZeFzy77jH9LJU79PjNqxwF(0BBjBaYkTmN7hXqkuw1Fjueoz5wLrV1QRwbJ0lqROnYFRpuTukNdQjW63F9u)8q6W8LNGeEABUF3XdOZrLQMaL04ckmvoPZsFRtWj1j9OvqRr)IoPHUiHwiORuHasjIAVNGMb6FOLuhPyJofNpHJYIYyqSe1iwalLLqqqjByXi5SedC53qG3O5m7nnRaIkawwmZEVGVdPYXwb0pned6NYFf9wx1pTYzWqvkPd5FD0QqWlcAeaqbfuCOkgYETaj3qiGre9gS1f5RcYRwtKIfIO6VbANHwKCjc8Cn0GVDKMySqm4i224muhfevrU(nIgm9u9R1g6SiZI(G2Wqhhab2reC8TXDuVbHxzgq7Bz2XCNMlnfJfOZtZua5HLMrakvgl8aDqlPiGuxp7bq9mL2T0N3E5P7YldtPCJKOEP1zz6sfPgIfGoHmFKUBTkqFl0m52Qwup73(XjyRyrMckN5(X)Ppxf(FA)sECyA)71tW8fuZT8EDcNuwbhjx1bjnhctKYkIlTqQmH2fpqQO5lOAegUCK4zrpjya3izheBut0MkyX2aio5ZmowMakFUPlKxNCjXbq(T2GjqwrQGGMKJgoGXtYcqk3U8MMWY2KSrEQxy5Xjy2bXszpFX6H8Xf4nRpWQL5OkiwnFm)AU)aSe9YtpSGlwXeGxKxguupeeoKfmlB4Zc1Y3b9gczCLwgc1i3aIa6mqcH4gK8AQV6GEbNJQxFz5WU8haDDH1vE46YjcuW6XyJBygrg8TlPjN1AM5OfLAyjMMZSHqVNgzRvKGROiFhrwWA94KIw5TurAK0ILy0tlNktVv3(6lVC5PpVmF(N0zWRfEp)kqq0OiwIlBKvKLzEh9QuzIIWI32QnVOTqXYIqvKABaPX9dRUnHIR0llJXeBegpMezrEt4KwYw33xTwb)AHZLPNXYtSRa04B7zSKV6yGwRknTftodxDM2eJI7xoA63ze0tnqpN1KcP3XX643MHT(eeLsSBk8Ej9OJtPAJSyP85HPD5LdZJPTFqFu2htYROR96Sk2E9JhnGUAXV53(txm0pYP8x3T3onFEmDp(ts)3",
 }
 
+--==================================FUNCTIONS FOR THE PROFILE STRINGS==================================--
 function ElvUI_TrenchyUI:ApplyTrenchyStyleFiltersDB(key)
 	if TrenchyStyleFilterStrings[key] then
 		D:ImportProfile(TrenchyStyleFilterStrings[key])
 
+		ElvUI_TrenchyUI:Print("Style Filters for "..key.." applied")
+		
 		--set the version they have
 		E.db.ElvUI_TrenchyUI.StyleFilters.Installed.type = key
 		E.db.ElvUI_TrenchyUI.StyleFilters.Installed.Version =  E.db.ElvUI_TrenchyUI.StyleFilters[key]["Version"]

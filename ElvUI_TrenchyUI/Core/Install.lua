@@ -140,7 +140,6 @@ ElvUI_TrenchyUI.InstallerData = {
 			PluginInstallFrame.Option1:SetText("Seasonal")
 			PluginInstallFrame.Option1:SetScript("OnClick", function()
 				ElvUI_TrenchyUI:ApplyTrenchyStyleFiltersDB("Seasonal")
-				ElvUI_TrenchyUI:Print("Seasonal filters applied ("..E.db.ElvUI_TrenchyUI.StyleFilters.Seasonal.Version..")")
 			end)
 
 			PluginInstallFrame.Option2:Enable()
@@ -148,7 +147,6 @@ ElvUI_TrenchyUI.InstallerData = {
 			PluginInstallFrame.Option2:SetText("Common")
 			PluginInstallFrame.Option2:SetScript("OnClick", function()
 				ElvUI_TrenchyUI:ApplyTrenchyStyleFiltersDB("Common")
-				ElvUI_TrenchyUI:Print("Common filters applied ("..E.db.ElvUI_TrenchyUI.StyleFilters.Common.Version..")")
 			end)
 
 			PluginInstallFrame.Option3:Hide()
