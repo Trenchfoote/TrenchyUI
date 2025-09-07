@@ -31,7 +31,7 @@ function ElvUI_TrenchyUI:ApplyTrenchyStyleFiltersDB(key)
 	if TrenchyStyleFilterStrings[key] then
 		D:ImportProfile(TrenchyStyleFilterStrings[key])
 
-		ElvUI_TrenchyUI:Print("Style Filters for "..key.." applied")
+		ElvUI_TrenchyUI:Print(""..key.." Style Filters applied.")
 		
 		--set the version they have
 		E.db.ElvUI_TrenchyUI.StyleFilters.Installed.type = key
