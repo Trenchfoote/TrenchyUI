@@ -56,8 +56,12 @@ function ElvUI_TrenchyUI:Configtable()
 	ElvUI_TrenchyUI.Options.args.ocGroup.args.applyOmniCDUnnamed = E.Libs.ACH:Execute("Unnamed", "Click to reapply the Unnamed OmniCd profile.", 3, function()
 		ElvUI_TrenchyUI:OmniCD("Unnamed")
 	end, nil, nil, "single")
-	ElvUI_TrenchyUI.Options.args.ocGroup.args.ocUseCCC = E.Libs.ACH:Toggle("Class Colors", "Forces OmniCD to use Custom Class Colors, if they're present.", 4, nil, nil, nil, function() return E.db.ElvUI_TrenchyUI.omnicd.forceCCC end, function(_, value) E.db.ElvUI_TrenchyUI.omnicd.forceCCC = value ElvUI_TrenchyUI.OmniCD_ApplyExtras(true) end)
-	ElvUI_TrenchyUI.Options.args.ocGroup.args.ocGap = E.Libs.ACH:Range("Padding X", nil, 5, { min = 0, max = 40, step = 1 }, nil, function() return E.db.ElvUI_TrenchyUI.omnicd.gapX end, function(_, value) E.db.ElvUI_TrenchyUI.omnicd.gapX = value ElvUI_TrenchyUI.OmniCD_ApplyExtras(true) end)
+	ElvUI_TrenchyUI.Options.args.ocGroup.args.ocUseCCC = E.Libs.ACH:Toggle("Class Colors", "Forces OmniCD to use Custom Class Colors, if they're present.", 4, nil, nil, nil,
+		function() return E.db.ElvUI_TrenchyUI.omnicd.forceCCC end,
+		function(_, value) ElvUI_TrenchyUI:OmniCD_SetUseCCC(value) end)
+	ElvUI_TrenchyUI.Options.args.ocGroup.args.ocGap = E.Libs.ACH:Range("Padding X", nil, 5, { min = 0, max = 40, step = 1 }, nil,
+		function() return E.db.ElvUI_TrenchyUI.omnicd.gapX end,
+		function(_, value) ElvUI_TrenchyUI:OmniCD_SetGap(value) end)
 
 	--[[
 	E.Libs.ACH:Header(name, order, get, set, hidden)
