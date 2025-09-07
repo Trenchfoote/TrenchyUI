@@ -20,7 +20,9 @@ local function CallbackFunction(accepted)
 			print("exists",bwProfileName)
 			_G.BigWigs3DB["profiles"]["TUI-"..bwProfileName]["bossModNameplatesDisabled"] = true
 		else
-			print("profile does not exist",bwProfileName)
+			for k,v in pairs(_G.BigWigs3DB["profiles"]) do
+				print("table inspect:",k,v)
+			end
 		end
 	end
 end
