@@ -16,7 +16,10 @@ local function CallbackFunction(accepted,profile)
 	--optout of the nameplate stuff
 	if _G.BigWigs3DB then
 		if _G.BigWigs3DB["profiles"]["TUI-"..profile] then
+			print("exists",profile)
 			_G.BigWigs3DB["profiles"]["TUI-"..profile]["bossModNameplatesDisabled"] = true
+		else
+			print("profile does not exist",profile)
 		end
 	end
 end
