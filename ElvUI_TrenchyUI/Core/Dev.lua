@@ -1,9 +1,13 @@
 local E = unpack(ElvUI)
 local ElvUI_TrenchyUI = E:GetModule('ElvUI_TrenchyUI')
+local UnitClass = UnitClass
+local GetPlayerInfoByGUID = GetPlayerInfoByGUID
+local RAID_CLASS_COLORS = RAID_CLASS_COLORS
+local InCombatLockdown = InCombatLockdown
+local hooksecurefunc = hooksecurefunc
 
--- =====================================================================
--- OmniCd Custom Class Colors and Offset adjustment
--- =====================================================================
+-- OmniCD
+
 
 local function GetBorderRGB()
 	local m = E and E.media and E.media.bordercolor
@@ -17,7 +21,7 @@ local function GetBorderRGB()
 end
 
 local function approx(a, b)
-	return math.abs((a or 0) - (b or 0)) < 0.01
+	return math.abs((a or 0) - (b or 0)) < 0.001
 end
 
 local function UseCCC()
@@ -25,7 +29,10 @@ local function UseCCC()
 	return cfg and cfg.forceCCC
 end
 
--- ---- coloring helpers ----
+local function sameRGB(r1, g1, b1, r2, g2, b2)
+	return approx(r1, r2) and approx(g1, g2) and approx(b1, b2)
+end
+
 local function IconClass(icon)
 	if not icon then return nil end
 	if icon.class and type(icon.class) == "string" then return icon.class end
@@ -43,64 +50,79 @@ end
 local function RecolorBar(sb, icon)
 	if not (sb and icon) then return end
 	if not UseCCC() then return end
+
 	local classFile = IconClass(icon)
 	if not classFile then return end
-	local ccc = rawget(_G, 'CUSTOM_CLASS_COLORS')
-	local rcc = rawget(_G, 'RAID_CLASS_COLORS')
-	local cc = ccc and ccc[classFile]
-	local rc = rcc and rcc[classFile]
-	if not cc then return end
-	local r, g, b = cc.r or 1, cc.g or 1, cc.b or 1
+	if not (E and E.ClassColor) then return end
+	local c = E:ClassColor(classFile)
+	if not c then return end
+	local r, g, b = c.r, c.g, c.b
+
+	local classColors = RAID_CLASS_COLORS
+	local rc = classColors and classColors[classFile]
+	if not rc then return end
+	local rr, rg, rb = rc.r, rc.g, rc.b
+	if sameRGB(r, g, b, rr, rg, rb) then return end
+
 	local bar = (sb.CastingBar and sb.CastingBar.SetStatusBarColor) and sb.CastingBar or sb
 	if bar then
-		if bar.startCastColor and bar.startCastColor.SetRGB then bar.startCastColor:SetRGB(r, g, b) end
-		if bar.startChannelColor and bar.startChannelColor.SetRGB then bar.startChannelColor:SetRGB(r, g, b) end
-		if bar.startRechargeColor and bar.startRechargeColor.SetRGB then bar.startRechargeColor:SetRGB(r, g, b) end
-		if bar.SetStatusBarColor then bar:SetStatusBarColor(r, g, b, 1) end
+		local obj
+		obj = bar.startCastColor
+		if obj and obj.GetRGB and obj.SetRGB then
+			local cr, cg, cb = obj:GetRGB()
+			if sameRGB(cr, cg, cb, rr, rg, rb) then obj:SetRGB(r, g, b) end
+		end
+		obj = bar.startChannelColor
+		if obj and obj.GetRGB and obj.SetRGB then
+			local cr, cg, cb = obj:GetRGB()
+			if sameRGB(cr, cg, cb, rr, rg, rb) then obj:SetRGB(r, g, b) end
+		end
+		obj = bar.startRechargeColor
+		if obj and obj.GetRGB and obj.SetRGB then
+			local cr, cg, cb = obj:GetRGB()
+			if sameRGB(cr, cg, cb, rr, rg, rb) then obj:SetRGB(r, g, b) end
+		end
+		if bar.GetStatusBarColor and bar.SetStatusBarColor then
+			local cr, cg, cb = bar:GetStatusBarColor()
+			if sameRGB(cr, cg, cb, rr, rg, rb) then bar:SetStatusBarColor(r, g, b, 1) end
+		end
 	end
 
-	-- If Text/BG are using raid class colors, replace with custom
-	if rc then
-		if sb.Text and sb.Text.GetTextColor and sb.Text.SetTextColor then
-			local tr, tg, tb = sb.Text:GetTextColor()
-			if approx(tr, rc.r) and approx(tg, rc.g) and approx(tb, rc.b) then
-				sb.Text:SetTextColor(r, g, b)
-			end
-		end
-		if sb.BG and sb.BG.GetVertexColor and sb.BG.SetVertexColor then
-			local br, bg, bb, ba = sb.BG:GetVertexColor()
-			if approx(br, rc.r) and approx(bg, rc.g) and approx(bb, rc.b) then
-				sb.BG:SetVertexColor(r, g, b, ba or 1)
-			end
-		end
+	local text = sb.Text
+	if text and text.GetTextColor and text.SetTextColor then
+		local tr, tg, tb = text:GetTextColor()
+		if sameRGB(tr, tg, tb, rr, rg, rb) then text:SetTextColor(r, g, b) end
+	end
+	local bg = sb.BG
+	if bg and bg.GetVertexColor and bg.SetVertexColor then
+		local br, bg2, bb, ba = bg:GetVertexColor()
+		if sameRGB(br, bg2, bb, rr, rg, rb) then bg:SetVertexColor(r, g, b, ba or 1) end
 	end
 end
 
 local function AttachBarHooks(sb, icon)
 	if not sb then return end
 	if not sb.__tuiHookedColors then
-		if type(hooksecurefunc) == 'function' and type(sb.SetColors) == 'function' then
+		if hooksecurefunc and sb.SetColors then
 			hooksecurefunc(sb, 'SetColors', function(self)
-				RecolorBar(self, icon)
+				local owner = self.parent or (self.GetParent and self:GetParent())
+				RecolorBar(self, owner)
 			end)
 		end
 		sb.__tuiHookedColors = true
 	end
-	-- Always recolor on Apply to handle toggle flips without waiting for SetColors
-	RecolorBar(sb, icon)
+	local owner = sb.parent or (sb.GetParent and sb:GetParent())
+	RecolorBar(sb, owner)
 end
 
--- forward declare so we can keep layout after coloring section
 local Reanchor
 local EnsureLeftEdge
 
 local function Apply(icon, sb)
 	if icon and sb then AttachBarHooks(sb, icon) end
-	-- layout next, after coloring
 	Reanchor(icon, sb)
 end
 
--- ---- layout/offset ----
 Reanchor = function(icon, sb)
 	if not (icon and sb) then return end
 	if InCombatLockdown and InCombatLockdown() then return end
@@ -115,7 +137,6 @@ Reanchor = function(icon, sb)
 	EnsureLeftEdge(sb, dx)
 end
 
--- Draw a thin left-edge border on the status bar to visually close the seam
 EnsureLeftEdge = function(sb, dx)
 	if not sb then return end
 	local edge = sb.__tuiLeftEdge
@@ -134,7 +155,6 @@ EnsureLeftEdge = function(sb, dx)
 	edge:Show()
 end
 
--- Pool sweeps (guard everything)
 local function SweepStatusBars(P)
 	if not P or not P.StatusBarPool then return end
 	for sb in P.StatusBarPool:EnumerateActive() do
@@ -156,16 +176,15 @@ local function SweepExtraBars(P)
 	end
 end
 
--- Hooks
 local hooked = false
 local function EnsureHook()
 	if hooked then return end
-	local Omni = rawget(_G, 'OmniCD'); if not Omni then return end
+	local Omni = OmniCD; if not Omni then return end
 	local OE = Omni[1]; if not OE then return end
 	local P  = OE.Party; if not P then return end
 	hooked = true
 
-	if type(P.GetStatusBarFrame) == 'function' then
+	if P.GetStatusBarFrame then
 		hooksecurefunc(P, 'GetStatusBarFrame', function(_, icon)
 			local sb = icon and icon.statusBar
 			if sb then Apply(icon, sb) end
@@ -173,7 +192,7 @@ local function EnsureHook()
 	end
 
 	for _, fname in ipairs({ 'UpdateAllBars', 'UpdateExBars' }) do
-		if type(P[fname]) == 'function' then
+		if P[fname] then
 			hooksecurefunc(P, fname, function()
 				SweepStatusBars(P)
 				SweepExtraBars(P)
@@ -187,21 +206,19 @@ end
 
 function ElvUI_TrenchyUI:OmniCD_ApplyExtras()
 	EnsureHook()
-	local Omni = rawget(_G, 'OmniCD'); if not Omni then return end
+	local Omni = OmniCD; if not Omni then return end
 	local OE = Omni[1]; if not OE then return end
 	local P  = OE.Party; if not P then return end
 	SweepStatusBars(P)
 	SweepExtraBars(P)
 end
 
--- Public setters for Options.lua
 function ElvUI_TrenchyUI:OmniCD_SetUseCCC(enabled)
 	local cfg = E.db and E.db.ElvUI_TrenchyUI and E.db.ElvUI_TrenchyUI.omnicd
 	if not cfg then return end
 	cfg.forceCCC = not not enabled
 	if self.OmniCD_ApplyExtras then self:OmniCD_ApplyExtras() end
-	-- Nudge OmniCD to repaint now so SetColors runs and our post-hook recolors
-	local Omni = rawget(_G, 'OmniCD')
+	local Omni = OmniCD
 	local OE = Omni and Omni[1]
 	local P  = OE and OE.Party
 	if P then
@@ -217,96 +234,43 @@ function ElvUI_TrenchyUI:OmniCD_SetGap(dx)
 	if v then cfg.gapX = v end
 	if self.OmniCD_ApplyExtras then self:OmniCD_ApplyExtras() end
 end
+-- WD
 
-local f = CreateFrame('Frame')
-f:RegisterEvent('ADDON_LOADED')
-f:RegisterEvent('PLAYER_LOGIN')
-f:SetScript('OnEvent', function(_, evt, arg1)
-	if evt == 'PLAYER_LOGIN' or (evt == 'ADDON_LOADED' and (arg1 == 'OmniCD' or arg1 == 'ElvUI_TrenchyUI')) then
-		if ElvUI_TrenchyUI and ElvUI_TrenchyUI.OmniCD_ApplyExtras then
-			ElvUI_TrenchyUI:OmniCD_ApplyExtras()
-		end
-	end
-end)
-
--- Re-apply when CUSTOM_CLASS_COLORS change or load later
-do
-	local function tryRegisterCCC(attempt)
-		attempt = (attempt or 0) + 1
-		local CCC = rawget(_G, 'CUSTOM_CLASS_COLORS')
-		if CCC and CCC.RegisterCallback then
-			CCC:RegisterCallback(function()
-				if not UseCCC() then return end
-				if ElvUI_TrenchyUI and ElvUI_TrenchyUI.OmniCD_ApplyExtras then
-					ElvUI_TrenchyUI:OmniCD_ApplyExtras()
-				end
-			end, 'TrenchyUI_OmniCD')
-		elseif C_Timer and C_Timer.After and attempt < 5 then
-			C_Timer.After(1, function() tryRegisterCCC(attempt) end)
-		end
-	end
-	tryRegisterCCC(0)
-end
-
-
--- ===================================================================================================
--- WarpDeplete Custom Class Colors
--- ===================================================================================================
-
--- ensure writable config path
 local function WD_Cfg()
     E.db.ElvUI_TrenchyUI = E.db.ElvUI_TrenchyUI or {}
     E.db.ElvUI_TrenchyUI.warpdeplete = E.db.ElvUI_TrenchyUI.warpdeplete or {}
     return E.db.ElvUI_TrenchyUI.warpdeplete
 end
 
-local function WD_GetClassRGB()
-    local class = select(2, UnitClass("player"))
-    local ccc = _G and rawget(_G, "CUSTOM_CLASS_COLORS")
-    local rcc = _G and rawget(_G, "RAID_CLASS_COLORS")
-    local t = (ccc and ccc[class]) or (rcc and rcc[class])
-    if t then return t.r, t.g, t.b end
-    return 1, 1, 1
-end
-
 function ElvUI_TrenchyUI:WarpDeplete_ApplyClassColors()
-    -- respect your toggle
     local cfg = WD_Cfg()
     if not cfg.forceClassColors then return end
 
-    local WD = _G and rawget(_G, "WarpDeplete"); if not WD then return end
-    local r, g, b = WD_GetClassRGB()
+	local WD = WarpDeplete; if not WD then return end
+	local _, class = UnitClass("player")
+	local c = (E and E.ClassColor and class) and E:ClassColor(class) or nil
+	local r, g, b = c and c.r or 1, c and c.g or 1, c and c.b or 1
 
-    -- Color main timer/segment/status bars
-    local bars = WD.bars
-    if type(bars) == "table" then
-        for _, barObj in pairs(bars) do
-            local sb = barObj and barObj.bar
-            if sb and sb.SetStatusBarColor then
-                sb:SetStatusBarColor(r, g, b, 1)
-            end
-        end
-    end
+	for _, barObj in pairs(WD.bars or {}) do
+		local sb = barObj and barObj.bar
+		if sb and sb.SetStatusBarColor then sb:SetStatusBarColor(r, g, b, 1) end
+	end
 
-    -- Color the enemy forces main bar, but NOT the current pull overlay
-    local forces = WD.forces
-    if type(forces) == "table" then
-        if forces.bar and forces.bar.SetStatusBarColor then
-            forces.bar:SetStatusBarColor(r, g, b, 1)  -- main forces bar
-        end
-        -- leave forces.overlayBar untouched (this is the "current pull" display)
-    end
+	local forces = WD.forces
+	if forces and forces.bar and forces.bar.SetStatusBarColor then
+		forces.bar:SetStatusBarColor(r, g, b, 1)
+	end
+
 end
 
--- Rebuild WD UI to restore its own colors (used when disabling our override)
 function ElvUI_TrenchyUI:WarpDeplete_ClearOverride()
-    local WD = _G and rawget(_G, "WarpDeplete"); if not WD then return end
-    if type(WD.RenderLayout)  == "function" then pcall(WD.RenderLayout, WD) end
-    if type(WD.RenderForces)  == "function" then pcall(WD.RenderForces, WD) end
-    if type(WD.OnProfileChanged) == "function" then pcall(WD.OnProfileChanged, WD) end
+	local WD = WarpDeplete; if not WD then return end
+	if WD.RenderLayout  then pcall(WD.RenderLayout, WD) end
+	if WD.RenderForces  then pcall(WD.RenderForces, WD) end
+	if WD.OnProfileChanged then pcall(WD.OnProfileChanged, WD) end
+
 end
 
--- Toggle setter called from Options.lua
 function ElvUI_TrenchyUI:WarpDeplete_SetUseClassColors(enabled)
     local cfg = WD_Cfg()
     cfg.forceClassColors = not not enabled
@@ -315,13 +279,13 @@ function ElvUI_TrenchyUI:WarpDeplete_SetUseClassColors(enabled)
     else
         self:WarpDeplete_ClearOverride()
     end
+
 end
 
--- Keep colors applied whenever WD builds/updates its UI
 local WD_hooked
 local function EnsureWDHooks()
     if WD_hooked then return end
-    local WD = _G and rawget(_G, "WarpDeplete"); if not WD then return end
+	local WD = WarpDeplete; if not WD then return end
     WD_hooked = true
     local function repaint()
         if ElvUI_TrenchyUI and ElvUI_TrenchyUI.WarpDeplete_ApplyClassColors then
@@ -331,21 +295,31 @@ local function EnsureWDHooks()
     for _, fname in ipairs({ "RenderLayout", "RenderForces", "OnProfileChanged" }) do
         if type(WD[fname]) == "function" then hooksecurefunc(WD, fname, repaint) end
     end
-    -- first paint
-    repaint()
+	repaint()
 end
 
-local f = CreateFrame("Frame")
-f:RegisterEvent("PLAYER_LOGIN")
-f:RegisterEvent("ADDON_LOADED")
-f:SetScript("OnEvent", function(_, evt, arg1)
-    if evt == "PLAYER_LOGIN" then
-        -- defaults so Options get() has values
-        local cfg = WD_Cfg()
-        if cfg.forceClassColors == nil then cfg.forceClassColors = false end
-        EnsureWDHooks()
-        ElvUI_TrenchyUI:WarpDeplete_ApplyClassColors()
-    elseif evt == "ADDON_LOADED" and arg1 == "WarpDeplete" then
-        EnsureWDHooks()
-    end
+-- Now that all helpers are defined, register the unified event frame
+local tuiEvt = CreateFrame('Frame')
+tuiEvt:RegisterEvent('ADDON_LOADED')
+tuiEvt:RegisterEvent('PLAYER_LOGIN')
+tuiEvt:SetScript('OnEvent', function(_, evt, arg1)
+	if evt == 'PLAYER_LOGIN' then
+		if ElvUI_TrenchyUI and ElvUI_TrenchyUI.OmniCD_ApplyExtras then
+			ElvUI_TrenchyUI:OmniCD_ApplyExtras()
+		end
+		local cfg = WD_Cfg()
+		if cfg.forceClassColors == nil then cfg.forceClassColors = false end
+		EnsureWDHooks()
+		if ElvUI_TrenchyUI and ElvUI_TrenchyUI.WarpDeplete_ApplyClassColors then
+			ElvUI_TrenchyUI:WarpDeplete_ApplyClassColors()
+		end
+	elseif evt == 'ADDON_LOADED' then
+		if arg1 == 'OmniCD' or arg1 == 'ElvUI_TrenchyUI' then
+			if ElvUI_TrenchyUI and ElvUI_TrenchyUI.OmniCD_ApplyExtras then
+				ElvUI_TrenchyUI:OmniCD_ApplyExtras()
+			end
+		elseif arg1 == 'WarpDeplete' then
+			EnsureWDHooks()
+		end
+	end
 end)
