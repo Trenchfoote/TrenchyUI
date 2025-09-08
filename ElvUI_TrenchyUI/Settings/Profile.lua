@@ -11,7 +11,7 @@ P.ElvUI_TrenchyUI = {
 		Seasonal = {
 			Expansion = "TWW",
 			Season = 3,
-			Version = 20250905,
+			Version = 20250906,
 		},
 		Common = {
 			Expansion = "TWW",

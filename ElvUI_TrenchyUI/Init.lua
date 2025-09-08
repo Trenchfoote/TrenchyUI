@@ -22,6 +22,7 @@ function ElvUI_TrenchyUI:Initialize()
 	--Insert our options table when ElvUI config is loaded
 	local EP = LibStub("LibElvUIPlugin-1.0")
 	EP:RegisterPlugin(addon, ElvUI_TrenchyUI.Configtable)
+	ElvUI_TrenchyUI:LoadCommands() --add the chat commands
 end
 
 --Register module with callback so it gets initialized when ready
