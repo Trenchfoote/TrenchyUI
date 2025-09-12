@@ -17,6 +17,6 @@ function ElvUI_TrenchyUI:OmniCD(profile)
 	local ProfileSharing = OmniCD.ProfileSharing
 	local profileType, profileKey, profileData = ProfileSharing:Decode(export)
 	ProfileSharing:CopyProfile(profileType, profileKey, profileData)
-	
+
 	ElvUI_TrenchyUI:Print("OmniCD "..profile.." profile applied.")
 end
