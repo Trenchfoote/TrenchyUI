@@ -25,7 +25,7 @@ TUI.conflictDefs = {
 		addonName  = 'ElvUI_EltreumUI',
 		addonLabel = 'Eltruism',
 		tuiFeature = 'TUI Pixel Glow',
-		popupText  = 'Looks like you have |cffff2f3dEltruism|r and |cffff2f3dTrenchyUI|r installed.\nPlease select which aura highlight you\'d prefer to use.',
+		popupText  = 'Looks like you have |cffff2f3dEltruism|r and |cffff2f3dTrenchyUI|r installed.\nPlease select which pixel glow you\'d prefer to use.',
 	},
 	moveableFrames = {
 		addonName  = 'BlizzMove',
@@ -60,7 +60,7 @@ do -- Compat popup system
 			if key == 'damageMeter' and TUI.db then
 				TUI.db.profile.damageMeter.enabled = false
 			elseif key == 'auraHighlight' and TUI.db then
-				TUI.db.profile.auraHighlight.enabled = false
+				TUI.db.profile.pixelGlow.enabled = false
 			elseif key == 'moveableFrames' and TUI.db then
 				TUI.db.profile.qol.moveableFrames = false
 			end
@@ -106,14 +106,8 @@ end
 function TUI:GetClassColor(classFilename)
 	classFilename = classFilename or select(2, UnitClass('player'))
 	if not classFilename then return nil end
-	if CUSTOM_CLASS_COLORS and CUSTOM_CLASS_COLORS[classFilename] then
-		local c = CUSTOM_CLASS_COLORS[classFilename]
-		return c.r, c.g, c.b
-	end
-	if RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFilename] then
-		local c = RAID_CLASS_COLORS[classFilename]
-		return c.r, c.g, c.b
-	end
+	local c = E:ClassColor(classFilename)
+	if c then return c.r, c.g, c.b end
 	return nil
 end
 
@@ -151,6 +145,11 @@ do -- Settings merge
 		if E.db.TrenchyUI.blizzard and not E.db.TrenchyUI.qol then
 			E.db.TrenchyUI.qol = E.db.TrenchyUI.blizzard
 			E.db.TrenchyUI.blizzard = nil
+		end
+
+		if E.db.TrenchyUI.auraHighlight and not E.db.TrenchyUI.pixelGlow then
+			E.db.TrenchyUI.pixelGlow = E.db.TrenchyUI.auraHighlight
+			E.db.TrenchyUI.auraHighlight = nil
 		end
 
 		local addons = E.db.TrenchyUI.addons
@@ -197,7 +196,7 @@ do -- Settings merge
 		if self.InitElvNP then self:InitElvNP() end
 		if self.InitSkinAuctionator then self:InitSkinAuctionator() end
 		if self.InitCooldownManager then self:InitCooldownManager() end
-		if not self:IsCompatBlocked('auraHighlight') and self.InitAuraHighlight then self:InitAuraHighlight() end
+		if not self:IsCompatBlocked('auraHighlight') and self.InitPixelGlow then self:InitPixelGlow() end
 		if not self:IsCompatBlocked('damageMeter') and self.InitDamageMeter then self:InitDamageMeter() end
 		if self.InitSkinBugSack then self:InitSkinBugSack() end
 		if self.InitSkinOPie then self:InitSkinOPie() end

@@ -3,10 +3,10 @@ local TUI = E:GetModule('TrenchyUI')
 local UF = E:GetModule('UnitFrames')
 local LCG = E.Libs.CustomGlow
 
-local GLOW_KEY = 'TUI_AuraHighlight'
+local GLOW_KEY = 'TUI_PixelGlow'
 
-local function GetAuraHighlightDB()
-	local db = TUI.db and TUI.db.profile and TUI.db.profile.auraHighlight
+local function GetPixelGlowDB()
+	local db = TUI.db and TUI.db.profile and TUI.db.profile.pixelGlow
 	if not db then return false, 8, 0.25, 2 end
 	return db.enabled, db.lines, db.speed, db.thickness
 end
@@ -14,7 +14,7 @@ end
 local function AfterElvUIPostUpdate(element, frame, unit, aura, debuffType, texture, wasFiltered, style, color)
 	if not LCG or not LCG.PixelGlow_Start then return end
 
-	local _, lines, speed, thickness = GetAuraHighlightDB()
+	local _, lines, speed, thickness = GetPixelGlowDB()
 	local glowTarget = frame.Health or frame
 
 	if aura or debuffType then
@@ -31,8 +31,8 @@ local function AfterElvUIPostUpdate(element, frame, unit, aura, debuffType, text
 	end
 end
 
-function TUI:InitAuraHighlight()
-	local enabled = GetAuraHighlightDB()
+function TUI:InitPixelGlow()
+	local enabled = GetPixelGlowDB()
 	if not enabled then return end
 
 	if E.db.unitframe.debuffHighlighting == 'NONE' then

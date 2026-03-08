@@ -537,11 +537,11 @@ local function ApplyHeaderStyle(win, db)
     local hc = db.headerBGColor
     header.bg:SetVertexColor(hc.r, hc.g, hc.b, hc.a)
 
-    header.text:SetFont(fontPath, db.headerFontSize + 1, flags)
+    header.text:FontTemplate(fontPath, db.headerFontSize + 1, flags)
     local tc = db.headerFontColor
     header.text:SetTextColor(tc.r, tc.g, tc.b)
 
-    header.timer:SetFont(fontPath, db.headerFontSize, flags)
+    header.timer:FontTemplate(fontPath, db.headerFontSize, flags)
     header.timer:SetTextColor(tc.r, tc.g, tc.b, 0.7)
     header.timer:ClearAllPoints()
     if db.showTimer then
@@ -708,9 +708,9 @@ local function CreateEmbeddedWindow(win, db)
 
     for i = 1, MAX_BARS do
         local bar = CreateBar(win.frame)
-        bar.leftText:SetFont(fontPath, db.barFontSize, flags)
-        bar.rightText:SetFont(fontPath, db.barFontSize, flags)
-        bar.pctText:SetFont(fontPath, db.barFontSize, flags)
+        bar.leftText:FontTemplate(fontPath, db.barFontSize, flags)
+        bar.rightText:FontTemplate(fontPath, db.barFontSize, flags)
+        bar.pctText:FontTemplate(fontPath, db.barFontSize, flags)
         ApplyBarIconLayout(bar, db)
         ApplyBarBorder(bar, db)
 
@@ -786,9 +786,9 @@ local function CreateStandaloneWindow(win, db, savedW, savedH)
 
     for j = 1, MAX_BARS do
         local bar = CreateBar(win.frame)
-        bar.leftText:SetFont(fontPath, db.barFontSize, flags)
-        bar.rightText:SetFont(fontPath, db.barFontSize, flags)
-        bar.pctText:SetFont(fontPath, db.barFontSize, flags)
+        bar.leftText:FontTemplate(fontPath, db.barFontSize, flags)
+        bar.rightText:FontTemplate(fontPath, db.barFontSize, flags)
+        bar.pctText:FontTemplate(fontPath, db.barFontSize, flags)
         ApplyBarIconLayout(bar, db)
         ApplyBarBorder(bar, db)
 
@@ -1176,10 +1176,19 @@ RefreshWindow = function(win)
     end
 end
 
+local refreshPending = false
+
 function TUI:RefreshMeter()
     for _, win in pairs(windows) do
         RefreshWindow(win)
     end
+    refreshPending = false
+end
+
+local function ScheduleRefresh()
+    if refreshPending then return end
+    refreshPending = true
+    C_Timer.After(0.2, function() TUI:RefreshMeter() end)
 end
 
 function TUI:SetMeterTestMode(enabled)
@@ -1267,9 +1276,9 @@ function TUI:UpdateMeterLayout()
         for i = 1, MAX_BARS do
             local bar = win.bars[i]
             if bar then
-                bar.leftText:SetFont(fontPath, db.barFontSize, flags)
-                bar.rightText:SetFont(fontPath, db.barFontSize, flags)
-                bar.pctText:SetFont(fontPath, db.barFontSize, flags)
+                bar.leftText:FontTemplate(fontPath, db.barFontSize, flags)
+                bar.rightText:FontTemplate(fontPath, db.barFontSize, flags)
+                bar.pctText:FontTemplate(fontPath, db.barFontSize, flags)
                 ApplyBarIconLayout(bar, db)
                 ApplyBarBorder(bar, db)
             end
@@ -1350,7 +1359,7 @@ function TUI:InitDamageMeter()
                 end
                 TUI:RefreshMeter()
             else
-                TUI:RefreshMeter()
+                ScheduleRefresh()
             end
         end)
         evFrame:SetScript("OnUpdate", OnUpdate)

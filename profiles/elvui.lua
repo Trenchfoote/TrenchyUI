@@ -423,10 +423,12 @@ local function SetupProfileDB()
     E.db.chat.noAlertInCombat = true
     E.db.chat.numScrollMessages = 1
     E.db.chat.panelBackdrop = "LEFT"
+    E.db.chat.panelHeight = 185
     E.db.chat.panelColor.a = 1
     E.db.chat.panelColor.b = 0.17254902422428
     E.db.chat.panelColor.g = 0.17254902422428
     E.db.chat.panelColor.r = 0.17254902422428
+    E.db.chat.panelWidth = 410
     E.db.chat.panelTabBackdrop = true
     E.db.chat.panelWidthRight = 400
     E.db.chat.recentAllyIcon = true
@@ -697,7 +699,7 @@ local function SetupProfileDB()
     E.db.movers.AltPowerBarMover = "TOP,ElvUIParent,TOP,0,-41"
     E.db.movers.ArenaHeaderMover = "BOTTOMRIGHT,UIParent,BOTTOMRIGHT,-4,395"
     E.db.movers.AzeriteBarMover = "BOTTOMLEFT,ElvUIParent,BOTTOMLEFT,430,-1"
-    E.db.movers.BNETMover = "BOTTOMLEFT,ElvUIParent,BOTTOMLEFT,2,184"
+    E.db.movers.BNETMover = "BOTTOMLEFT,ElvUIParent,BOTTOMLEFT,2,188"
     E.db.movers.BelowMinimapContainerMover = "TOPRIGHT,UIParent,TOPRIGHT,-253,-103"
     E.db.movers.BigButtonsSeedBarMover = "TOP,ElvUIParent,TOP,0,-476"
     E.db.movers.BossBannerMover = "TOP,UIParent,TOP,0,-144"
@@ -707,7 +709,7 @@ local function SetupProfileDB()
     E.db.movers.CDM_BuffBars_Mover = "BOTTOM,UIParent,BOTTOM,0,225"
     E.db.movers.CDM_Essentials_Mover = "BOTTOM,ElvUIParent,BOTTOM,-6,455"
     E.db.movers.CDM_Utility_Mover = "TOP,UIParent,TOP,4,368"
-    E.db.movers.ClassBarMover = "BOTTOM,ElvUIParent,BOTTOM,0,455"
+    E.db.movers.ClassBarMover = "BOTTOM,ElvUIParent,BOTTOM,0,454"
     E.db.movers["DTPanelT-TimeMover"] = "TOP,UIParent,TOP,0,-11"
     E.db.movers.DebuffsMover = "TOPLEFT,ElvUIParent,TOPLEFT,2,-94"
     E.db.movers.DurabilityFrameMover = "BOTTOMLEFT,ElvUIParent,BOTTOMLEFT,486,278"
@@ -734,7 +736,7 @@ local function SetupProfileDB()
     E.db.movers.ElvUF_PetMover = "BOTTOM,ElvUIParent,BOTTOM,-252,346"
     E.db.movers.ElvUF_PetTargetMover = "BOTTOMRIGHT,UIParent,BOTTOMRIGHT,-750,380"
     E.db.movers.ElvUF_PlayerAuraMover = "BOTTOM,ElvUIParent,BOTTOM,0,484"
-    E.db.movers.ElvUF_PlayerCastbarMover = "BOTTOM,ElvUIParent,BOTTOM,0,319"
+    E.db.movers.ElvUF_PlayerCastbarMover = "BOTTOM,ElvUIParent,BOTTOM,0,316"
     E.db.movers.ElvUF_PlayerMover = "BOTTOM,ElvUIParent,BOTTOM,0,400"
     E.db.movers.ElvUF_Raid1Mover = "BOTTOMLEFT,ElvUIParent,BOTTOMLEFT,4,399"
     E.db.movers.ElvUF_Raid2Mover = "TOPLEFT,UIParent,TOPLEFT,104,-328"
@@ -779,7 +781,7 @@ local function SetupProfileDB()
     E.db.movers.ObjectiveFrameMover = "TOPRIGHT,UIParent,TOPRIGHT,0,-244"
     E.db.movers.PHInstanceDifficultyFrameMover = "TOPRIGHT,ElvUIParent,TOPRIGHT,-82,-203"
     E.db.movers.PetAB = "BOTTOM,ElvUIParent,BOTTOM,-243,319"
-    E.db.movers.PlayerPowerBarMover = "BOTTOM,ElvUIParent,BOTTOM,0,434"
+    E.db.movers.PlayerPowerBarMover = "BOTTOM,ElvUIParent,BOTTOM,0,437"
     E.db.movers.PowerBarContainerMover = "TOP,UIParent,TOP,0,-104"
     E.db.movers.PowerWidgetMover = "TOP,ElvUIParent,TOP,0,-102"
     E.db.movers.PrivateAurasMover = "BOTTOM,UIParent,BOTTOM,-231,596"
@@ -900,6 +902,7 @@ local function SetupProfileDB()
     E.db.nameplates.colors.classification.melee.r = 1
     E.db.nameplates.colors.glowColor.b = 0.23921570181847
     E.db.nameplates.colors.glowColor.g = 0.1843137294054
+    E.db.nameplates.colors.glowColor.r = 0.95686280727386
     E.db.nameplates.colors.healPrediction.absorbs.a = 0.39367169141769
     E.db.nameplates.colors.healPrediction.absorbs.b = 1
     E.db.nameplates.colors.healPrediction.absorbs.g = 0.44705885648727
@@ -983,6 +986,7 @@ local function SetupProfileDB()
     E.db.nameplates.units.ENEMY_NPC.buffs.durationPosition = "TOP"
     E.db.nameplates.units.ENEMY_NPC.buffs.height = 25
     E.db.nameplates.units.ENEMY_NPC.buffs.isAuraImportant = false
+    E.db.nameplates.units.ENEMY_NPC.buffs.isAuraImportantPlayer = false
     E.db.nameplates.units.ENEMY_NPC.buffs.isAuraRaidPlayerDispellable = false
     E.db.nameplates.units.ENEMY_NPC.buffs.keepSizeRatio = false
     E.db.nameplates.units.ENEMY_NPC.buffs.numAuras = 1
@@ -1078,7 +1082,10 @@ local function SetupProfileDB()
     E.db.nameplates.units.ENEMY_NPC.questIcon.fontOutline = "SHADOWOUTLINE"
     E.db.nameplates.units.ENEMY_NPC.questIcon.fontSize = 13
     E.db.nameplates.units.ENEMY_NPC.questIcon.position = "CENTER"
+    E.db.nameplates.units.ENEMY_NPC.questIcon.size = 41
     E.db.nameplates.units.ENEMY_NPC.questIcon.textPosition = "TOPRIGHT"
+    E.db.nameplates.units.ENEMY_NPC.questIcon.textXOffset = -20
+    E.db.nameplates.units.ENEMY_NPC.questIcon.textYOffset = 7
     E.db.nameplates.units.ENEMY_NPC.questIcon.xOffset = 4
     E.db.nameplates.units.ENEMY_NPC.raidTargetIndicator.position = "CENTER"
     E.db.nameplates.units.ENEMY_NPC.raidTargetIndicator.size = 40
@@ -1558,9 +1565,9 @@ local function SetupProfileDB()
     E.db.unitframe.colors.classResources.comboPoints[7].g = 0.2549019753933
     E.db.unitframe.colors.classResources.comboPoints[7].r = 1
     E.db.unitframe.colors.classbackdrop = true
-    E.db.unitframe.colors.classpower_backdrop.b = 0.14117647707462
-    E.db.unitframe.colors.classpower_backdrop.g = 0.14117647707462
-    E.db.unitframe.colors.classpower_backdrop.r = 0.14117647707462
+    E.db.unitframe.colors.classpower_backdrop.b = 0.17254902422428
+    E.db.unitframe.colors.classpower_backdrop.g = 0.17254902422428
+    E.db.unitframe.colors.classpower_backdrop.r = 0.17254902422428
     E.db.unitframe.colors.colorhealthbyvalue = false
     E.db.unitframe.colors.customaurabarbackdrop = true
     E.db.unitframe.colors.customcastbarbackdrop = true
@@ -1623,9 +1630,9 @@ local function SetupProfileDB()
     E.db.unitframe.colors.power.RAGE.g = 0.32
     E.db.unitframe.colors.power.RAGE.r = 1
     E.db.unitframe.colors.power.RUNIC_POWER.g = 0.81960791349411
-    E.db.unitframe.colors.power_backdrop.b = 0.14901961386204
-    E.db.unitframe.colors.power_backdrop.g = 0.14901961386204
-    E.db.unitframe.colors.power_backdrop.r = 0.14901961386204
+    E.db.unitframe.colors.power_backdrop.b = 0.17254902422428
+    E.db.unitframe.colors.power_backdrop.g = 0.17254902422428
+    E.db.unitframe.colors.power_backdrop.r = 0.17254902422428
     E.db.unitframe.colors.reaction[1].b = 0
     E.db.unitframe.colors.reaction[1].g = 0.25098040699959
     E.db.unitframe.colors.reaction[1].r = 1
@@ -2229,7 +2236,6 @@ local function SetupProfileDB()
     E.db.unitframe.units.player.castbar.xOffsetTime = 0
     E.db.unitframe.units.player.classbar.detachFromFrame = true
     E.db.unitframe.units.player.classbar.detachedWidth = 300
-    E.db.unitframe.units.player.classbar.enable = false
     E.db.unitframe.units.player.classbar.fill = "spaced"
     E.db.unitframe.units.player.classbar.height = 15
     E.db.unitframe.units.player.classbar.smoothbars = true
@@ -2313,13 +2319,14 @@ local function SetupProfileDB()
     E.db.unitframe.units.player.power.EnergyManaRegen = true
     E.db.unitframe.units.player.power.attachTextTo = "Power"
     E.db.unitframe.units.player.power.detachedWidth = 300
-    E.db.unitframe.units.player.power.enable = false
     E.db.unitframe.units.player.power.height = 15
     E.db.unitframe.units.player.power.powerPrediction = true
     E.db.unitframe.units.player.power.smoothbars = true
     E.db.unitframe.units.player.power.strataAndLevel.frameStrata = "BACKGROUND"
     E.db.unitframe.units.player.power.text_format = "[classcolor][curpp]"
     E.db.unitframe.units.player.power.width = "inset"
+    E.db.unitframe.units.player.power.detachFromFrame = true
+    E.db.unitframe.units.player.power.position = "CENTER"
     E.db.unitframe.units.player.power.xOffset = 0
     E.db.unitframe.units.player.privateAuras.borderScale = -5
     E.db.unitframe.units.player.privateAuras.enable = true
@@ -2867,8 +2874,8 @@ local function SetupTrenchyUI()
     E.db.TrenchyUI.addons.skinBugSack = true
     E.db.TrenchyUI.addons.skinOPie = true
     E.db.TrenchyUI.addons.skinWarpDeplete = true
-    E.db.TrenchyUI.auraHighlight.enabled = true
-    E.db.TrenchyUI.auraHighlight.thickness = 3
+    E.db.TrenchyUI.pixelGlow.enabled = true
+    E.db.TrenchyUI.pixelGlow.thickness = 3
     E.db.TrenchyUI.cooldownManager.enabled = true
     E.db.TrenchyUI.cooldownManager.glow.enabled = true
     E.db.TrenchyUI.cooldownManager.hideSwipe = true
@@ -2934,7 +2941,7 @@ local function SetupTrenchyUI()
     E.db.TrenchyUI.minimapButtonBar.buttonBackdropColor.g = 0.17254902422428
     E.db.TrenchyUI.minimapButtonBar.buttonBackdropColor.r = 0.17254902422428
     E.db.TrenchyUI.minimapButtonBar.buttonSize = 30
-    E.db.TrenchyUI.minimapButtonBar.buttonsPerRow = 1
+    E.db.TrenchyUI.minimapButtonBar.buttonsPerRow = 8
     E.db.TrenchyUI.minimapButtonBar.enabled = true
     E.db.TrenchyUI.minimapButtonBar.growthDirection = "UPLEFT"
     E.db.TrenchyUI.minimapButtonBar.mouseoverAlpha = 0.45
@@ -2987,6 +2994,7 @@ local function SetupPrivateDB()
     E.private.general.replaceCombatText = true
     E.private.general.totemTracker = false
     E.private.install_complete = 13.97
+    E.private.skins.blizzard.cooldownManager = true
     E.private.skins.parchmentRemoverEnable = true
     E.private.theme = "class"
 end

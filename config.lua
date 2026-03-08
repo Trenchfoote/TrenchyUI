@@ -53,7 +53,7 @@ TUI.defaults = {
                 texture = 'TrenchyFocus',
             },
         },
-        auraHighlight = {
+        pixelGlow = {
             enabled   = false,
             lines     = 8,
             speed     = 0.25,
@@ -1277,39 +1277,39 @@ function TUI:BuildConfig()
     )
 
     uf.auraEnabled = ACH:Toggle(
-        function() return TUI.db.profile.auraHighlight.enabled and "|cff00ff00Enable|r" or "Enable" end,
+        function() return TUI.db.profile.pixelGlow.enabled and "|cff00ff00Enable|r" or "Enable" end,
         "Replace ElvUI's Aura Highlight with a Pixel Glow effect.",
         2, nil, nil, nil,
-        function() return TUI.db.profile.auraHighlight.enabled end,
+        function() return TUI.db.profile.pixelGlow.enabled end,
         function(_, value)
-            TUI.db.profile.auraHighlight.enabled = value
+            TUI.db.profile.pixelGlow.enabled = value
             E:StaticPopup_Show('CONFIG_RL')
         end
     )
 
-    local auraDisabled = function() return not TUI.db.profile.auraHighlight.enabled end
+    local auraDisabled = function() return not TUI.db.profile.pixelGlow.enabled end
 
     uf.auraLines = ACH:Range(
         "Lines", "Number of animated glow lines around the frame.", 3,
         { min = 1, max = 20, step = 1 }, nil,
-        function() return TUI.db.profile.auraHighlight.lines end,
-        function(_, value) TUI.db.profile.auraHighlight.lines = value end,
+        function() return TUI.db.profile.pixelGlow.lines end,
+        function(_, value) TUI.db.profile.pixelGlow.lines = value end,
         auraDisabled
     )
 
     uf.auraSpeed = ACH:Range(
         "Speed", "Animation speed (cycles per second). Higher = faster.", 4,
         { min = 0.05, max = 1, step = 0.05, isPercent = false }, nil,
-        function() return TUI.db.profile.auraHighlight.speed end,
-        function(_, value) TUI.db.profile.auraHighlight.speed = value end,
+        function() return TUI.db.profile.pixelGlow.speed end,
+        function(_, value) TUI.db.profile.pixelGlow.speed = value end,
         auraDisabled
     )
 
     uf.auraThickness = ACH:Range(
         "Thickness", "Pixel thickness of the glow lines.", 5,
         { min = 1, max = 5, step = 1 }, nil,
-        function() return TUI.db.profile.auraHighlight.thickness end,
-        function(_, value) TUI.db.profile.auraHighlight.thickness = value end,
+        function() return TUI.db.profile.pixelGlow.thickness end,
+        function(_, value) TUI.db.profile.pixelGlow.thickness = value end,
         auraDisabled
     )
 
@@ -1512,30 +1512,27 @@ function TUI:BuildConfig()
     root.skins = ACH:Group("Skins", nil, 5)
     local skins = root.skins.args
 
-    local addonSkinToggles = {
-        skinWarpDeplete = "WarpDeplete",
-        skinBigWigs = "BigWigs",
-        skinAuctionator = "Auctionator",
-        skinOPie = "OPie",
-        skinBugSack = "BugSack",
+    skins.addons = ACH:Group("AddOns", nil, 1)
+    skins.addons.inline = true
+
+    local skinDefs = {
+        { key = "skinAuctionator", addon = "Auctionator", label = "Auctionator", order = 1 },
+        { key = "skinBigWigs",     addon = "BigWigs",     label = "BigWigs",      order = 2 },
+        { key = "skinBugSack",     addon = "BugSack",     label = "BugSack",      order = 3 },
+        { key = "skinOPie",        addon = "OPie",        label = "OPie",         order = 4 },
+        { key = "skinWarpDeplete", addon = "WarpDeplete",  label = "WarpDeplete",  order = 5 },
     }
 
-    local skinAddonNames = {
-        skinWarpDeplete = "WarpDeplete",
-        skinBigWigs     = "BigWigs",
-        skinAuctionator = "Auctionator",
-        skinOPie        = "OPie",
-        skinBugSack     = "BugSack",
-    }
-
-    skins.addons = ACH:MultiSelect("AddOns", nil, 1, addonSkinToggles, nil, nil,
-        function(_, key) return TUI.db.profile.addons[key] end,
-        function(_, key, value)
-            TUI.db.profile.addons[key] = value
-            E:StaticPopup_Show('CONFIG_RL')
-        end,
-        function(_, key) return not C_AddOns.IsAddOnLoaded(skinAddonNames[key] or "") end
-    )
+    for _, def in ipairs(skinDefs) do
+        skins.addons.args[def.key] = ACH:Toggle(def.label, nil, def.order, nil, nil, nil,
+            function() return TUI.db.profile.addons[def.key] end,
+            function(_, value)
+                TUI.db.profile.addons[def.key] = value
+                E:StaticPopup_Show('CONFIG_RL')
+            end,
+            function() return not E:IsAddOnEnabled(def.addon) end
+        )
+    end
 
     root.profiles = ACH:Group("Profiles", nil, 6)
     local prof = root.profiles.args
@@ -1558,7 +1555,7 @@ function TUI:BuildConfig()
     end)
 
     local function addonDisabled(name)
-        return function() return not C_AddOns.IsAddOnLoaded(name) end
+        return function() return not E:IsAddOnEnabled(name) end
     end
 
     indArgs.installBigWigs = ACH:Execute("BigWigs", "Imports the TrenchyUI layout into BigWigs.", 2, function()

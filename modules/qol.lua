@@ -124,12 +124,12 @@ do -- Difficulty Text Replacement
 		local fontOutline = db and db.difficultyFontOutline or 'OUTLINE'
 
 		diffFontString = diffTextFrame:CreateFontString(nil, 'OVERLAY')
-		diffFontString:SetFont(fontPath, fontSize, fontOutline)
+		diffFontString:FontTemplate(fontPath, fontSize, fontOutline)
 		diffFontString:SetPoint('CENTER', diffTextFrame, 'CENTER', 0, 0)
 		diffFontString:SetJustifyH('CENTER')
 
 		diffLevelString = diffTextFrame:CreateFontString(nil, 'OVERLAY')
-		diffLevelString:SetFont(fontPath, fontSize, fontOutline)
+		diffLevelString:FontTemplate(fontPath, fontSize, fontOutline)
 		diffLevelString:SetPoint('LEFT', diffFontString, 'RIGHT', 1, 0)
 		diffLevelString:SetJustifyH('CENTER')
 	end
@@ -140,8 +140,8 @@ do -- Difficulty Text Replacement
 		local fontPath = LSM:Fetch('font', db and db.difficultyFont or 'Expressway')
 		local fontSize = db and db.difficultyFontSize or 14
 		local fontOutline = db and db.difficultyFontOutline or 'OUTLINE'
-		diffFontString:SetFont(fontPath, fontSize, fontOutline)
-		diffLevelString:SetFont(fontPath, fontSize, fontOutline)
+		diffFontString:FontTemplate(fontPath, fontSize, fontOutline)
+		diffLevelString:FontTemplate(fontPath, fontSize, fontOutline)
 	end
 
 	local function UpdateDifficultyText()

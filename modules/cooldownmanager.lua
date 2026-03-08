@@ -124,7 +124,7 @@ end
 -- Text styling
 local function GetTextColor(tdb)
 	if tdb.classColor then
-		local cc = CUSTOM_CLASS_COLORS and CUSTOM_CLASS_COLORS[E.myclass] or RAID_CLASS_COLORS[E.myclass]
+		local cc = E:ClassColor(E.myclass)
 		if cc then return cc.r, cc.g, cc.b end
 	end
 	local c = tdb.color
