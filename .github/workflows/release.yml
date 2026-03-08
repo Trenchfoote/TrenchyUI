@@ -2,8 +2,8 @@ name: Package and Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
 
 permissions:
   contents: write
@@ -13,7 +13,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BigWigsMods/packager@v2
+        with:
+          fetch-depth: 0
+
+      - name: Get version from TOC
+        id: version
+        run: |
+          ver=$(grep -oP '## Version:\s*\K\S+' ElvUI_TrenchyUI.toc)
+          echo "version=$ver" >> "$GITHUB_OUTPUT"
+          if git rev-parse "v$ver" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create tag
+        if: steps.version.outputs.exists == 'false'
+        run: |
+          git tag "v${{ steps.version.outputs.version }}"
+          git push origin "v${{ steps.version.outputs.version }}"
+
+      - name: Package
+        if: steps.version.outputs.exists == 'false'
+        uses: BigWigsMods/packager@v2
         with:
           args: -g retail
         env:
