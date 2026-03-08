@@ -80,6 +80,11 @@ TUI.defaults = {
                     cooldownText = { font = 'Expressway', fontSize = 16, fontOutline = 'OUTLINE', classColor = false, color = { r = 1, g = 1, b = 1 }, position = 'CENTER', xOffset = 0, yOffset = 0 },
                     countText    = { font = 'Expressway', fontSize = 11, fontOutline = 'OUTLINE', classColor = false, color = { r = 1, g = 1, b = 1 }, position = 'BOTTOMRIGHT', xOffset = 0, yOffset = 0 },
                 },
+                buffBar = {
+                    iconWidth = 30, iconHeight = 30, iconZoom = 0, spacing = 2, iconsPerRow = 12, growthDirection = 'DOWN',
+                    cooldownText = { font = 'Expressway', fontSize = 16, fontOutline = 'OUTLINE', classColor = false, color = { r = 1, g = 1, b = 1 }, position = 'CENTER', xOffset = 0, yOffset = 0 },
+                    countText    = { font = 'Expressway', fontSize = 11, fontOutline = 'OUTLINE', classColor = false, color = { r = 1, g = 1, b = 1 }, position = 'BOTTOMRIGHT', xOffset = 0, yOffset = 0 },
+                },
             },
             glow = {
                 enabled   = false,
@@ -965,7 +970,7 @@ function TUI:BuildConfig()
         end
         local selVDB = function() return cdmDB().viewers[cdmDB().selectedViewer] end
 
-        local VIEWER_CHOICES = { essential = 'Essential', utility = 'Utility', buffIcon = 'Buff Icon' }
+        local VIEWER_CHOICES = { essential = 'Essential', utility = 'Utility', buffIcon = 'Buff Icon', buffBar = 'Ext. Defensives' }
         local POSITIONS = { CENTER = 'Center', TOP = 'Top', BOTTOM = 'Bottom', LEFT = 'Left', RIGHT = 'Right',
             TOPLEFT = 'Top Left', TOPRIGHT = 'Top Right', BOTTOMLEFT = 'Bottom Left', BOTTOMRIGHT = 'Bottom Right' }
 
@@ -1581,7 +1586,7 @@ function TUI:BuildConfig()
 
     indArgs.editMode = ACH:Execute("Edit Mode", "Shows the TrenchyUI Edit Mode layout string for you to import manually.", 5, function()
         TUI:ShowEditModeString()
-    end)
+    end, nil, nil, nil, nil, nil, function() return true end)
 
     root.info = ACH:Group("Information", nil, 7)
     local info = root.info.args

@@ -273,6 +273,7 @@ local function NewWindowState(index, savedModeIndex)
         bars          = {},
         modeIndex     = savedModeIndex or 1,
         sessionType   = Enum.DamageMeterSessionType.Current,
+        sessionId     = nil,
         embedded      = false,
         scrollOffset  = 0,
         positionCache = {},
@@ -295,6 +296,7 @@ local function CreateBar(parent)
     bar.statusbar:SetStatusBarTexture(E.media.normTex)
     bar.statusbar:SetMinMaxValues(0, 1)
     bar.statusbar:SetValue(0)
+    bar.statusbar.smoothing = Enum.StatusBarInterpolation and Enum.StatusBarInterpolation.ExponentialEaseOut or nil
 
     bar.classIcon = bar.statusbar:CreateTexture(nil, "OVERLAY")
     bar.classIcon:SetTexture("Interface\\WorldStateFrame\\Icons-Classes")
@@ -420,6 +422,7 @@ local function ResizeStandalone(win)
 end
 
 local RefreshWindow
+local GetSession, GetSessionSource
 
 local function EnterDrillDown(win, guid, name, classFilename)
     win.drillSource = { guid = guid, name = name, class = classFilename }
@@ -446,7 +449,7 @@ local function GetDrillSpellCount(win)
     end
 
     local meterType  = ResolveMeterType(MODE_ORDER[win.modeIndex])
-    local sourceData = C_DamageMeter.GetCombatSessionSourceFromType(win.sessionType, meterType, ds.guid)
+    local sourceData = ds.guid and GetSessionSource(win, meterType, ds.guid)
     return (sourceData and sourceData.combatSpells) and #sourceData.combatSpells or 0
 end
 
@@ -517,7 +520,7 @@ local function SetupScrollWheel(win)
             total = #TEST_DATA
         else
             local meterType = ResolveMeterType(MODE_ORDER[win.modeIndex])
-            local session   = C_DamageMeter.GetCombatSessionFromType(win.sessionType, meterType)
+            local session   = GetSession(win, meterType)
             total = (session and session.combatSources and #session.combatSources) or 0
         end
         local numVis = ComputeNumVisible(win)
@@ -537,9 +540,12 @@ local function ApplyHeaderStyle(win, db)
     local hc = db.headerBGColor
     header.bg:SetVertexColor(hc.r, hc.g, hc.b, hc.a)
 
-    header.text:FontTemplate(fontPath, db.headerFontSize + 1, flags)
     local tc = db.headerFontColor
-    header.text:SetTextColor(tc.r, tc.g, tc.b)
+    header.modeText:FontTemplate(fontPath, db.headerFontSize + 1, flags)
+    header.modeText:SetTextColor(tc.r, tc.g, tc.b)
+
+    header.sessText:FontTemplate(fontPath, db.headerFontSize + 1, flags)
+    header.sessText:SetTextColor(tc.r, tc.g, tc.b)
 
     header.timer:FontTemplate(fontPath, db.headerFontSize, flags)
     header.timer:SetTextColor(tc.r, tc.g, tc.b, 0.7)
@@ -613,6 +619,83 @@ local function BuildModeMenu(win)
     }
 end
 
+local function BuildSessionMenu(win)
+    local menu = {}
+
+    -- Encounter sessions first (oldest = 1 at top)
+    if C_DamageMeter.GetAvailableCombatSessions then
+        local ok, sessions = pcall(C_DamageMeter.GetAvailableCombatSessions)
+        if ok and sessions and #sessions > 0 then
+            local count = #sessions
+            for i = count, 1, -1 do
+                local sess = sessions[i]
+                local sid = sess.sessionId or sess.combatSessionId or sess.id or sess.sessionID
+                local label = sess.name or "Encounter"
+                local dur = sess.durationSeconds or sess.duration
+                if dur and not IsSecret(dur) then
+                    local timeOk, timeStr = pcall(function()
+                        return format("[%d:%02d]", floor(dur / 60), floor(dur % 60))
+                    end)
+                    if timeOk then label = label .. " " .. timeStr end
+                end
+                menu[#menu + 1] = {
+                    text = (win.sessionId == sid) and ("|cffffd100" .. label .. "|r") or label,
+                    notCheckable = true,
+                    func = function()
+                        win.sessionId    = sid
+                        win.sessionType  = nil
+                        win.scrollOffset = 0
+                        win.drillSource  = nil
+                        RefreshWindow(win)
+                    end,
+                }
+            end
+            menu[#menu + 1] = { text = "", notCheckable = true, disabled = true }
+        end
+    end
+
+    -- Current / Overall at the bottom
+    menu[#menu + 1] = {
+        text = (win.sessionId == nil and win.sessionType == Enum.DamageMeterSessionType.Current)
+            and "|cffffd100Current Segment|r" or "Current Segment",
+        notCheckable = true,
+        func = function()
+            win.sessionId    = nil
+            win.sessionType  = Enum.DamageMeterSessionType.Current
+            win.scrollOffset = 0
+            win.drillSource  = nil
+            RefreshWindow(win)
+        end,
+    }
+
+    menu[#menu + 1] = {
+        text = (win.sessionId == nil and win.sessionType == Enum.DamageMeterSessionType.Overall)
+            and "|cffffd100Overall|r" or "Overall",
+        notCheckable = true,
+        func = function()
+            win.sessionId    = nil
+            win.sessionType  = Enum.DamageMeterSessionType.Overall
+            win.scrollOffset = 0
+            win.drillSource  = nil
+            RefreshWindow(win)
+        end,
+    }
+
+    return menu
+end
+
+local function ToggleSession(win)
+    win.sessionId = nil
+    if win.sessionType == Enum.DamageMeterSessionType.Current then
+        win.sessionType = Enum.DamageMeterSessionType.Overall
+    else
+        win.sessionType = Enum.DamageMeterSessionType.Current
+    end
+    win.scrollOffset = 0
+    win.drillSource  = nil
+    RefreshWindow(win)
+end
+
 local function SetupHeaderContent(win, db)
     local header = win.header
 
@@ -620,9 +703,13 @@ local function SetupHeaderContent(win, db)
     header.bg:SetAllPoints()
     header.bg:SetTexture(E.media.normTex)
 
-    header.text = header:CreateFontString(nil, "OVERLAY")
-    header.text:SetPoint("LEFT", 4, 0)
-    header.text:SetShadowOffset(1, -1)
+    header.modeText = header:CreateFontString(nil, "OVERLAY")
+    header.modeText:SetPoint("LEFT", 4, 0)
+    header.modeText:SetShadowOffset(1, -1)
+
+    header.sessText = header:CreateFontString(nil, "OVERLAY")
+    header.sessText:SetPoint("LEFT", header.modeText, "RIGHT", 0, 0)
+    header.sessText:SetShadowOffset(1, -1)
 
     header.reset = CreateFrame("Button", nil, header)
     header.reset:SetSize(16, 16)
@@ -647,7 +734,12 @@ local function SetupHeaderContent(win, db)
 
     ApplyHeaderStyle(win, db)
 
-    local function HandleMouseUp(_, button)
+    -- Mode click area (left portion)
+    header.modeArea = CreateFrame("Frame", nil, header)
+    header.modeArea:SetPoint("TOPLEFT",     header.modeText, "TOPLEFT",     0, 0)
+    header.modeArea:SetPoint("BOTTOMRIGHT", header.modeText, "BOTTOMRIGHT", 0, 0)
+    header.modeArea:EnableMouse(true)
+    header.modeArea:SetScript("OnMouseUp", function(_, button)
         if button == "LeftButton" then
             if win.drillSource then
                 ExitDrillDown(win)
@@ -657,34 +749,50 @@ local function SetupHeaderContent(win, db)
                 local openMenu = mgr and mgr:GetOpenMenu()
                 if openMenu then
                     openMenu:ClearAllPoints()
-                    openMenu:SetPoint("BOTTOMLEFT", header, "TOPLEFT", 0, 1)
+                    openMenu:SetPoint("BOTTOMLEFT", header, "TOPLEFT", -1, -3)
                 end
             end
         elseif button == "RightButton" then
-            win.sessionType = (win.sessionType == Enum.DamageMeterSessionType.Current)
-                and Enum.DamageMeterSessionType.Overall
-                or  Enum.DamageMeterSessionType.Current
-            RefreshWindow(win)
+            ToggleSession(win)
         end
-    end
-
-    header.titleArea = CreateFrame("Frame", nil, header)
-    header.titleArea:SetPoint("TOPLEFT",     header.text, "TOPLEFT",     0, 0)
-    header.titleArea:SetPoint("BOTTOMRIGHT", header.text, "BOTTOMRIGHT", 0, 0)
-    header.titleArea:EnableMouse(true)
-    header.titleArea:SetScript("OnMouseUp", HandleMouseUp)
-    header.titleArea:SetScript("OnEnter", function(self)
+    end)
+    header.modeArea:SetScript("OnEnter", function(self)
         GameTooltip_SetDefaultAnchor(GameTooltip, self)
         if win.drillSource then
-            GameTooltip:AddLine("Left-click: return to overview", 0.7, 0.7, 0.7)
+            GameTooltip:AddLine("|cffffd100Left-click:|r return to overview", 0.7, 0.7, 0.7)
         else
-            GameTooltip:AddLine("Trenchy Damage Meter", 1, 1, 1)
-            GameTooltip:AddLine("Left-click: choose display mode", 0.7, 0.7, 0.7)
+            GameTooltip:AddLine("|cffffd100Left-click:|r choose display mode", 0.7, 0.7, 0.7)
         end
-        GameTooltip:AddLine("Right-click: toggle Current / Overall", 0.7, 0.7, 0.7)
+        GameTooltip:AddLine("|cffffd100Right-click:|r toggle Current / Overall", 0.7, 0.7, 0.7)
         GameTooltip:Show()
     end)
-    header.titleArea:SetScript("OnLeave", GameTooltip_Hide)
+    header.modeArea:SetScript("OnLeave", GameTooltip_Hide)
+
+    -- Session click area (right portion)
+    header.sessArea = CreateFrame("Frame", nil, header)
+    header.sessArea:SetPoint("TOPLEFT",     header.sessText, "TOPLEFT",     0, 0)
+    header.sessArea:SetPoint("BOTTOMRIGHT", header.sessText, "BOTTOMRIGHT", 0, 0)
+    header.sessArea:EnableMouse(true)
+    header.sessArea:SetScript("OnMouseUp", function(_, button)
+        if button == "LeftButton" then
+            E:ComplicatedMenu(BuildSessionMenu(win), E.EasyMenu, nil, nil, nil, "MENU")
+            local mgr = Menu and Menu.GetManager and Menu.GetManager()
+            local openMenu = mgr and mgr:GetOpenMenu()
+            if openMenu then
+                openMenu:ClearAllPoints()
+                openMenu:SetPoint("BOTTOMLEFT", header, "TOPLEFT", -1, -3)
+            end
+        elseif button == "RightButton" then
+            ToggleSession(win)
+        end
+    end)
+    header.sessArea:SetScript("OnEnter", function(self)
+        GameTooltip_SetDefaultAnchor(GameTooltip, self)
+        GameTooltip:AddLine("|cffffd100Left-click:|r choose encounter", 0.7, 0.7, 0.7)
+        GameTooltip:AddLine("|cffffd100Right-click:|r toggle Current / Overall", 0.7, 0.7, 0.7)
+        GameTooltip:Show()
+    end)
+    header.sessArea:SetScript("OnLeave", GameTooltip_Hide)
 end
 
 local function CreateEmbeddedWindow(win, db)
@@ -831,6 +939,43 @@ local function CreateMeterFrame(win, isEmbedded)
     end
 end
 
+local function GetSessionLabel(win)
+    if win.sessionId then
+        if C_DamageMeter.GetAvailableCombatSessions then
+            local ok, sessions = pcall(C_DamageMeter.GetAvailableCombatSessions)
+            if ok and sessions then
+                local count = #sessions
+                for i, sess in ipairs(sessions) do
+                    local sid = sess.sessionId or sess.combatSessionId or sess.id or sess.sessionID
+                    if sid == win.sessionId then
+                        local label = sess.name or "Encounter"
+                        if label == "Encounter" then
+                            label = "Encounter " .. (count - i + 1)
+                        end
+                        return label
+                    end
+                end
+            end
+        end
+        return "Encounter"
+    end
+    return SESSION_LABELS[win.sessionType] or "?"
+end
+
+GetSession = function(win, meterType)
+    if win.sessionId and C_DamageMeter.GetCombatSessionFromID then
+        return C_DamageMeter.GetCombatSessionFromID(win.sessionId, meterType)
+    end
+    return C_DamageMeter.GetCombatSessionFromType(win.sessionType, meterType)
+end
+
+GetSessionSource = function(win, meterType, guid)
+    if win.sessionId and C_DamageMeter.GetCombatSessionSourceFromID then
+        return C_DamageMeter.GetCombatSessionSourceFromID(win.sessionId, meterType, guid)
+    end
+    return C_DamageMeter.GetCombatSessionSourceFromType(win.sessionType, meterType, guid)
+end
+
 RefreshWindow = function(win)
     if not win or not win.frame or not win.header then return end
 
@@ -840,11 +985,18 @@ RefreshWindow = function(win)
         local ds = win.drillSource
         local modeEntry = MODE_ORDER[win.modeIndex]
         local modeLabel = MODE_SHORT[modeEntry] or MODE_LABELS[modeEntry] or "?"
-        local sessLabel = SESSION_LABELS[win.sessionType] or "?"
+        local sessLabel = GetSessionLabel(win)
 
         local cr, cg, cb = TUI:GetClassColor(ds.class)
         local nameHex = cr and format("%02x%02x%02x", cr * 255, cg * 255, cb * 255) or "ffffff"
-        win.header.text:SetText(format("|cff%s%s|r \226\128\148 %s (%s)", nameHex, ds.name, modeLabel, sessLabel))
+        win.header.modeText:SetText(format("|cff%s%s|r \226\128\148 %s", nameHex, ds.name, modeLabel))
+        win.header.sessText:SetText(" (" .. sessLabel .. ")")
+        if win.sessionId then
+            win.header.sessText:SetTextColor(1, 0.3, 0.3)
+        else
+            local tc = GetWinDB(win.index).headerFontColor
+            win.header.sessText:SetTextColor(tc.r, tc.g, tc.b)
+        end
         win.header.timer:Hide()
 
         local spells
@@ -854,7 +1006,7 @@ RefreshWindow = function(win)
             end
         else
             local meterType  = ResolveMeterType(modeEntry)
-            local sourceData = ds.guid and C_DamageMeter.GetCombatSessionSourceFromType(win.sessionType, meterType, ds.guid)
+            local sourceData = ds.guid and GetSessionSource(win, meterType, ds.guid)
             spells = sourceData and sourceData.combatSpells
         end
 
@@ -982,7 +1134,8 @@ RefreshWindow = function(win)
     end
 
     if testMode then
-        win.header.text:SetText("|cffff6600[Test Mode]|r")
+        win.header.modeText:SetText("|cffff6600[Test Mode]|r")
+        win.header.sessText:SetText("")
         win.header.timer:Hide()
         local numVisible = ComputeNumVisible(win)
         local maxVal     = TEST_DATA[1].value
@@ -1047,21 +1200,32 @@ RefreshWindow = function(win)
     local modeEntry = MODE_ORDER[win.modeIndex]
     local meterType = ResolveMeterType(modeEntry)
     local modeLabel = MODE_SHORT[modeEntry] or MODE_LABELS[modeEntry] or "?"
-    local sessLabel = SESSION_LABELS[win.sessionType] or "?"
+    local sessLabel = GetSessionLabel(win)
 
-    win.header.text:SetText(modeLabel .. " \226\128\148 " .. sessLabel)
+    win.header.modeText:SetText(modeLabel)
+    win.header.sessText:SetText(" \226\128\148 " .. sessLabel)
+    if win.sessionId then
+        win.header.sessText:SetTextColor(1, 0.3, 0.3)
+    else
+        local tc = GetWinDB(win.index).headerFontColor
+        win.header.sessText:SetTextColor(tc.r, tc.g, tc.b)
+    end
 
-    local dur = C_DamageMeter.GetSessionDurationSeconds(win.sessionType)
-    if dur then
-        local ok = pcall(function()
-            win.header.timer:SetText(format("%d:%02d", floor(dur / 60), floor(dur % 60)))
-        end)
-        if not ok then win.header.timer:SetText("--:--") end
+    if win.sessionType then
+        local dur = C_DamageMeter.GetSessionDurationSeconds(win.sessionType)
+        if dur then
+            local ok = pcall(function()
+                win.header.timer:SetText(format("%d:%02d", floor(dur / 60), floor(dur % 60)))
+            end)
+            if not ok then win.header.timer:SetText("--:--") end
+        else
+            win.header.timer:SetText("")
+        end
     else
         win.header.timer:SetText("")
     end
 
-    local session    = C_DamageMeter.GetCombatSessionFromType(win.sessionType, meterType)
+    local session    = GetSession(win, meterType)
     local sources    = session and session.combatSources
     local usePerSec  = (modeEntry == Enum.DamageMeterType.Dps or modeEntry == Enum.DamageMeterType.Hps)
     local useCombined = (modeEntry == COMBINED_DAMAGE or modeEntry == COMBINED_HEALING)
@@ -1176,19 +1340,10 @@ RefreshWindow = function(win)
     end
 end
 
-local refreshPending = false
-
 function TUI:RefreshMeter()
     for _, win in pairs(windows) do
         RefreshWindow(win)
     end
-    refreshPending = false
-end
-
-local function ScheduleRefresh()
-    if refreshPending then return end
-    refreshPending = true
-    C_Timer.After(0.2, function() TUI:RefreshMeter() end)
 end
 
 function TUI:SetMeterTestMode(enabled)
@@ -1205,12 +1360,14 @@ local function OnUpdate(_, dt)
 
     for _, win in pairs(windows) do
         if not win.header or not win.header.timer then break end
-        local dur = C_DamageMeter.GetSessionDurationSeconds(win.sessionType)
-        if dur then
-            local ok = pcall(function()
-                win.header.timer:SetText(format("%d:%02d", floor(dur / 60), floor(dur % 60)))
-            end)
-            if not ok then win.header.timer:SetText("--:--") end
+        if win.sessionType then
+            local dur = C_DamageMeter.GetSessionDurationSeconds(win.sessionType)
+            if dur then
+                local ok = pcall(function()
+                    win.header.timer:SetText(format("%d:%02d", floor(dur / 60), floor(dur % 60)))
+                end)
+                if not ok then win.header.timer:SetText("--:--") end
+            end
         end
     end
 end
@@ -1343,8 +1500,10 @@ function TUI:InitDamageMeter()
                 wipe(classCache)
                 for _, w in pairs(windows) do
                     wipe(w.positionCache)
-                    w.scrollOffset = 0
-                    w.drillSource  = nil
+                    w.scrollOffset  = 0
+                    w.drillSource   = nil
+                    w.sessionId     = nil
+                    w.sessionType   = Enum.DamageMeterSessionType.Current
                 end
                 if TUI.db.profile.damageMeter.autoResetOnComplete then
                     local _, instanceType = IsInInstance()
@@ -1354,12 +1513,14 @@ function TUI:InitDamageMeter()
                 end
             elseif event == "DAMAGE_METER_RESET" then
                 for _, w in pairs(windows) do
-                    w.scrollOffset = 0
-                    w.drillSource  = nil
+                    w.scrollOffset  = 0
+                    w.drillSource   = nil
+                    w.sessionId     = nil
+                    w.sessionType   = Enum.DamageMeterSessionType.Current
                 end
                 TUI:RefreshMeter()
             else
-                ScheduleRefresh()
+                TUI:RefreshMeter()
             end
         end)
         evFrame:SetScript("OnUpdate", OnUpdate)

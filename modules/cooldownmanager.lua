@@ -11,11 +11,11 @@ local math_ceil = math.ceil
 local math_min = math.min
 local math_floor = math.floor
 
--- Viewer types we manage (buffBar excluded — different frame structure)
 local VIEWER_KEYS = {
 	essential = { global = 'EssentialCooldownViewer', label = 'Essential CDs',  mover = 'TUI_CDM_Essential' },
 	utility   = { global = 'UtilityCooldownViewer',  label = 'Utility CDs',    mover = 'TUI_CDM_Utility' },
 	buffIcon  = { global = 'BuffIconCooldownViewer', label = 'Buff Icon CDs',  mover = 'TUI_CDM_BuffIcon' },
+	buffBar   = { global = 'BuffBarCooldownViewer',  label = 'Ext. Defensives', mover = 'TUI_CDM_BuffBar' },
 }
 
 local containers = {}   -- [viewerKey] = container frame
@@ -115,9 +115,15 @@ end
 
 local function ApplyIconZoom(itemFrame, zoom)
 	if not zoom or zoom <= 0 then return end
+	-- Icon viewers: itemFrame.Icon is a Texture
+	-- BuffBar viewers: itemFrame.Icon is a Frame with .Icon sub-texture
 	local icon = itemFrame.Icon
-	if icon and icon.SetTexCoord then
-		icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
+	if icon then
+		if icon.SetTexCoord then
+			icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
+		elseif icon.Icon and icon.Icon.SetTexCoord then
+			icon.Icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
+		end
 	end
 end
 
@@ -324,14 +330,11 @@ local function LayoutContainer(viewerKey, isCapture)
 	local vdb = GetViewerDB(viewerKey)
 	if not vdb then return end
 
-	local iconW = vdb.iconWidth or 30
-	local iconH = vdb.iconHeight or 30
+	local iconW = E:Scale(vdb.iconWidth or 30)
+	local iconH = E:Scale(vdb.iconHeight or 30)
 	local perRow = vdb.iconsPerRow or 12
 
-	-- Scale spacing so slider value = visual pixels (E.UIParent has custom scale)
-	local rawSpacing = vdb.spacing or 2
-	local parentScale = container:GetEffectiveScale()
-	local spacing = (parentScale and parentScale > 0) and (rawSpacing / parentScale) or rawSpacing
+	local spacing = E:Scale(vdb.spacing or 2)
 	local growUp = (vdb.growthDirection == 'UP')
 
 	local icons = iconCache[viewerKey]
@@ -411,6 +414,30 @@ local function LayoutContainer(viewerKey, isCapture)
 	end
 end
 
+-- BuffBar conversion: hide bar, promote icon to fill the frame
+local function ConvertBuffBarFrame(itemFrame)
+	if itemFrame.tuiBarConverted then return end
+	itemFrame.tuiBarConverted = true
+
+	-- Hide the StatusBar portion
+	local bar = itemFrame.Bar
+	if bar then bar:Hide() end
+
+	-- Promote the icon to fill the item frame
+	local icon = itemFrame.Icon
+	if icon then
+		icon:ClearAllPoints()
+		icon:SetAllPoints(itemFrame)
+		icon:Show()
+
+		-- The icon sub-texture
+		local iconTex = icon.Icon
+		if iconTex then
+			iconTex:SetAllPoints(icon)
+		end
+	end
+end
+
 -- Frame capture
 local function CaptureAndLayout(viewer, viewerKey)
 	local db = GetDB()
@@ -418,6 +445,8 @@ local function CaptureAndLayout(viewer, viewerKey)
 
 	local container = containers[viewerKey]
 	if not container then return end
+
+	local isBuffBar = (viewerKey == 'buffBar')
 
 	-- Hide container during recapture to prevent visual flash
 	local needsCapture = false
@@ -430,6 +459,13 @@ local function CaptureAndLayout(viewer, viewerKey)
 				end
 				child:SetParent(container)
 				child:SetScale(1)
+				if isBuffBar then ConvertBuffBarFrame(child) end
+			end
+			if child.DebuffBorder and not child.tuiDebuffBorderKilled then
+				child.DebuffBorder:Hide()
+				child.DebuffBorder:SetAlpha(0)
+				hooksecurefunc(child.DebuffBorder, 'Show', function(self) self:Hide() end)
+				child.tuiDebuffBorderKilled = true
 			end
 		end
 	end
@@ -443,30 +479,36 @@ local function CaptureAndLayout(viewer, viewerKey)
 end
 
 -- Hook setup
+local layoutPending = false
+
+local function ScheduleRelayout()
+	if layoutPending then return end
+	layoutPending = true
+	C_Timer.After(0.05, function()
+		layoutPending = false
+		local db = GetDB()
+		if not db or not db.enabled then return end
+		for viewerKey in pairs(VIEWER_KEYS) do
+			local viewer = GetViewer(viewerKey)
+			if viewer then
+				CaptureAndLayout(viewer, viewerKey)
+			end
+		end
+	end)
+end
+
+local function OnCDMEvent(_, event, unit)
+	if event == 'UNIT_AURA' and unit ~= 'player' then return end
+	ScheduleRelayout()
+end
+
 local function HookViewer(viewerKey)
 	local viewer = GetViewer(viewerKey)
 	if not viewer or hookedViewers[viewerKey] then return end
 	hookedViewers[viewerKey] = true
 
-	hooksecurefunc(viewer, 'RefreshLayout', function(self)
-		CaptureAndLayout(self, viewerKey)
-	end)
-end
-
--- Event-driven relayout
-local layoutPending = false
-
-local function ScheduleRelayout(_, event, unit)
-	if event == 'UNIT_AURA' and unit ~= 'player' then return end
-	if layoutPending then return end
-	layoutPending = true
-	C_Timer.After(0.1, function()
-		layoutPending = false
-		local db = GetDB()
-		if not db or not db.enabled then return end
-		for viewerKey in pairs(VIEWER_KEYS) do
-			LayoutContainer(viewerKey)
-		end
+	hooksecurefunc(viewer, 'RefreshLayout', function()
+		ScheduleRelayout()
 	end)
 end
 
@@ -506,7 +548,7 @@ function TUI:InitCooldownManager()
 		eventFrame:RegisterEvent('UNIT_AURA')
 		eventFrame:RegisterEvent('SPELL_UPDATE_COOLDOWN')
 		eventFrame:RegisterEvent('SPELLS_CHANGED')
-		eventFrame:SetScript('OnEvent', ScheduleRelayout)
+		eventFrame:SetScript('OnEvent', OnCDMEvent)
 	end)
 end
 
