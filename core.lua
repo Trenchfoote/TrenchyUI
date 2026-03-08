@@ -196,6 +196,7 @@ do -- Settings merge
 		if self.InitQoL then self:InitQoL() end
 		if self.InitElvNP then self:InitElvNP() end
 		if self.InitSkinAuctionator then self:InitSkinAuctionator() end
+		if self.InitCooldownManager then self:InitCooldownManager() end
 		if not self:IsCompatBlocked('auraHighlight') and self.InitAuraHighlight then self:InitAuraHighlight() end
 		if not self:IsCompatBlocked('damageMeter') and self.InitDamageMeter then self:InitDamageMeter() end
 		if self.InitSkinBugSack then self:InitSkinBugSack() end

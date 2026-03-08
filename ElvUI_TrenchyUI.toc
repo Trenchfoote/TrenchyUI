@@ -24,3 +24,4 @@ modules\skins\auctionator.lua
 modules\skins\bugsack.lua
 modules\skins\opie.lua
 modules\damagemeter.lua
+modules\cooldownmanager.lua

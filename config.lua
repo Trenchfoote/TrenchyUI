@@ -60,6 +60,26 @@ TUI.defaults = {
             thickness = 2,
             length    = nil,
         },
+        cooldownManager = {
+            enabled = false,
+            viewers = {
+                essential = { iconWidth = 30, iconHeight = 30, iconZoom = 0, spacing = 2, iconsPerRow = 12, growthDirection = 'DOWN' },
+                utility   = { iconWidth = 30, iconHeight = 30, iconZoom = 0, spacing = 2, iconsPerRow = 12, growthDirection = 'DOWN' },
+                buffIcon  = { iconWidth = 30, iconHeight = 30, iconZoom = 0, spacing = 2, iconsPerRow = 12, growthDirection = 'DOWN' },
+            },
+            glow = {
+                enabled   = false,
+                type      = 'pixel',
+                color     = { r = 0.95, g = 0.95, b = 0.32, a = 1 },
+                lines     = 8,
+                speed     = 0.25,
+                thickness = 2,
+                length    = nil,
+                particles = 4,
+                scale     = 1,
+                startAnim = true,
+            },
+        },
         damageMeter = {
             enabled       = false,
             barHeight     = 18,
@@ -888,6 +908,187 @@ function TUI:BuildConfig()
             function() return winGetColor('rankColor') end,
             function(_, r, g, b) winSetColor('rankColor', r, g, b); winRefresh() end,
             function() return rankDisabled() or winGet('rankClassColor') end
+        )
+    end
+
+    do -- Cooldown Manager config
+        root.cooldownManager = ACH:Group("CDM", nil, 2.5)
+
+        local cdmDB = function() return TUI.db.profile.cooldownManager end
+        local cdmDisabled = function() return not cdmDB().enabled end
+        local cdmRefresh = function()
+            if TUI.RefreshCDM then TUI:RefreshCDM() end
+        end
+
+        root.cooldownManager.args.general = ACH:Group("General", nil, 1)
+        root.cooldownManager.args.general.inline = true
+        local cdmGen = root.cooldownManager.args.general.args
+
+        cdmGen.desc = ACH:Description(
+            "Customize Blizzard's Cooldown Manager viewers with per-group icon sizing, "
+            .. "centered icon growth, and glow effects.",
+            1, "medium"
+        )
+
+        cdmGen.enabled = ACH:Toggle(
+            function() return cdmDB().enabled and "|cff00ff00Enable|r" or "Enable" end,
+            "Enable TrenchyUI Cooldown Manager customizations.",
+            2, nil, nil, nil,
+            function() return cdmDB().enabled end,
+            function(_, value)
+                cdmDB().enabled = value
+                E:StaticPopup_Show('CONFIG_RL')
+            end
+        )
+
+        -- Per-viewer container settings
+        local viewerOrder = { essential = 1, utility = 2, buffIcon = 3 }
+        local VIEWER_LABELS = { essential = 'Essential', utility = 'Utility', buffIcon = 'Buff Icon' }
+
+        root.cooldownManager.args.viewers = ACH:Group("Containers", nil, 2)
+        root.cooldownManager.args.viewers.inline = true
+        local cdmViewers = root.cooldownManager.args.viewers.args
+
+        cdmViewers.desc = ACH:Description(
+            "Each viewer's icons are reparented into TUI containers with ElvUI movers. "
+            .. "Use /elvui toggle anchors to position them.",
+            1, "medium"
+        )
+
+        for key, order in pairs(viewerOrder) do
+            local label = VIEWER_LABELS[key]
+            local baseOrder = order * 10
+
+            cdmViewers[key .. 'Header'] = ACH:Header(label, baseOrder)
+
+            cdmViewers[key .. 'Width'] = ACH:Range(
+                "Icon Width", "Icon width in pixels.", baseOrder + 1,
+                { min = 16, max = 80, step = 1 }, nil,
+                function() return cdmDB().viewers[key].iconWidth end,
+                function(_, value) cdmDB().viewers[key].iconWidth = value; cdmRefresh() end,
+                cdmDisabled
+            )
+
+            cdmViewers[key .. 'Height'] = ACH:Range(
+                "Icon Height", "Icon height in pixels.", baseOrder + 2,
+                { min = 16, max = 80, step = 1 }, nil,
+                function() return cdmDB().viewers[key].iconHeight end,
+                function(_, value) cdmDB().viewers[key].iconHeight = value; cdmRefresh() end,
+                cdmDisabled
+            )
+
+            cdmViewers[key .. 'Zoom'] = ACH:Range(
+                "Icon Zoom", "Crop the icon texture inward.", baseOrder + 3,
+                { min = 0, max = 0.60, step = 0.01, isPercent = true }, nil,
+                function() return cdmDB().viewers[key].iconZoom end,
+                function(_, value) cdmDB().viewers[key].iconZoom = value; cdmRefresh() end,
+                cdmDisabled
+            )
+
+            cdmViewers[key .. 'Spacing'] = ACH:Range(
+                "Spacing", "Gap between icons in pixels.", baseOrder + 4,
+                { min = 0, max = 20, step = 1 }, nil,
+                function() return cdmDB().viewers[key].spacing end,
+                function(_, value) cdmDB().viewers[key].spacing = value; cdmRefresh() end,
+                cdmDisabled
+            )
+
+            cdmViewers[key .. 'PerRow'] = ACH:Range(
+                "Icons Per Row", "Max icons before wrapping to next row.", baseOrder + 5,
+                { min = 1, max = 20, step = 1 }, nil,
+                function() return cdmDB().viewers[key].iconsPerRow end,
+                function(_, value) cdmDB().viewers[key].iconsPerRow = value; cdmRefresh() end,
+                cdmDisabled
+            )
+
+            cdmViewers[key .. 'GrowthDir'] = ACH:Select(
+                "Vertical Growth", "Direction rows grow when there are multiple rows.",
+                baseOrder + 6,
+                { DOWN = 'Down', UP = 'Up' },
+                nil, nil,
+                function() return cdmDB().viewers[key].growthDirection end,
+                function(_, value) cdmDB().viewers[key].growthDirection = value; cdmRefresh() end,
+                cdmDisabled
+            )
+        end
+
+        -- Glow options
+        root.cooldownManager.args.glow = ACH:Group("Glow", nil, 3)
+        root.cooldownManager.args.glow.inline = true
+        local cdmGlow = root.cooldownManager.args.glow.args
+
+        local glowDisabled = function() return cdmDisabled() or not cdmDB().glow.enabled end
+
+        cdmGlow.enabled = ACH:Toggle(
+            function() return cdmDB().glow.enabled and "|cff00ff00Enable|r" or "Enable" end,
+            "Apply a glow effect to cooldown icons.",
+            1, nil, nil, nil,
+            function() return cdmDB().glow.enabled end,
+            function(_, value) cdmDB().glow.enabled = value; cdmRefresh() end,
+            cdmDisabled
+        )
+
+        cdmGlow.type = ACH:Select(
+            "Type", "Glow animation style.", 2,
+            { pixel = 'Pixel', autocast = 'Autocast', button = 'Button', proc = 'Proc' },
+            nil, nil,
+            function() return cdmDB().glow.type end,
+            function(_, value) cdmDB().glow.type = value; cdmRefresh() end,
+            glowDisabled
+        )
+
+        cdmGlow.color = ACH:Color(
+            "Color", "Glow color.", 3, true, nil,
+            function()
+                local c = cdmDB().glow.color
+                return c.r, c.g, c.b, c.a
+            end,
+            function(_, r, g, b, a)
+                local c = cdmDB().glow.color
+                c.r, c.g, c.b, c.a = r, g, b, a
+                cdmRefresh()
+            end,
+            glowDisabled
+        )
+
+        cdmGlow.lines = ACH:Range(
+            "Lines", "Number of glow lines (Pixel only).", 4,
+            { min = 1, max = 20, step = 1 }, nil,
+            function() return cdmDB().glow.lines end,
+            function(_, value) cdmDB().glow.lines = value; cdmRefresh() end,
+            function() return glowDisabled() or cdmDB().glow.type ~= 'pixel' end
+        )
+
+        cdmGlow.speed = ACH:Range(
+            "Speed", "Animation speed.", 5,
+            { min = 0.05, max = 2, step = 0.05 }, nil,
+            function() return cdmDB().glow.speed end,
+            function(_, value) cdmDB().glow.speed = value; cdmRefresh() end,
+            glowDisabled
+        )
+
+        cdmGlow.thickness = ACH:Range(
+            "Thickness", "Line thickness (Pixel only).", 6,
+            { min = 1, max = 8, step = 1 }, nil,
+            function() return cdmDB().glow.thickness end,
+            function(_, value) cdmDB().glow.thickness = value; cdmRefresh() end,
+            function() return glowDisabled() or cdmDB().glow.type ~= 'pixel' end
+        )
+
+        cdmGlow.particles = ACH:Range(
+            "Particles", "Number of particles (Autocast only).", 7,
+            { min = 1, max = 16, step = 1 }, nil,
+            function() return cdmDB().glow.particles end,
+            function(_, value) cdmDB().glow.particles = value; cdmRefresh() end,
+            function() return glowDisabled() or cdmDB().glow.type ~= 'autocast' end
+        )
+
+        cdmGlow.scale = ACH:Range(
+            "Scale", "Glow scale (Autocast only).", 8,
+            { min = 0.5, max = 3, step = 0.1 }, nil,
+            function() return cdmDB().glow.scale end,
+            function(_, value) cdmDB().glow.scale = value; cdmRefresh() end,
+            function() return glowDisabled() or cdmDB().glow.type ~= 'autocast' end
         )
     end
 
