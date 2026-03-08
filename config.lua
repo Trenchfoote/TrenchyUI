@@ -62,10 +62,24 @@ TUI.defaults = {
         },
         cooldownManager = {
             enabled = false,
+            hideSwipe = false,
+            selectedViewer = 'essential',
             viewers = {
-                essential = { iconWidth = 30, iconHeight = 30, iconZoom = 0, spacing = 2, iconsPerRow = 12, growthDirection = 'DOWN' },
-                utility   = { iconWidth = 30, iconHeight = 30, iconZoom = 0, spacing = 2, iconsPerRow = 12, growthDirection = 'DOWN' },
-                buffIcon  = { iconWidth = 30, iconHeight = 30, iconZoom = 0, spacing = 2, iconsPerRow = 12, growthDirection = 'DOWN' },
+                essential = {
+                    iconWidth = 30, iconHeight = 30, iconZoom = 0, spacing = 2, iconsPerRow = 12, growthDirection = 'DOWN',
+                    cooldownText = { font = 'Expressway', fontSize = 16, fontOutline = 'OUTLINE', classColor = false, color = { r = 1, g = 1, b = 1 }, position = 'CENTER', xOffset = 0, yOffset = 0 },
+                    countText    = { font = 'Expressway', fontSize = 11, fontOutline = 'OUTLINE', classColor = false, color = { r = 1, g = 1, b = 1 }, position = 'BOTTOMRIGHT', xOffset = 0, yOffset = 0 },
+                },
+                utility = {
+                    iconWidth = 30, iconHeight = 30, iconZoom = 0, spacing = 2, iconsPerRow = 12, growthDirection = 'DOWN',
+                    cooldownText = { font = 'Expressway', fontSize = 16, fontOutline = 'OUTLINE', classColor = false, color = { r = 1, g = 1, b = 1 }, position = 'CENTER', xOffset = 0, yOffset = 0 },
+                    countText    = { font = 'Expressway', fontSize = 11, fontOutline = 'OUTLINE', classColor = false, color = { r = 1, g = 1, b = 1 }, position = 'BOTTOMRIGHT', xOffset = 0, yOffset = 0 },
+                },
+                buffIcon = {
+                    iconWidth = 30, iconHeight = 30, iconZoom = 0, spacing = 2, iconsPerRow = 12, growthDirection = 'DOWN',
+                    cooldownText = { font = 'Expressway', fontSize = 16, fontOutline = 'OUTLINE', classColor = false, color = { r = 1, g = 1, b = 1 }, position = 'CENTER', xOffset = 0, yOffset = 0 },
+                    countText    = { font = 'Expressway', fontSize = 11, fontOutline = 'OUTLINE', classColor = false, color = { r = 1, g = 1, b = 1 }, position = 'BOTTOMRIGHT', xOffset = 0, yOffset = 0 },
+                },
             },
             glow = {
                 enabled   = false,
@@ -912,21 +926,26 @@ function TUI:BuildConfig()
     end
 
     do -- Cooldown Manager config
-        root.cooldownManager = ACH:Group("CDM", nil, 2.5)
+        root.cooldownManager = ACH:Group("CDM", nil, 2.5, 'tab')
 
         local cdmDB = function() return TUI.db.profile.cooldownManager end
         local cdmDisabled = function() return not cdmDB().enabled end
         local cdmRefresh = function()
             if TUI.RefreshCDM then TUI:RefreshCDM() end
         end
+        local selVDB = function() return cdmDB().viewers[cdmDB().selectedViewer] end
 
+        local VIEWER_CHOICES = { essential = 'Essential', utility = 'Utility', buffIcon = 'Buff Icon' }
+        local POSITIONS = { CENTER = 'Center', TOP = 'Top', BOTTOM = 'Bottom', LEFT = 'Left', RIGHT = 'Right',
+            TOPLEFT = 'Top Left', TOPRIGHT = 'Top Right', BOTTOMLEFT = 'Bottom Left', BOTTOMRIGHT = 'Bottom Right' }
+
+        -- General tab
         root.cooldownManager.args.general = ACH:Group("General", nil, 1)
-        root.cooldownManager.args.general.inline = true
         local cdmGen = root.cooldownManager.args.general.args
 
         cdmGen.desc = ACH:Description(
-            "Customize Blizzard's Cooldown Manager viewers with per-group icon sizing, "
-            .. "centered icon growth, and glow effects.",
+            "Reparents Blizzard's CDM icons into TUI containers with ElvUI movers. "
+            .. "Overrides ElvUI's CDM text styling with per-viewer font settings.",
             1, "medium"
         )
 
@@ -941,91 +960,213 @@ function TUI:BuildConfig()
             end
         )
 
-        -- Per-viewer container settings
-        local viewerOrder = { essential = 1, utility = 2, buffIcon = 3 }
-        local VIEWER_LABELS = { essential = 'Essential', utility = 'Utility', buffIcon = 'Buff Icon' }
-
-        root.cooldownManager.args.viewers = ACH:Group("Containers", nil, 2)
-        root.cooldownManager.args.viewers.inline = true
-        local cdmViewers = root.cooldownManager.args.viewers.args
-
-        cdmViewers.desc = ACH:Description(
-            "Each viewer's icons are reparented into TUI containers with ElvUI movers. "
-            .. "Use /elvui toggle anchors to position them.",
-            1, "medium"
+        cdmGen.hideSwipe = ACH:Toggle(
+            "Hide GCD Swipe", "Hide the cooldown swipe overlay on CDM icons.",
+            3, nil, nil, nil,
+            function() return cdmDB().hideSwipe end,
+            function(_, value) cdmDB().hideSwipe = value; cdmRefresh() end,
+            cdmDisabled
         )
 
-        for key, order in pairs(viewerOrder) do
-            local label = VIEWER_LABELS[key]
-            local baseOrder = order * 10
+        -- Viewer tab — dropdown + settings for selected viewer
+        root.cooldownManager.args.viewer = ACH:Group("Viewer", nil, 2, nil, nil, nil, cdmDisabled)
+        local cdmViewer = root.cooldownManager.args.viewer.args
 
-            cdmViewers[key .. 'Header'] = ACH:Header(label, baseOrder)
+        cdmViewer.selectedViewer = ACH:Select(
+            "Viewer", "Select which CDM viewer to configure.", 1,
+            VIEWER_CHOICES, nil, nil,
+            function() return cdmDB().selectedViewer end,
+            function(_, value) cdmDB().selectedViewer = value end
+        )
 
-            cdmViewers[key .. 'Width'] = ACH:Range(
-                "Icon Width", "Icon width in pixels.", baseOrder + 1,
-                { min = 16, max = 80, step = 1 }, nil,
-                function() return cdmDB().viewers[key].iconWidth end,
-                function(_, value) cdmDB().viewers[key].iconWidth = value; cdmRefresh() end,
-                cdmDisabled
-            )
+        cdmViewer.spacer1 = ACH:Spacer(2)
 
-            cdmViewers[key .. 'Height'] = ACH:Range(
-                "Icon Height", "Icon height in pixels.", baseOrder + 2,
-                { min = 16, max = 80, step = 1 }, nil,
-                function() return cdmDB().viewers[key].iconHeight end,
-                function(_, value) cdmDB().viewers[key].iconHeight = value; cdmRefresh() end,
-                cdmDisabled
-            )
+        -- Layout group
+        cdmViewer.layout = ACH:Group("Layout", nil, 3)
+        cdmViewer.layout.inline = true
+        local cdmLayout = cdmViewer.layout.args
 
-            cdmViewers[key .. 'Zoom'] = ACH:Range(
-                "Icon Zoom", "Crop the icon texture inward.", baseOrder + 3,
-                { min = 0, max = 0.60, step = 0.01, isPercent = true }, nil,
-                function() return cdmDB().viewers[key].iconZoom end,
-                function(_, value) cdmDB().viewers[key].iconZoom = value; cdmRefresh() end,
-                cdmDisabled
-            )
+        cdmLayout.iconWidth = ACH:Range(
+            "Icon Width", nil, 1,
+            { min = 16, max = 80, step = 1 }, nil,
+            function() return selVDB().iconWidth end,
+            function(_, value) selVDB().iconWidth = value; cdmRefresh() end
+        )
 
-            cdmViewers[key .. 'Spacing'] = ACH:Range(
-                "Spacing", "Gap between icons in pixels.", baseOrder + 4,
-                { min = 0, max = 20, step = 1 }, nil,
-                function() return cdmDB().viewers[key].spacing end,
-                function(_, value) cdmDB().viewers[key].spacing = value; cdmRefresh() end,
-                cdmDisabled
-            )
+        cdmLayout.iconHeight = ACH:Range(
+            "Icon Height", nil, 2,
+            { min = 16, max = 80, step = 1 }, nil,
+            function() return selVDB().iconHeight end,
+            function(_, value) selVDB().iconHeight = value; cdmRefresh() end
+        )
 
-            cdmViewers[key .. 'PerRow'] = ACH:Range(
-                "Icons Per Row", "Max icons before wrapping to next row.", baseOrder + 5,
-                { min = 1, max = 20, step = 1 }, nil,
-                function() return cdmDB().viewers[key].iconsPerRow end,
-                function(_, value) cdmDB().viewers[key].iconsPerRow = value; cdmRefresh() end,
-                cdmDisabled
-            )
+        cdmLayout.iconZoom = ACH:Range(
+            "Icon Zoom", "Crop the icon texture inward.", 3,
+            { min = 0, max = 0.60, step = 0.01, isPercent = true }, nil,
+            function() return selVDB().iconZoom end,
+            function(_, value) selVDB().iconZoom = value; cdmRefresh() end
+        )
 
-            cdmViewers[key .. 'GrowthDir'] = ACH:Select(
-                "Vertical Growth", "Direction rows grow when there are multiple rows.",
-                baseOrder + 6,
-                { DOWN = 'Down', UP = 'Up' },
-                nil, nil,
-                function() return cdmDB().viewers[key].growthDirection end,
-                function(_, value) cdmDB().viewers[key].growthDirection = value; cdmRefresh() end,
-                cdmDisabled
-            )
-        end
+        cdmLayout.spacing = ACH:Range(
+            "Spacing", "Gap between icons in pixels.", 4,
+            { min = 0, max = 20, step = 1 }, nil,
+            function() return selVDB().spacing end,
+            function(_, value) selVDB().spacing = value; cdmRefresh() end
+        )
 
-        -- Glow options
-        root.cooldownManager.args.glow = ACH:Group("Glow", nil, 3)
-        root.cooldownManager.args.glow.inline = true
+        cdmLayout.iconsPerRow = ACH:Range(
+            "Icons Per Row", nil, 5,
+            { min = 1, max = 20, step = 1 }, nil,
+            function() return selVDB().iconsPerRow end,
+            function(_, value) selVDB().iconsPerRow = value; cdmRefresh() end
+        )
+
+        cdmLayout.growthDirection = ACH:Select(
+            "Vertical Growth", nil, 6,
+            { DOWN = 'Down', UP = 'Up' },
+            nil, nil,
+            function() return selVDB().growthDirection end,
+            function(_, value) selVDB().growthDirection = value; cdmRefresh() end
+        )
+
+        -- Cooldown Text group
+        cdmViewer.cooldownText = ACH:Group("Cooldown Text", nil, 4)
+        cdmViewer.cooldownText.inline = true
+        local cdmCD = cdmViewer.cooldownText.args
+
+        cdmCD.font = ACH:SharedMediaFont("Font", nil, 1, nil,
+            function() return selVDB().cooldownText.font end,
+            function(_, value) selVDB().cooldownText.font = value; cdmRefresh() end
+        )
+
+        cdmCD.fontSize = ACH:Range(
+            "Font Size", nil, 2,
+            { min = 6, max = 36, step = 1 }, nil,
+            function() return selVDB().cooldownText.fontSize end,
+            function(_, value) selVDB().cooldownText.fontSize = value; cdmRefresh() end
+        )
+
+        cdmCD.fontOutline = ACH:FontFlags(
+            "Font Outline", nil, 3, nil,
+            function() return selVDB().cooldownText.fontOutline end,
+            function(_, value) selVDB().cooldownText.fontOutline = value; cdmRefresh() end
+        )
+
+        cdmCD.classColor = ACH:Toggle(
+            "Class Color", "Use custom class color.", 4, nil, nil, nil,
+            function() return selVDB().cooldownText.classColor end,
+            function(_, value) selVDB().cooldownText.classColor = value; cdmRefresh() end
+        )
+
+        cdmCD.color = ACH:Color(
+            "Color", nil, 5, nil, nil,
+            function()
+                local c = selVDB().cooldownText.color
+                return c.r, c.g, c.b
+            end,
+            function(_, r, g, b)
+                local c = selVDB().cooldownText.color
+                c.r, c.g, c.b = r, g, b
+                cdmRefresh()
+            end,
+            function() return selVDB().cooldownText.classColor end
+        )
+
+        cdmCD.position = ACH:Select(
+            "Position", nil, 6, POSITIONS, nil, nil,
+            function() return selVDB().cooldownText.position end,
+            function(_, value) selVDB().cooldownText.position = value; cdmRefresh() end
+        )
+
+        cdmCD.xOffset = ACH:Range(
+            "X-Offset", nil, 7,
+            { min = -45, max = 45, step = 1 }, nil,
+            function() return selVDB().cooldownText.xOffset end,
+            function(_, value) selVDB().cooldownText.xOffset = value; cdmRefresh() end
+        )
+
+        cdmCD.yOffset = ACH:Range(
+            "Y-Offset", nil, 8,
+            { min = -45, max = 45, step = 1 }, nil,
+            function() return selVDB().cooldownText.yOffset end,
+            function(_, value) selVDB().cooldownText.yOffset = value; cdmRefresh() end
+        )
+
+        -- Count Text group
+        cdmViewer.countText = ACH:Group("Count Text", nil, 5)
+        cdmViewer.countText.inline = true
+        local cdmCT = cdmViewer.countText.args
+
+        cdmCT.font = ACH:SharedMediaFont("Font", nil, 1, nil,
+            function() return selVDB().countText.font end,
+            function(_, value) selVDB().countText.font = value; cdmRefresh() end
+        )
+
+        cdmCT.fontSize = ACH:Range(
+            "Font Size", nil, 2,
+            { min = 6, max = 36, step = 1 }, nil,
+            function() return selVDB().countText.fontSize end,
+            function(_, value) selVDB().countText.fontSize = value; cdmRefresh() end
+        )
+
+        cdmCT.fontOutline = ACH:FontFlags(
+            "Font Outline", nil, 3, nil,
+            function() return selVDB().countText.fontOutline end,
+            function(_, value) selVDB().countText.fontOutline = value; cdmRefresh() end
+        )
+
+        cdmCT.classColor = ACH:Toggle(
+            "Class Color", "Use custom class color.", 4, nil, nil, nil,
+            function() return selVDB().countText.classColor end,
+            function(_, value) selVDB().countText.classColor = value; cdmRefresh() end
+        )
+
+        cdmCT.color = ACH:Color(
+            "Color", nil, 5, nil, nil,
+            function()
+                local c = selVDB().countText.color
+                return c.r, c.g, c.b
+            end,
+            function(_, r, g, b)
+                local c = selVDB().countText.color
+                c.r, c.g, c.b = r, g, b
+                cdmRefresh()
+            end,
+            function() return selVDB().countText.classColor end
+        )
+
+        cdmCT.position = ACH:Select(
+            "Position", nil, 6, POSITIONS, nil, nil,
+            function() return selVDB().countText.position end,
+            function(_, value) selVDB().countText.position = value; cdmRefresh() end
+        )
+
+        cdmCT.xOffset = ACH:Range(
+            "X-Offset", nil, 7,
+            { min = -45, max = 45, step = 1 }, nil,
+            function() return selVDB().countText.xOffset end,
+            function(_, value) selVDB().countText.xOffset = value; cdmRefresh() end
+        )
+
+        cdmCT.yOffset = ACH:Range(
+            "Y-Offset", nil, 8,
+            { min = -45, max = 45, step = 1 }, nil,
+            function() return selVDB().countText.yOffset end,
+            function(_, value) selVDB().countText.yOffset = value; cdmRefresh() end
+        )
+
+        -- Glow tab
+        root.cooldownManager.args.glow = ACH:Group("Glow", nil, 3, nil, nil, nil, cdmDisabled)
         local cdmGlow = root.cooldownManager.args.glow.args
 
-        local glowDisabled = function() return cdmDisabled() or not cdmDB().glow.enabled end
+        local glowDisabled = function() return not cdmDB().glow.enabled end
 
         cdmGlow.enabled = ACH:Toggle(
             function() return cdmDB().glow.enabled and "|cff00ff00Enable|r" or "Enable" end,
             "Apply a glow effect to cooldown icons.",
             1, nil, nil, nil,
             function() return cdmDB().glow.enabled end,
-            function(_, value) cdmDB().glow.enabled = value; cdmRefresh() end,
-            cdmDisabled
+            function(_, value) cdmDB().glow.enabled = value; cdmRefresh() end
         )
 
         cdmGlow.type = ACH:Select(
