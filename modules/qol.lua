@@ -471,6 +471,7 @@ do -- Minimap Button Bar
 		local perRow = db.buttonsPerRow
 		local bdInset = (db.buttonBorder and db.buttonBorderSize or 0)
 		local effectiveSpacing = spacing + bdInset * 2
+		local growth = db.growthDirection or 'RIGHTDOWN'
 
 		local count = #mbbButtons
 		if count == 0 then
@@ -478,18 +479,52 @@ do -- Minimap Button Bar
 			return
 		end
 
-		local cols = min(count, perRow)
-		local rows = ceil(count / perRow)
-		mbbBar:SetSize(MBB_PADDING * 2 + cols * size + (cols - 1) * effectiveSpacing,
-		               MBB_PADDING * 2 + rows * size + (rows - 1) * effectiveSpacing)
+		local primary = min(count, perRow)
+		local secondary = ceil(count / perRow)
+
+		-- Determine bar dimensions based on orientation
+		local isHorizontal = (db.orientation or 'HORIZONTAL') == 'HORIZONTAL'
+		local barW, barH
+		if isHorizontal then
+			barW = MBB_PADDING * 2 + primary * size + (primary - 1) * effectiveSpacing
+			barH = MBB_PADDING * 2 + secondary * size + (secondary - 1) * effectiveSpacing
+		else
+			barW = MBB_PADDING * 2 + secondary * size + (secondary - 1) * effectiveSpacing
+			barH = MBB_PADDING * 2 + primary * size + (primary - 1) * effectiveSpacing
+		end
+		mbbBar:SetSize(barW, barH)
+
+		-- Determine anchor and direction multipliers from growth direction
+		local anchorPoint, xDir, yDir
+		if growth == 'RIGHTDOWN' then     anchorPoint = 'TOPLEFT';     xDir =  1; yDir = -1
+		elseif growth == 'RIGHTUP' then   anchorPoint = 'BOTTOMLEFT';  xDir =  1; yDir =  1
+		elseif growth == 'LEFTDOWN' then  anchorPoint = 'TOPRIGHT';    xDir = -1; yDir = -1
+		elseif growth == 'LEFTUP' then    anchorPoint = 'BOTTOMRIGHT'; xDir = -1; yDir =  1
+		elseif growth == 'DOWNRIGHT' then anchorPoint = 'TOPLEFT';     xDir =  1; yDir = -1
+		elseif growth == 'DOWNLEFT' then  anchorPoint = 'TOPRIGHT';    xDir = -1; yDir = -1
+		elseif growth == 'UPRIGHT' then   anchorPoint = 'BOTTOMLEFT';  xDir =  1; yDir =  1
+		elseif growth == 'UPLEFT' then    anchorPoint = 'BOTTOMRIGHT'; xDir = -1; yDir =  1
+		else                              anchorPoint = 'TOPLEFT';     xDir =  1; yDir = -1
+		end
 
 		for i, btn in ipairs(mbbButtons) do
 			btn:ClearAllPoints()
 			SkinButton(btn, size)
-			local col = (i - 1) % perRow
-			local row = floor((i - 1) / perRow)
-			btn:SetPoint('TOPLEFT', mbbBar, 'TOPLEFT', MBB_PADDING + col * (size + effectiveSpacing),
-			             -(MBB_PADDING + row * (size + effectiveSpacing)))
+
+			local idx = i - 1
+			local primaryIdx = idx % perRow
+			local secondaryIdx = floor(idx / perRow)
+
+			local x, y
+			if isHorizontal then
+				x = xDir * (MBB_PADDING + primaryIdx * (size + effectiveSpacing))
+				y = yDir * (MBB_PADDING + secondaryIdx * (size + effectiveSpacing))
+			else
+				x = xDir * (MBB_PADDING + secondaryIdx * (size + effectiveSpacing))
+				y = yDir * (MBB_PADDING + primaryIdx * (size + effectiveSpacing))
+			end
+
+			btn:SetPoint(anchorPoint, mbbBar, anchorPoint, x, y)
 			btn:SetParent(mbbBar)
 			btn:Show()
 		end

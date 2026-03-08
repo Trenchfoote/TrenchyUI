@@ -28,9 +28,7 @@ local previewActive = false
 
 local sortFunc = function(a, b) return (a.layoutIndex or 0) < (b.layoutIndex or 0) end
 
--- ═══════════════════════════════════════════════════════════════════
--- DB HELPERS
--- ═══════════════════════════════════════════════════════════════════
+-- DB helpers
 local function GetDB()
 	return TUI.db and TUI.db.profile and TUI.db.profile.cooldownManager
 end
@@ -45,9 +43,7 @@ local function GetViewer(viewerKey)
 	return info and _G[info.global]
 end
 
--- ═══════════════════════════════════════════════════════════════════
--- GLOW
--- ═══════════════════════════════════════════════════════════════════
+-- Glow
 local function StopGlow(itemFrame)
 	if not LCG or not glowActive[itemFrame] then return end
 	glowActive[itemFrame] = nil
@@ -125,9 +121,7 @@ local function ApplyIconZoom(itemFrame, zoom)
 	end
 end
 
--- ═══════════════════════════════════════════════════════════════════
--- TEXT STYLING — overrides ElvUI's cdmanager cooldown text settings
--- ═══════════════════════════════════════════════════════════════════
+-- Text styling
 local function GetTextColor(tdb)
 	if tdb.classColor then
 		local cc = CUSTOM_CLASS_COLORS and CUSTOM_CLASS_COLORS[E.myclass] or RAID_CLASS_COLORS[E.myclass]
@@ -197,9 +191,7 @@ local function ApplyTextOverrides(itemFrame, vdb, db)
 	ApplySwipeOverride(itemFrame.Cooldown, db)
 end
 
--- ═══════════════════════════════════════════════════════════════════
--- PREVIEW — show fake text on icons when config is open
--- ═══════════════════════════════════════════════════════════════════
+-- Preview text for config
 local function SetPreviewText(itemFrame, show, vdb)
 	-- Cooldown preview: use a standalone FontString since Blizzard hides
 	-- the cooldown text region when no cooldown is active
@@ -265,9 +257,7 @@ local function HidePreview()
 	end
 end
 
--- ═══════════════════════════════════════════════════════════════════
--- BLIZZARD CDM SETTINGS HELPER
--- ═══════════════════════════════════════════════════════════════════
+-- Blizzard CDM settings
 local function ShowBlizzardCDMSettings()
 	if not C_AddOns.IsAddOnLoaded('Blizzard_CooldownViewer') then
 		C_AddOns.LoadAddOn('Blizzard_CooldownViewer')
@@ -285,24 +275,24 @@ local function HideBlizzardCDMSettings()
 	end
 end
 
+local function IsConfigOpen()
+	local ACD = E.Libs.AceConfigDialog
+	return ACD and ACD.OpenFrames and ACD.OpenFrames.ElvUI
+end
+
 local function OpenCDMConfig()
-	E:ToggleOptions('TrenchyUI')
+	if not IsConfigOpen() then
+		E:ToggleOptions('TrenchyUI')
+	end
 	C_Timer.After(0.1, function()
 		local configGroup = E.Options and E.Options.args and E.Options.args.TrenchyUI
 		if configGroup and configGroup.args and configGroup.args.cooldownManager then
 			E.Libs.AceConfigDialog:SelectGroup('ElvUI', 'TrenchyUI', 'cooldownManager')
 		end
-		-- Defer CDM settings + preview until after layout settles
-		C_Timer.After(0.2, function()
-			ShowBlizzardCDMSettings()
-			ShowPreview()
-		end)
 	end)
 end
 
--- ═══════════════════════════════════════════════════════════════════
--- CONTAINER CREATION
--- ═══════════════════════════════════════════════════════════════════
+-- Container creation
 local CDM_CONFIG_STRING = '/TrenchyUI,cooldownManager'
 
 local function CreateContainer(viewerKey)
@@ -317,18 +307,13 @@ local function CreateContainer(viewerKey)
 	frame:SetFrameStrata('MEDIUM')
 	frame:SetFrameLevel(5)
 
-	-- 9th param = configString for right-click on mover
 	E:CreateMover(frame, info.mover .. 'Mover', 'TUI ' .. info.label, nil, nil, nil, nil, nil, CDM_CONFIG_STRING)
 
 	containers[viewerKey] = frame
-	iconCache[viewerKey] = {}
 	return frame
 end
 
--- ═══════════════════════════════════════════════════════════════════
--- GRID LAYOUT — positions captured icons inside our container
--- Styling (text/glow/zoom) only applied on capture, not every relayout.
--- ═══════════════════════════════════════════════════════════════════
+-- Grid layout
 local function LayoutContainer(viewerKey, isCapture)
 	local container = containers[viewerKey]
 	if not container then return end
@@ -426,9 +411,7 @@ local function LayoutContainer(viewerKey, isCapture)
 	end
 end
 
--- ═══════════════════════════════════════════════════════════════════
--- FRAME CAPTURE — reparent CDM item frames into our containers
--- ═══════════════════════════════════════════════════════════════════
+-- Frame capture
 local function CaptureAndLayout(viewer, viewerKey)
 	local db = GetDB()
 	if not db or not db.enabled then return end
@@ -459,9 +442,7 @@ local function CaptureAndLayout(viewer, viewerKey)
 	end
 end
 
--- ═══════════════════════════════════════════════════════════════════
--- HOOK SETUP
--- ═══════════════════════════════════════════════════════════════════
+-- Hook setup
 local function HookViewer(viewerKey)
 	local viewer = GetViewer(viewerKey)
 	if not viewer or hookedViewers[viewerKey] then return end
@@ -472,9 +453,7 @@ local function HookViewer(viewerKey)
 	end)
 end
 
--- ═══════════════════════════════════════════════════════════════════
--- EVENT-DRIVEN RE-LAYOUT (position only, no restyling)
--- ═══════════════════════════════════════════════════════════════════
+-- Event-driven relayout
 local layoutPending = false
 
 local function ScheduleRelayout(_, event, unit)
@@ -491,9 +470,7 @@ local function ScheduleRelayout(_, event, unit)
 	end)
 end
 
--- ═══════════════════════════════════════════════════════════════════
--- PUBLIC API
--- ═══════════════════════════════════════════════════════════════════
+-- Public API
 function TUI:RefreshCDM()
 	local db = GetDB()
 	if not db or not db.enabled then return end
@@ -505,7 +482,6 @@ function TUI:RefreshCDM()
 		LayoutContainer(viewerKey, true)
 	end
 
-	-- Update preview if active
 	if previewActive then
 		previewActive = false
 		ShowPreview()
@@ -519,13 +495,7 @@ function TUI:InitCooldownManager()
 	C_Timer.After(0, function()
 		for viewerKey in pairs(VIEWER_KEYS) do
 			CreateContainer(viewerKey)
-		end
-
-		for viewerKey in pairs(VIEWER_KEYS) do
 			HookViewer(viewerKey)
-		end
-
-		for viewerKey in pairs(VIEWER_KEYS) do
 			local viewer = GetViewer(viewerKey)
 			if viewer then
 				CaptureAndLayout(viewer, viewerKey)
@@ -540,20 +510,17 @@ function TUI:InitCooldownManager()
 	end)
 end
 
--- ═══════════════════════════════════════════════════════════════════
--- /cdm SLASH COMMAND
--- ═══════════════════════════════════════════════════════════════════
+-- Slash command
 SLASH_TUICDM1 = '/cdm'
 SlashCmdList['TUICDM'] = function()
 	OpenCDMConfig()
 end
 
--- ═══════════════════════════════════════════════════════════════════
--- CONFIG HOOKS — mover right-click + ESC close (single ToggleOptions hook)
--- ═══════════════════════════════════════════════════════════════════
+-- Config hooks
 local configCloseHooked = false
+local cdmTabActive = false
 
-local function HookConfigClose()
+local function TryHookConfigClose()
 	if configCloseHooked then return end
 
 	local ACD = E.Libs.AceConfigDialog
@@ -564,14 +531,48 @@ local function HookConfigClose()
 
 	configCloseHooked = true
 	configFrame.frame:HookScript('OnHide', function()
+		cdmTabActive = false
 		HideBlizzardCDMSettings()
 		HidePreview()
 	end)
 end
 
 C_Timer.After(0, function()
+	-- Hook SelectGroup eagerly — ACD exists at load time
+	local ACD = E.Libs.AceConfigDialog
+	if ACD then
+		hooksecurefunc(ACD, 'SelectGroup', function(_, appName, ...)
+			if appName ~= 'ElvUI' then return end
+
+			-- Try to hook config close if we haven't yet (frame now exists)
+			if not configCloseHooked then
+				TryHookConfigClose()
+			end
+
+			local isCDM = false
+			for i = 1, select('#', ...) do
+				if select(i, ...) == 'cooldownManager' then
+					isCDM = true
+					break
+				end
+			end
+
+			if isCDM and not cdmTabActive then
+				cdmTabActive = true
+				C_Timer.After(0.3, function()
+					ShowBlizzardCDMSettings()
+					ShowPreview()
+				end)
+			elseif not isCDM and cdmTabActive then
+				cdmTabActive = false
+				HideBlizzardCDMSettings()
+				HidePreview()
+			end
+		end)
+	end
+
+	-- Mover right-click hook
 	hooksecurefunc(E, 'ToggleOptions', function(_, msg)
-		-- Open Blizzard CDM settings + preview when right-clicking a CDM mover
 		if msg == CDM_CONFIG_STRING then
 			C_Timer.After(0.3, function()
 				ShowBlizzardCDMSettings()
@@ -579,9 +580,9 @@ C_Timer.After(0, function()
 			end)
 		end
 
-		-- Hook config frame close (ESC) — frame may not exist on first call
+		-- Also try to hook config close from here as a fallback
 		if not configCloseHooked then
-			C_Timer.After(0.1, HookConfigClose)
+			C_Timer.After(0.1, TryHookConfigClose)
 		end
 	end)
 end)

@@ -132,6 +132,8 @@ TUI.defaults = {
         },
         minimapButtonBar = {
             enabled        = false,
+            orientation    = 'HORIZONTAL',
+            growthDirection = 'RIGHTDOWN',
             buttonSize     = 28,
             buttonSpacing  = 2,
             buttonsPerRow  = 12,
@@ -349,15 +351,43 @@ function TUI:BuildConfig()
 
     mbb.layoutHeader = ACH:Header("Layout", 2)
 
-    mbb.buttonSize = ACH:Range("Button Size", "Size of each button.", 3, { min = 16, max = 48, step = 1 },
+    mbb.orientation = ACH:Select(
+        "Orientation", "Primary direction the bar extends.", 3,
+        { HORIZONTAL = 'Horizontal', VERTICAL = 'Vertical' }, nil, nil,
+        function() return mbbDB().orientation or 'HORIZONTAL' end,
+        function(_, v)
+            mbbDB().orientation = v
+            -- Reset growth direction to a sensible default
+            mbbDB().growthDirection = (v == 'HORIZONTAL') and 'RIGHTDOWN' or 'DOWNRIGHT'
+            mbbUpdate()
+        end,
+        mbbDisabled
+    )
+
+    mbb.growthDirection = ACH:Select(
+        "Growth Direction", "How buttons fill and wrap.", 4,
+        function()
+            if (mbbDB().orientation or 'HORIZONTAL') == 'HORIZONTAL' then
+                return { RIGHTDOWN = 'Right, then Down', RIGHTUP = 'Right, then Up', LEFTDOWN = 'Left, then Down', LEFTUP = 'Left, then Up' }
+            else
+                return { DOWNRIGHT = 'Down, then Right', DOWNLEFT = 'Down, then Left', UPRIGHT = 'Up, then Right', UPLEFT = 'Up, then Left' }
+            end
+        end,
+        nil, nil,
+        function() return mbbDB().growthDirection or 'RIGHTDOWN' end,
+        function(_, v) mbbDB().growthDirection = v; mbbUpdate() end,
+        mbbDisabled
+    )
+
+    mbb.buttonSize = ACH:Range("Button Size", "Size of each button.", 5, { min = 16, max = 48, step = 1 },
         nil, function() return mbbDB().buttonSize end,
         function(_, v) mbbDB().buttonSize = v; mbbUpdate() end, mbbDisabled)
 
-    mbb.buttonSpacing = ACH:Range("Button Spacing", "Space between buttons.", 4, { min = 0, max = 10, step = 1 },
+    mbb.buttonSpacing = ACH:Range("Button Spacing", "Space between buttons.", 6, { min = 0, max = 10, step = 1 },
         nil, function() return mbbDB().buttonSpacing end,
         function(_, v) mbbDB().buttonSpacing = v; mbbUpdate() end, mbbDisabled)
 
-    mbb.buttonsPerRow = ACH:Range("Buttons Per Row", "Number of buttons before wrapping to the next row.", 5, { min = 1, max = 24, step = 1 },
+    mbb.buttonsPerRow = ACH:Range("Buttons Per Row", "Number of buttons before wrapping to the next row/column.", 7, { min = 1, max = 24, step = 1 },
         nil, function() return mbbDB().buttonsPerRow end,
         function(_, v) mbbDB().buttonsPerRow = v; mbbUpdate() end, mbbDisabled)
 
@@ -1572,10 +1602,11 @@ function TUI:BuildConfig()
     info.credits.inline = true
     info.credits.args.desc = ACH:Description(
         E:TextGradient('Requiem', 0.13,0.37,0.13, 0.30,0.57,0.25) .. " — For entertaining me while making this...and he tested some stuff.\n\n"
+        .. E:TextGradient('Menios', 0.64,0.19,0.79, 0.46,0.33,0.80) .. " — For the 10+ years of trolling and entertainment, and helping me kill 4+ Guilds during Legion.\n\n"
         .. E:TextGradient('Jiberish', 1.00,0.08,0.56, 1.00,0.41,0.71) .. " — For the encouragement to actually do this, and for the baller UI's.\n\n"
         .. "|cFFb8bb26Thurin|r — For bouncing all the ideas off of and balancing Jib's uncontrollable \"push the buttons\".\n\n"
         .. "|cffff2f3dThe ElvUI team|r ("
-        .. E:TextGradient('Simpy but my name needs to be longer.', 0.28,0.79,0.96, 0.50,0.77,0.38, 1.00,0.95,0.38, 0.96,0.53,0.37, 0.80,0.51,0.72, 0.34,0.80,0.96)
+        .. E:TextGradient('Simpy but my name needs to be longer', 0.28,0.79,0.96, 0.50,0.77,0.38, 1.00,0.95,0.38, 0.96,0.53,0.37, 0.80,0.51,0.72, 0.34,0.80,0.96)
         .. ", |cFFAAD372Tsxy|r, |cfff48cbaRepooc|r) — For having a space to learn a ton about stuff I never knew about.\n\n"
         .. E:TextGradient('Eltreum', 0.50,0.70,1, 0.67,0.95,1) .. " — For the inspiration on some of these ideas and for the fantastic plugin, " .. E:TextGradient('Eltruism', 0.50,0.70,1, 0.67,0.95,1) .. ".\n\n"
         .. "|CFF6559F1B|r|CFF7A4DEFl|r|CFF8845ECi|r|CFFA037E9n|r|CFFB32DE6k|r|CFFBC26E5i|r|CFFCB1EE3i|r — For allowing me to use his module for the interrupt ready, and for always being receptive to new ideas with |CFF6559F1m|r|CFF7A4DEFM|r|CFF8845ECe|r|CFFA037E9d|r|CFFA435E8i|r|CFFB32DE6a|r|CFFBC26E5T|r|CFFCB1EE3a|r|CFFDD14E0g|r|CFFE609DFs|r.\n\n"
