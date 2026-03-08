@@ -42,7 +42,7 @@ function TUI:InitElvNP()
 
 	local baf = np.blizzAuraFilter
 	if baf and (baf.cc or baf.noDuration) then
-		self:HookBlizzAuraFiltering(baf)
+		self:HookBlizzAuraFiltering()
 	end
 end
 
@@ -406,14 +406,10 @@ do -- Disable Friendly Highlight
 end
 
 do -- Nameplate Aura Extras (CC separation + noDuration)
-	function TUI:HookBlizzAuraFiltering(baf)
-		if self._hookedBlizzAuraFilter then return end
-		self._hookedBlizzAuraFilter = true
-
-		local origAuraFilter = UF.AuraFilter
-
-		UF.AuraFilter = function(element, unit, button, aura, name, icon, count, debuffType, duration, expiration, source, isStealable, nameplateShowPersonal, spellID, canApplyAura, isBossAura, castByPlayer, nameplateShowAll)
-			if element.isNameplate and aura and name then
+	local function NameplateAuraFilter(element, unit, button, aura, name, icon, count, debuffType, duration, expiration, source, isStealable, nameplateShowPersonal, spellID, canApplyAura, isBossAura, castByPlayer, nameplateShowAll)
+		if aura and name then
+			local baf = TUI.db.profile.nameplates.blizzAuraFilter
+			if baf then
 				if baf.noDuration and aura.auraIsHarmful and not button.auraDuration then
 					return false
 				end
@@ -421,15 +417,33 @@ do -- Nameplate Aura Extras (CC separation + noDuration)
 				if baf.cc then
 					local elType = element.type
 					if elType == 'debuffs' and aura.auraIsCrowdControl then
-						return false -- exclude CC from debuffs element
+						return false
 					elseif elType == 'auras' then
 						button.priority = 0
 						return aura.auraIsHarmful and aura.auraIsCrowdControl
 					end
 				end
 			end
-
-			return origAuraFilter(element, unit, button, aura, name, icon, count, debuffType, duration, expiration, source, isStealable, nameplateShowPersonal, spellID, canApplyAura, isBossAura, castByPlayer, nameplateShowAll)
 		end
+
+		return UF.AuraFilter(element, unit, button, aura, name, icon, count, debuffType, duration, expiration, source, isStealable, nameplateShowPersonal, spellID, canApplyAura, isBossAura, castByPlayer, nameplateShowAll)
+	end
+
+	local function ApplyNameplateFilter(element)
+		if element and element.isNameplate then
+			element.CustomFilter = NameplateAuraFilter
+		end
+	end
+
+	function TUI:HookBlizzAuraFiltering()
+		if self._hookedBlizzAuraFilter then return end
+		self._hookedBlizzAuraFilter = true
+
+		hooksecurefunc(NP, 'Configure_Auras', function(_, nameplate)
+			if not nameplate then return end
+			ApplyNameplateFilter(nameplate.Auras)
+			ApplyNameplateFilter(nameplate.Buffs)
+			ApplyNameplateFilter(nameplate.Debuffs)
+		end)
 	end
 end
