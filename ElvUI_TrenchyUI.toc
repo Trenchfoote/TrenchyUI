@@ -1,0 +1,26 @@
+## Interface: 120000, 120001
+## Title: |cff1784d1ElvUI|r |cffff2f3dTrenchyUI|r
+## Notes: ElvUI companion — addon skins, QoL tweaks, nameplate enhancements, damage meter
+## Author: Trenchy
+## Version: 1.0.0
+## IconTexture: Interface\AddOns\ElvUI_TrenchyUI\media\TrenchyUI_Tiny
+## RequiredDeps: ElvUI
+## OptionalDeps: WarpDeplete, BigWigs, Auctionator, BugSack, OPie, ls_Toasts
+## SavedVariables:
+
+core.lua
+config.lua
+profiles\elvui.lua
+profiles\bigwigs.lua
+profiles\warpdeplete.lua
+profiles\editmode.lua
+profiles\lstoasts.lua
+modules\skins\warpdeplete.lua
+modules\skins\bigwigs.lua
+modules\qol.lua
+modules\elvui\elvnp.lua
+modules\elvui\elvuf.lua
+modules\skins\auctionator.lua
+modules\skins\bugsack.lua
+modules\skins\opie.lua
+modules\damagemeter.lua

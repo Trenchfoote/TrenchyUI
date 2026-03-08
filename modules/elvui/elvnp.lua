@@ -1,0 +1,435 @@
+local E = unpack(ElvUI)
+local TUI = E:GetModule('TrenchyUI')
+local NP = E:GetModule('NamePlates')
+local UF = E:GetModule('UnitFrames')
+local LSM = E.Libs.LSM
+
+local CreateFrame = CreateFrame
+local UnitIsTapDenied = UnitIsTapDenied
+local UnitCanAttack = UnitCanAttack
+local UnitIsUnit = UnitIsUnit
+local IsInInstance = IsInInstance
+local C_NamePlate_GetNamePlates = C_NamePlate.GetNamePlates
+local C_NamePlate_GetNamePlateForUnit = C_NamePlate.GetNamePlateForUnit
+local C_Spell_GetSpellCooldownDuration = C_Spell.GetSpellCooldownDuration
+local C_SpellBook_IsSpellKnownOrInSpellBook = C_SpellBook.IsSpellKnownOrInSpellBook
+local EvalColorBool = C_CurveUtil.EvaluateColorValueFromBoolean
+local ipairs = ipairs
+
+function TUI:InitElvNP()
+	local np = self.db.profile.nameplates
+	if not np then return end
+
+	if np.classificationInstanceOnly then
+		self:HookClassificationInstanceOnly()
+	end
+
+	if np.classificationOverThreat then
+		self:HookNameplateThreat()
+	end
+
+	if np.interruptCastbarColors then
+		self:HookCastbarInterrupt()
+	end
+
+	if np.focusGlow and np.focusGlow.enabled then
+		self:InitFocusGlow()
+	end
+
+	if np.disableFriendlyHighlight then
+		self:HookDisableFriendlyHighlight()
+	end
+
+	local baf = np.blizzAuraFilter
+	if baf and (baf.cc or baf.noDuration) then
+		self:HookBlizzAuraFiltering(baf)
+	end
+end
+
+do -- Classification Instance Only
+	function TUI:HookClassificationInstanceOnly()
+		if self._hookedClassificationInstance then return end
+		self._hookedClassificationInstance = true
+
+		hooksecurefunc(NP, 'Health_SetColors', function(_, nameplate, threatColors)
+			if threatColors then return end
+			if not IsInInstance() then
+				nameplate.Health.colorClassification = nil
+			end
+		end)
+	end
+end
+
+do -- Threat Override
+	function TUI:HookNameplateThreat()
+		if self._hookedThreatPost then return end
+		self._hookedThreatPost = true
+
+		local origPostUpdate = NP.ThreatIndicator_PostUpdate
+
+		local function ThreatWrapper(Indicator, unit, status)
+			if not status then
+				return origPostUpdate(Indicator, unit, status)
+			end
+
+			local nameplate = Indicator.__owner
+			local db = NP.db.threat
+			if not db or not db.enable or not db.useThreatColor or UnitIsTapDenied(unit) then
+				return origPostUpdate(Indicator, unit, status)
+			end
+
+			local isTank = Indicator.isTank
+			local isGoodThreat = isTank and (status == 3) or (not isTank and status == 0)
+
+			if not isGoodThreat then
+				return origPostUpdate(Indicator, unit, status)
+			end
+
+			nameplate.threatStatus = status
+			nameplate.threatScale = 1
+			NP:ScalePlate(nameplate, 1)
+			NP:Health_SetColors(nameplate, false)
+			NP.Health_UpdateColor(nameplate, nil, unit)
+		end
+
+		NP.ThreatIndicator_PostUpdate = ThreatWrapper
+	end
+end
+
+do -- Interrupt Spell Detection
+	local interruptMap = {
+		DEATHKNIGHT = { 47528 },
+		DEMONHUNTER = { 183752 },
+		DRUID       = { 106839, 78675 },
+		EVOKER      = { 351338 },
+		HUNTER      = { 147362, 187707 },
+		MAGE        = { 2139 },
+		MONK        = { 116705 },
+		PALADIN     = { 96231 },
+		PRIEST      = { 15487 },
+		ROGUE       = { 1766 },
+		SHAMAN      = { 57994 },
+		WARLOCK     = { 19647, 89766, 119910, 132409 },
+		WARRIOR     = { 6552 },
+	}
+
+	local currentInterrupt
+
+	local function UpdateInterruptSpell()
+		currentInterrupt = nil
+		local spells = interruptMap[E.myclass]
+		if not spells then return end
+		for _, spellID in ipairs(spells) do
+			if C_SpellBook_IsSpellKnownOrInSpellBook(spellID)
+			or C_SpellBook_IsSpellKnownOrInSpellBook(spellID, Enum.SpellBookSpellBank.Pet) then
+				currentInterrupt = spellID
+			end
+		end
+	end
+
+	do
+		local f = CreateFrame('Frame')
+		f:RegisterEvent('PLAYER_LOGIN')
+		f:RegisterEvent('SPELLS_CHANGED')
+		f:SetScript('OnEvent', UpdateInterruptSpell)
+	end
+
+	local function GetOrCreateMarker(castbar)
+		if castbar.TUI_InterruptMarker then
+			return castbar.TUI_InterruptMarker
+		end
+		local marker = castbar:CreateTexture(nil, 'OVERLAY')
+		marker:SetDrawLayer('OVERLAY', 4)
+		marker:SetBlendMode('ADD')
+		marker:SetSize(3, castbar:GetHeight())
+		marker:SetColorTexture(1, 1, 1)
+		marker:Hide()
+		castbar.TUI_InterruptMarker = marker
+		return marker
+	end
+
+	local function GetOrCreateCDPositioner(castbar)
+		if castbar.TUI_CDPositioner then
+			return castbar.TUI_CDPositioner, castbar.TUI_CDClipper
+		end
+
+		local clip = CreateFrame('Frame', nil, castbar)
+		clip:SetAllPoints(castbar)
+		clip:SetClipsChildren(true)
+		clip:SetFrameLevel(castbar:GetFrameLevel() + 1)
+		castbar.TUI_CDClipper = clip
+
+		local pos = CreateFrame('StatusBar', nil, clip)
+		pos:SetStatusBarTexture(E.media.blankTex)
+		pos:GetStatusBarTexture():SetAlpha(0)
+		pos:SetMinMaxValues(0, 1)
+		pos:SetValue(0)
+		castbar.TUI_CDPositioner = pos
+
+		return pos, clip
+	end
+
+	local function CancelInterruptTicker(castbar)
+		if castbar.TUI_InterruptTicker then
+			castbar.TUI_InterruptTicker:Cancel()
+			castbar.TUI_InterruptTicker = nil
+		end
+	end
+
+	local function ResetInterruptOverlay(castbar)
+		CancelInterruptTicker(castbar)
+		if castbar.TUI_InterruptMarker then castbar.TUI_InterruptMarker:Hide() end
+		if castbar.TUI_CDClipper then castbar.TUI_CDClipper:Hide() end
+		castbar.TUI_InterruptUnit = nil
+	end
+
+	local function InterruptPreamble(castbar, unit)
+		ResetInterruptOverlay(castbar)
+		castbar.TUI_WasInterrupted = nil
+
+		if not castbar.casting and not castbar.channeling then return nil end
+		if unit == 'vehicle' then unit = 'player' end
+		if not UnitCanAttack('player', unit) then return nil end
+		if not currentInterrupt then return nil end
+
+		return unit
+	end
+
+	local function ApplyInterruptColor(castbar, notInt, isReady)
+		local db = TUI.db.profile.nameplates
+		local readyC = db.castbarInterruptReady
+		local onCDC = db.castbarInterruptOnCD
+
+		local iR = EvalColorBool(isReady, readyC.r, onCDC.r)
+		local iG = EvalColorBool(isReady, readyC.g, onCDC.g)
+		local iB = EvalColorBool(isReady, readyC.b, onCDC.b)
+
+		local noIntC = NP.db.colors.castNoInterruptColor
+		castbar:SetStatusBarColor(
+			EvalColorBool(notInt, noIntC.r, iR),
+			EvalColorBool(notInt, noIntC.g, iG),
+			EvalColorBool(notInt, noIntC.b, iB)
+		)
+
+		if castbar.TUI_CDClipper then
+			local showAlpha = EvalColorBool(isReady, 0, 1)
+			castbar.TUI_CDClipper:SetAlpha(EvalColorBool(notInt, 0, showAlpha))
+		end
+	end
+
+	function TUI:HookCastbarInterrupt()
+		if self._hookedCastbarInterrupt then return end
+		self._hookedCastbarInterrupt = true
+
+		local origPostCastFail = NP.Castbar_PostCastFail
+		NP.Castbar_PostCastFail = function(castbar, ...)
+			ResetInterruptOverlay(castbar)
+			origPostCastFail(castbar, ...)
+			castbar.TUI_WasInterrupted = true
+		end
+
+		local origPostCastInterrupted = NP.Castbar_PostCastInterrupted
+		NP.Castbar_PostCastInterrupted = function(castbar, ...)
+			ResetInterruptOverlay(castbar)
+			origPostCastInterrupted(castbar, ...)
+			castbar.TUI_WasInterrupted = true
+			local c = NP.db.colors.castInterruptedColor
+			if c then castbar:SetStatusBarColor(c.r, c.g, c.b) end
+		end
+
+		local origCheckInterrupt = NP.Castbar_CheckInterrupt
+
+		local function PlaceMarker(castbar, unit)
+			local cdDuration = C_Spell_GetSpellCooldownDuration(currentInterrupt)
+			local isReady = cdDuration:IsZero()
+
+			local markerAlpha = EvalColorBool(isReady, 0, 1)
+
+			local castDuration = UnitCastingDuration(unit) or UnitChannelDuration(unit)
+			if not castDuration then
+				if castbar.TUI_CDClipper then castbar.TUI_CDClipper:SetAlpha(0) end
+				return
+			end
+
+			local pos, clip = GetOrCreateCDPositioner(castbar)
+			local isReverse = castbar.channeling or castbar:GetReverseFill()
+
+			pos:ClearAllPoints()
+			pos:SetPoint('TOPLEFT', castbar, 'TOPLEFT')
+			pos:SetPoint('BOTTOMRIGHT', castbar, 'BOTTOMRIGHT')
+			pos:SetReverseFill(isReverse)
+			pos:SetMinMaxValues(0, castDuration:GetTotalDuration())
+			pos:SetValue(cdDuration:GetRemainingDuration())
+			clip:SetAlpha(markerAlpha)
+			clip:Show()
+
+			local marker = GetOrCreateMarker(castbar)
+			marker:SetParent(clip)
+			local mc = TUI.db.profile.nameplates.castbarMarkerColor
+			marker:SetColorTexture(mc.r, mc.g, mc.b)
+			marker:SetSize(3, castbar:GetHeight())
+			marker:ClearAllPoints()
+			if isReverse then
+				marker:SetPoint('RIGHT', pos:GetStatusBarTexture(), 'LEFT', 0, 0)
+			else
+				marker:SetPoint('LEFT', pos:GetStatusBarTexture(), 'RIGHT', 0, 0)
+			end
+			marker:Show()
+		end
+
+		local function UpdateMarkerAlpha(castbar)
+			if not castbar.TUI_CDClipper then return end
+			local cdDuration = C_Spell_GetSpellCooldownDuration(currentInterrupt)
+			local isReady = cdDuration:IsZero()
+			local notInt = castbar.notInterruptible
+			local showAlpha = EvalColorBool(isReady, 0, 1)
+			castbar.TUI_CDClipper:SetAlpha(EvalColorBool(notInt, 0, showAlpha))
+		end
+
+		local function CheckInterruptWrapper(castbar, unit)
+			origCheckInterrupt(castbar, unit)
+			unit = InterruptPreamble(castbar, unit)
+			if not unit then return end
+
+			local notInt = castbar.notInterruptible
+			local cdDuration = C_Spell_GetSpellCooldownDuration(currentInterrupt)
+			local isReady = cdDuration:IsZero()
+
+			ApplyInterruptColor(castbar, notInt, isReady)
+			castbar.TUI_InterruptUnit = unit
+			PlaceMarker(castbar, unit)
+
+			castbar.TUI_InterruptTicker = C_Timer.NewTicker(0.1, function()
+				if not castbar:IsShown() or not (castbar.casting or castbar.channeling) then
+					if castbar.TUI_WasInterrupted and castbar:IsShown() then
+						local c = NP.db.colors.castInterruptedColor
+						if c then castbar:SetStatusBarColor(c.r, c.g, c.b) end
+					end
+					ResetInterruptOverlay(castbar)
+					return
+				end
+				local notInt2 = castbar.notInterruptible
+				local cdDuration2 = C_Spell_GetSpellCooldownDuration(currentInterrupt)
+				local isReady2 = cdDuration2:IsZero()
+				ApplyInterruptColor(castbar, notInt2, isReady2)
+				UpdateMarkerAlpha(castbar)
+			end)
+		end
+
+		NP.Castbar_CheckInterrupt = CheckInterruptWrapper
+	end
+end
+
+do -- Focus Overlay
+	local function GetOrCreateFocusOverlay(nameplate)
+		if nameplate.TUI_FocusOverlay then
+			return nameplate.TUI_FocusOverlay
+		end
+
+		local holder = CreateFrame('Frame', nil, nameplate.Health)
+		holder:SetAllPoints(nameplate.Health)
+		holder:SetFrameLevel(9)
+
+		local overlay = holder:CreateTexture(nil, 'OVERLAY')
+		overlay:SetAllPoints(holder)
+		overlay:SetBlendMode('BLEND')
+		holder:Hide()
+
+		nameplate.TUI_FocusOverlay = holder
+		nameplate.TUI_FocusOverlayTex = overlay
+		return holder, overlay
+	end
+
+	local function UpdateFocusOverlay(nameplate)
+		local db = TUI.db.profile.nameplates.focusGlow
+		if not nameplate.unit or not nameplate.Health then return end
+
+		if UnitIsUnit(nameplate.unit, 'focus') then
+			local holder, tex = GetOrCreateFocusOverlay(nameplate)
+			tex = tex or nameplate.TUI_FocusOverlayTex
+			tex:SetTexture(LSM:Fetch('statusbar', db.texture or NP.db.statusbar))
+			local c = db.color
+			tex:SetVertexColor(c.r, c.g, c.b, c.a or 0.3)
+			holder:Show()
+		elseif nameplate.TUI_FocusOverlay then
+			nameplate.TUI_FocusOverlay:Hide()
+		end
+	end
+
+	local function UpdateAllFocusOverlays()
+		for _, nameplate in ipairs(C_NamePlate_GetNamePlates()) do
+			if nameplate.unitFrame then
+				UpdateFocusOverlay(nameplate.unitFrame)
+			end
+		end
+	end
+
+	function TUI:InitFocusGlow()
+		if self._initFocusGlow then return end
+		self._initFocusGlow = true
+
+		local f = CreateFrame('Frame')
+		f:RegisterEvent('PLAYER_FOCUS_CHANGED')
+		f:RegisterEvent('NAME_PLATE_UNIT_ADDED')
+		f:RegisterEvent('NAME_PLATE_UNIT_REMOVED')
+		f:SetScript('OnEvent', function(_, event, unit)
+			if event == 'PLAYER_FOCUS_CHANGED' then
+				UpdateAllFocusOverlays()
+			elseif event == 'NAME_PLATE_UNIT_ADDED' then
+				local nameplate = C_NamePlate_GetNamePlateForUnit(unit)
+				if nameplate and nameplate.unitFrame then
+					UpdateFocusOverlay(nameplate.unitFrame)
+				end
+			elseif event == 'NAME_PLATE_UNIT_REMOVED' then
+				local nameplate = C_NamePlate_GetNamePlateForUnit(unit)
+				if nameplate and nameplate.unitFrame and nameplate.unitFrame.TUI_FocusOverlay then
+					nameplate.unitFrame.TUI_FocusOverlay:Hide()
+				end
+			end
+		end)
+	end
+end
+
+do -- Disable Friendly Highlight
+	function TUI:HookDisableFriendlyHighlight()
+		if self._hookedFriendlyHighlight then return end
+		self._hookedFriendlyHighlight = true
+
+		hooksecurefunc(NP, 'Update_Highlight', function(_, nameplate)
+			if not nameplate or not nameplate.frameType then return end
+			local ft = nameplate.frameType
+			if (ft == 'FRIENDLY_PLAYER' or ft == 'FRIENDLY_NPC') and nameplate:IsElementEnabled('Highlight') then
+				nameplate:DisableElement('Highlight')
+			end
+		end)
+	end
+end
+
+do -- Nameplate Aura Extras (CC separation + noDuration)
+	function TUI:HookBlizzAuraFiltering(baf)
+		if self._hookedBlizzAuraFilter then return end
+		self._hookedBlizzAuraFilter = true
+
+		local origAuraFilter = UF.AuraFilter
+
+		UF.AuraFilter = function(element, unit, button, aura, name, icon, count, debuffType, duration, expiration, source, isStealable, nameplateShowPersonal, spellID, canApplyAura, isBossAura, castByPlayer, nameplateShowAll)
+			if element.isNameplate and aura and name then
+				if baf.noDuration and aura.auraIsHarmful and not button.auraDuration then
+					return false
+				end
+
+				if baf.cc then
+					local elType = element.type
+					if elType == 'debuffs' and aura.auraIsCrowdControl then
+						return false -- exclude CC from debuffs element
+					elseif elType == 'auras' then
+						button.priority = 0
+						return aura.auraIsHarmful and aura.auraIsCrowdControl
+					end
+				end
+			end
+
+			return origAuraFilter(element, unit, button, aura, name, icon, count, debuffType, duration, expiration, source, isStealable, nameplateShowPersonal, spellID, canApplyAura, isBossAura, castByPlayer, nameplateShowAll)
+		end
+	end
+end
