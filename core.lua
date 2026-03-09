@@ -14,6 +14,9 @@ LSM:Register('statusbar', 'TrenchyFocus', mediaPath .. 'statusbar\\TrenchyFocus'
 local TUI = E:NewModule('TrenchyUI', 'AceHook-3.0', 'AceEvent-3.0')
 ns.TUI = TUI
 
+-- Register TrenchyUI as a mover filter category in ElvUI's Config Mode dropdown
+E:ConfigMode_AddGroup('TRENCHYUI', E:TextGradient('TrenchyUI', 1.00,0.18,0.24, 0.80,0.10,0.20))
+
 TUI.conflictDefs = {
 	damageMeter = {
 		addonName  = 'Details',
@@ -197,6 +200,7 @@ do -- Settings merge
 		if self.InitSkinAuctionator then self:InitSkinAuctionator() end
 		if self.InitCooldownManager then self:InitCooldownManager() end
 		if self.InitSoulFragments then self:InitSoulFragments() end
+		if self.InitIronfurBar then self:InitIronfurBar() end
 		if not self:IsCompatBlocked('auraHighlight') and self.InitPixelGlow then self:InitPixelGlow() end
 		if not self:IsCompatBlocked('damageMeter') and self.InitDamageMeter then self:InitDamageMeter() end
 		if self.InitSkinBugSack then self:InitSkinBugSack() end

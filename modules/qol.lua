@@ -116,7 +116,7 @@ do -- Difficulty Text Replacement
 		local yOff = iconDb and iconDb.yOffset or 1
 		diffTextFrame:SetPoint(position, Minimap, position, xOff, yOff)
 
-		E:CreateMover(diffTextFrame, 'TUI_DifficultyTextMover', 'Difficulty Text', nil, nil, nil, 'ALL,GENERAL', nil, 'TrenchyUI,qol')
+		E:CreateMover(diffTextFrame, 'TUI_DifficultyTextMover', 'Difficulty Text', nil, nil, nil, 'ALL,TRENCHYUI', nil, 'TrenchyUI,qol')
 
 		local db = TUI.db and TUI.db.profile and TUI.db.profile.qol
 		local fontPath = LSM:Fetch('font', db and db.difficultyFont or 'Expressway')
@@ -623,7 +623,7 @@ do -- Minimap Button Bar
 				UpdateVisibility()
 			end)
 
-			E:CreateMover(mbbBar, 'TrenchyUIMinimapButtonBarMover', 'TUI Minimap Buttons', nil, nil, nil, nil, nil, 'TrenchyUI,qol')
+			E:CreateMover(mbbBar, 'TrenchyUIMinimapButtonBarMover', 'TUI Minimap Buttons', nil, nil, nil, 'ALL,TRENCHYUI', nil, 'TrenchyUI,qol')
 			TUI:UpdateMinimapButtonBar()
 			C_Timer.After(5, function() TUI:UpdateMinimapButtonBar() end)
 		end)

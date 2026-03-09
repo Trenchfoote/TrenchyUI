@@ -7,6 +7,23 @@ local LCG = E.Libs.CustomGlow
 local hooksecurefunc = hooksecurefunc
 local GetSpecialization = GetSpecialization
 local UnitClass = UnitClass
+local UnitPower = UnitPower
+local UnitPowerType = UnitPowerType
+local UnitPowerPercent = UnitPowerPercent
+local format = format
+
+local ScaleTo100 = CurveConstants and CurveConstants.ScaleTo100
+
+-- Smart Power tag: shows percentage for mana users, current value otherwise
+E:AddTag('tui-smartpower', 'UNIT_DISPLAYPOWER UNIT_POWER_FREQUENT UNIT_MAXPOWER', function(unit)
+	local powerType = UnitPowerType(unit)
+	if powerType == Enum.PowerType.Mana then
+		return format('%d', UnitPowerPercent(unit, nil, true, ScaleTo100))
+	else
+		return UnitPower(unit)
+	end
+end)
+E:AddTagInfo('tui-smartpower', 'Power', 'Shows power percentage for mana specs, current power for others')
 
 -- Fake Power fix
 hooksecurefunc(UF, 'Configure_ClassBar', function(_, frame)
@@ -236,6 +253,252 @@ function TUI:InitSoulFragments()
 		local specFrame = CreateFrame('Frame')
 		specFrame:RegisterEvent('PLAYER_SPECIALIZATION_CHANGED')
 		specFrame:SetScript('OnEvent', OnSpecChanged)
+	end)
+end
+
+-- Guardian Druid Ironfur Bar
+local IRONFUR_SPELL = 192081
+local IRONFUR_BASE_DUR = 7 -- base duration in seconds
+local ifBar, ifHolder, ifEventFrame
+local ifExpiry, ifDuration = 0, 0
+local ifAnimGroup
+
+local function StartIronfurDrain()
+	if not ifBar or not ifAnimGroup then return end
+	local now = GetTime()
+	local remaining = ifExpiry - now
+	if remaining <= 0 then
+		ifBar:SetMinMaxValues(0, 1)
+		ifBar:SetValue(0)
+		ifExpiry, ifDuration = 0, 0
+		ifAnimGroup:Hide()
+		return
+	end
+
+	ifBar:SetMinMaxValues(0, ifDuration)
+	ifBar:SetValue(remaining)
+	ifAnimGroup:Show()
+end
+
+local function StopIronfurDrain()
+	if ifAnimGroup then ifAnimGroup:Hide() end
+	if ifBar then
+		ifBar:SetMinMaxValues(0, 1)
+		ifBar:SetValue(0)
+	end
+	ifExpiry, ifDuration = 0, 0
+end
+
+local function OnIronfurCast()
+	local now = GetTime()
+	local remaining = ifExpiry > 0 and (ifExpiry - now) or 0
+	if remaining < 0 then remaining = 0 end
+
+	-- Pandemic: can extend up to 130% of base duration
+	local maxDur = IRONFUR_BASE_DUR * 1.3
+	local newRemaining = remaining + IRONFUR_BASE_DUR
+	if newRemaining > maxDur then newRemaining = maxDur end
+
+	ifDuration = newRemaining
+	ifExpiry = now + newRemaining
+	StartIronfurDrain()
+end
+
+local BEAR_FORM = 1
+
+local function UpdateIronfurVisibility()
+	if not ifHolder then return end
+	local inBear = GetShapeshiftForm() == BEAR_FORM
+	if inBear then
+		ifHolder:Show()
+	else
+		ifHolder:Hide()
+		StopIronfurDrain()
+	end
+end
+
+local function OnIronfurEvent(_, event, ...)
+	if event == 'UNIT_SPELLCAST_SUCCEEDED' then
+		local _, _, spellID = ...
+		if spellID == IRONFUR_SPELL then
+			OnIronfurCast()
+		end
+	elseif event == 'UPDATE_SHAPESHIFT_FORM' then
+		UpdateIronfurVisibility()
+	elseif event == 'PLAYER_REGEN_ENABLED' then
+		-- Out of combat: sync with actual aura data
+		local aura = C_UnitAuras.GetPlayerAuraBySpellID(IRONFUR_SPELL)
+		if aura and aura.duration and aura.duration > 0 then
+			ifDuration = aura.duration
+			ifExpiry = aura.expirationTime
+			StartIronfurDrain()
+		else
+			StopIronfurDrain()
+		end
+	end
+end
+
+local ifCachedW, ifCachedH = 0, 0
+
+local function LayoutIronfurBar()
+	if not ifBar or not ifHolder then return end
+
+	local cbdb = GetClassBarDB()
+	if not cbdb then return end
+
+	local BORDER = UF.BORDER or 2
+	local UISPACING = UF.SPACING or 1
+	local SPACING = (BORDER + UISPACING) * 2
+
+	local playerFrame = UF.player
+	local CLASSBAR_WIDTH
+	if playerFrame and playerFrame.CLASSBAR_DETACHED then
+		CLASSBAR_WIDTH = cbdb.detachedWidth or 250
+	elseif playerFrame and playerFrame.USE_MINI_CLASSBAR then
+		CLASSBAR_WIDTH = E:Scale(playerFrame.CLASSBAR_WIDTH or 250)
+	else
+		CLASSBAR_WIDTH = playerFrame and E:Scale(playerFrame.CLASSBAR_WIDTH or 250) or 250
+	end
+
+	local holderH = cbdb.height or 10
+
+	-- Skip layout if dimensions haven't changed
+	if CLASSBAR_WIDTH == ifCachedW and holderH == ifCachedH then return end
+	ifCachedW, ifCachedH = CLASSBAR_WIDTH, holderH
+
+	ifHolder:SetSize(CLASSBAR_WIDTH, holderH)
+	ifBar:SetSize(CLASSBAR_WIDTH - SPACING, holderH - SPACING)
+
+	ifBar:ClearAllPoints()
+	ifBar:SetPoint('BOTTOMLEFT', ifHolder, 'BOTTOMLEFT', BORDER + UISPACING, BORDER + UISPACING)
+
+	local texture = LSM:Fetch('statusbar', E.db.unitframe and E.db.unitframe.statusbar or 'ElvUI Norm')
+	ifBar:SetStatusBarTexture(texture)
+	ifBar:GetStatusBarTexture():SetHorizTile(false)
+	ifBar.bg:SetTexture(texture)
+
+	local borderColor = E.db.unitframe and E.db.unitframe.colors and E.db.unitframe.colors.borderColor
+	if ifBar.backdrop and borderColor and not ifBar.backdrop.forcedBorderColors then
+		ifBar.backdrop:SetBackdropBorderColor(borderColor.r, borderColor.g, borderColor.b)
+	end
+
+	ifBar:SetFrameStrata(cbdb.strataAndLevel and cbdb.strataAndLevel.useCustomStrata and cbdb.strataAndLevel.frameStrata or 'LOW')
+
+	local custom_backdrop = UF.db.colors.customclasspowerbackdrop and UF.db.colors.classpower_backdrop
+	local cc = E:ClassColor('DRUID')
+	if cc then
+		UF:SetStatusBarColor(ifBar, cc.r, cc.g, cc.b, custom_backdrop)
+	end
+
+	-- Read actual aura data out of combat
+	local aura = C_UnitAuras.GetPlayerAuraBySpellID(IRONFUR_SPELL)
+	if aura and aura.duration and aura.duration > 0 then
+		ifDuration = aura.duration
+		ifExpiry = aura.expirationTime
+		StartIronfurDrain()
+	end
+end
+
+local function CreateIronfurBar()
+	if ifHolder then return end
+
+	local anchor = _G['ClassBarMover'] or E.UIParent
+	ifHolder = CreateFrame('Frame', 'TUI_IronfurHolder', E.UIParent)
+	ifHolder:SetAllPoints(anchor)
+
+	ifBar = CreateFrame('StatusBar', 'TUI_IronfurBar', ifHolder)
+	ifBar:SetStatusBarTexture(E.media.blankTex)
+	ifBar:GetStatusBarTexture():SetHorizTile(false)
+	ifBar:SetMinMaxValues(0, 1)
+	ifBar:SetValue(0)
+	ifBar:CreateBackdrop(nil, nil, nil, nil, true)
+
+	ifBar.bg = ifBar:CreateTexture(nil, 'BORDER')
+	ifBar.bg:SetTexture(E.media.blankTex)
+	ifBar.bg:SetInside(ifBar.backdrop)
+
+	-- Ticker frame for smooth drain
+	local ticker = CreateFrame('Frame')
+	ticker:Hide()
+	local tickElapsed = 0
+	ticker:SetScript('OnUpdate', function(_, dt)
+		if ifExpiry == 0 then ticker:Hide() return end
+		tickElapsed = tickElapsed + dt
+		if tickElapsed < 0.1 then return end -- 10fps
+		tickElapsed = 0
+		local remaining = ifExpiry - GetTime()
+		if remaining > 0 then
+			ifBar:SetValue(remaining)
+		else
+			ifBar:SetValue(0)
+			ifExpiry, ifDuration = 0, 0
+			ticker:Hide()
+		end
+	end)
+	ifAnimGroup = ticker
+
+	hooksecurefunc(UF, 'Configure_ClassBar', function(_, frame)
+		if not ifHolder then return end
+		if frame ~= UF.player then return end
+		C_Timer.After(0, LayoutIronfurBar)
+	end)
+
+	LayoutIronfurBar()
+end
+
+local function ShowIronfurBar()
+	if not ifHolder then
+		CreateIronfurBar()
+	end
+
+	if not ifEventFrame then
+		ifEventFrame = CreateFrame('Frame')
+		ifEventFrame:SetScript('OnEvent', OnIronfurEvent)
+	end
+
+	ifEventFrame:RegisterUnitEvent('UNIT_SPELLCAST_SUCCEEDED', 'player')
+	ifEventFrame:RegisterEvent('PLAYER_REGEN_ENABLED')
+	ifEventFrame:RegisterEvent('UPDATE_SHAPESHIFT_FORM')
+
+	-- Show only if in Bear Form
+	UpdateIronfurVisibility()
+
+	-- Try to read aura data (works out of combat)
+	if GetShapeshiftForm() == BEAR_FORM then
+		local aura = C_UnitAuras.GetPlayerAuraBySpellID(IRONFUR_SPELL)
+		if aura and aura.duration and aura.duration > 0 then
+			ifDuration = aura.duration
+			ifExpiry = aura.expirationTime
+			StartIronfurDrain()
+		end
+	end
+end
+
+local function HideIronfurBar()
+	if ifHolder then ifHolder:Hide() end
+	if ifEventFrame then ifEventFrame:UnregisterAllEvents() end
+	ifExpiry, ifDuration = 0, 0
+end
+
+local function OnDruidSpecChanged()
+	local spec = GetSpecialization()
+	if spec == 3 then -- Guardian
+		ShowIronfurBar()
+	else
+		HideIronfurBar()
+	end
+end
+
+function TUI:InitIronfurBar()
+	local _, class = UnitClass('player')
+	if class ~= 'DRUID' then return end
+
+	C_Timer.After(0, function()
+		OnDruidSpecChanged()
+
+		local specFrame = CreateFrame('Frame')
+		specFrame:RegisterEvent('PLAYER_SPECIALIZATION_CHANGED')
+		specFrame:SetScript('OnEvent', OnDruidSpecChanged)
 	end)
 end
 

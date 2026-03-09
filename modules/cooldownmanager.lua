@@ -15,7 +15,6 @@ local VIEWER_KEYS = {
 	essential = { global = 'EssentialCooldownViewer', label = 'Essential CDs',  mover = 'TUI_CDM_Essential' },
 	utility   = { global = 'UtilityCooldownViewer',  label = 'Utility CDs',    mover = 'TUI_CDM_Utility' },
 	buffIcon  = { global = 'BuffIconCooldownViewer', label = 'Buff Icon CDs',  mover = 'TUI_CDM_BuffIcon' },
-	buffBar   = { global = 'BuffBarCooldownViewer',  label = 'Ext. Defensives', mover = 'TUI_CDM_BuffBar' },
 }
 
 local containers = {}   -- [viewerKey] = container frame
@@ -25,6 +24,9 @@ local glowActive = {}   -- [itemFrame] = true — tracks which frames currently 
 local iconCache = {}    -- [viewerKey] = reusable table for icon collection
 local glowColor = {}    -- reusable color table for glow
 local previewActive = false
+local cdmTabActive = false
+local inCombat = InCombatLockdown()
+local ScheduleRelayout -- forward declaration
 
 local sortFunc = function(a, b) return (a.layoutIndex or 0) < (b.layoutIndex or 0) end
 
@@ -63,7 +65,7 @@ end
 
 local hookedAlerts = {} -- [itemFrame] = true — tracks which alerts we've hooked
 
-local function ApplyGlow(itemFrame, db)
+local function ApplyGlow(itemFrame, glowDB)
 	if not LCG then return end
 
 	-- Glow on proc — mirror Blizzard's SpellActivationAlert
@@ -81,8 +83,9 @@ local function ApplyGlow(itemFrame, db)
 	if not hookedAlerts[itemFrame] then
 		hookedAlerts[itemFrame] = true
 		hooksecurefunc(alert, 'Show', function(self)
-			local cdb = GetDB()
-			if cdb and cdb.enabled and cdb.glow and cdb.glow.enabled then
+			local vKey = styledFrames[itemFrame]
+			local vdb = vKey and GetViewerDB(vKey)
+			if vdb and vdb.glow and vdb.glow.enabled then
 				self:SetAlpha(0)
 				itemFrame.tuiAlertHidden = true
 			end
@@ -91,23 +94,24 @@ local function ApplyGlow(itemFrame, db)
 
 	glowActive[itemFrame] = true
 
-	local glowType = db.glow.type or 'pixel'
-	local color = db.glow.color
-	glowColor[1] = color and color.r or 0.95
-	glowColor[2] = color and color.g or 0.95
-	glowColor[3] = color and color.b or 0.32
-	glowColor[4] = color and color.a or 1
+	local glowType = glowDB.type or 'pixel'
+	local color = glowDB.color
+	if color then
+		glowColor[1], glowColor[2], glowColor[3], glowColor[4] = color.r, color.g, color.b, color.a or 1
+	else
+		glowColor[1], glowColor[2], glowColor[3], glowColor[4] = 0.95, 0.95, 0.32, 1
+	end
 
 	if glowType == 'pixel' then
-		LCG.PixelGlow_Start(itemFrame, glowColor, db.glow.lines or 8, db.glow.speed or 0.25, db.glow.length, db.glow.thickness or 2, 0, 0, nil, 'TUI_CDM')
+		LCG.PixelGlow_Start(itemFrame, glowColor, glowDB.lines or 8, glowDB.speed or 0.25, glowDB.length, glowDB.thickness or 2, 0, 0, nil, 'TUI_CDM')
 	elseif glowType == 'autocast' then
-		LCG.AutoCastGlow_Start(itemFrame, glowColor, db.glow.particles or 4, db.glow.speed or 0.25, db.glow.scale or 1, 0, 0, 'TUI_CDM')
+		LCG.AutoCastGlow_Start(itemFrame, glowColor, glowDB.particles or 4, glowDB.speed or 0.25, glowDB.scale or 1, 0, 0, 'TUI_CDM')
 	elseif glowType == 'button' then
-		LCG.ButtonGlow_Start(itemFrame, glowColor, db.glow.speed or 0.25)
+		LCG.ButtonGlow_Start(itemFrame, glowColor, glowDB.speed or 0.25)
 	elseif glowType == 'proc' then
 		LCG.ProcGlow_Start(itemFrame, {
 			color = glowColor,
-			startAnim = db.glow.startAnim ~= false,
+			startAnim = glowDB.startAnim ~= false,
 			key = 'TUI_CDM',
 		})
 	end
@@ -115,8 +119,7 @@ end
 
 local function ApplyIconZoom(itemFrame, zoom)
 	if not zoom or zoom <= 0 then return end
-	-- Icon viewers: itemFrame.Icon is a Texture
-	-- BuffBar viewers: itemFrame.Icon is a Frame with .Icon sub-texture
+	-- itemFrame.Icon is a Texture (icon viewers) or a Frame with .Icon sub-texture
 	local icon = itemFrame.Icon
 	if icon then
 		if icon.SetTexCoord then
@@ -199,8 +202,7 @@ end
 
 -- Preview text for config
 local function SetPreviewText(itemFrame, show, vdb)
-	-- Cooldown preview: use a standalone FontString since Blizzard hides
-	-- the cooldown text region when no cooldown is active
+	-- Standalone FontString since Blizzard hides inactive cooldown text
 	if show then
 		if not itemFrame.tuiCDPreview then
 			itemFrame.tuiCDPreview = itemFrame:CreateFontString(nil, 'OVERLAY')
@@ -272,6 +274,8 @@ local function ShowBlizzardCDMSettings()
 	if settings and not settings:IsShown() then
 		settings:Show()
 	end
+	-- Blizzard's Show/Hide triggers RefreshLayout, recapture into our containers
+	ScheduleRelayout()
 end
 
 local function HideBlizzardCDMSettings()
@@ -279,6 +283,7 @@ local function HideBlizzardCDMSettings()
 	if settings and settings:IsShown() then
 		settings:Hide()
 	end
+	ScheduleRelayout()
 end
 
 local function IsConfigOpen()
@@ -313,7 +318,7 @@ local function CreateContainer(viewerKey)
 	frame:SetFrameStrata('MEDIUM')
 	frame:SetFrameLevel(5)
 
-	E:CreateMover(frame, info.mover .. 'Mover', 'TUI ' .. info.label, nil, nil, nil, nil, nil, CDM_CONFIG_STRING)
+	E:CreateMover(frame, info.mover .. 'Mover', 'TUI ' .. info.label, nil, nil, nil, 'ALL,TRENCHYUI', nil, CDM_CONFIG_STRING)
 
 	containers[viewerKey] = frame
 	return frame
@@ -357,7 +362,8 @@ local function LayoutContainer(viewerKey, isCapture)
 	end
 
 	local applyStyle = isCapture
-	local useGlow = db.glow and db.glow.enabled
+	local vGlow = vdb.glow
+	local useGlow = vGlow and vGlow.enabled
 
 	local iconZoom = vdb.iconZoom
 
@@ -374,7 +380,7 @@ local function LayoutContainer(viewerKey, isCapture)
 
 		-- Glow must run every relayout since proc state changes dynamically
 		if useGlow then
-			ApplyGlow(icon, db)
+			ApplyGlow(icon, vGlow)
 		else
 			StopGlow(icon)
 		end
@@ -414,30 +420,6 @@ local function LayoutContainer(viewerKey, isCapture)
 	end
 end
 
--- BuffBar conversion: hide bar, promote icon to fill the frame
-local function ConvertBuffBarFrame(itemFrame)
-	if itemFrame.tuiBarConverted then return end
-	itemFrame.tuiBarConverted = true
-
-	-- Hide the StatusBar portion
-	local bar = itemFrame.Bar
-	if bar then bar:Hide() end
-
-	-- Promote the icon to fill the item frame
-	local icon = itemFrame.Icon
-	if icon then
-		icon:ClearAllPoints()
-		icon:SetAllPoints(itemFrame)
-		icon:Show()
-
-		-- The icon sub-texture
-		local iconTex = icon.Icon
-		if iconTex then
-			iconTex:SetAllPoints(icon)
-		end
-	end
-end
-
 -- Frame capture
 local function CaptureAndLayout(viewer, viewerKey)
 	local db = GetDB()
@@ -446,20 +428,14 @@ local function CaptureAndLayout(viewer, viewerKey)
 	local container = containers[viewerKey]
 	if not container then return end
 
-	local isBuffBar = (viewerKey == 'buffBar')
+	local hasNew = false
 
-	-- Hide container during recapture to prevent visual flash
-	local needsCapture = false
 	for _, child in ipairs({ viewer:GetChildren() }) do
 		if child and child.layoutIndex then
 			if child:GetParent() ~= container then
-				if not needsCapture then
-					needsCapture = true
-					container:SetAlpha(0)
-				end
 				child:SetParent(container)
 				child:SetScale(1)
-				if isBuffBar then ConvertBuffBarFrame(child) end
+				hasNew = true
 			end
 			if child.DebuffBorder and not child.tuiDebuffBorderKilled then
 				child.DebuffBorder:Hide()
@@ -470,18 +446,31 @@ local function CaptureAndLayout(viewer, viewerKey)
 		end
 	end
 
-	viewer:SetAlpha(0)
-	LayoutContainer(viewerKey, true)
+	if not hookedViewers[viewerKey .. '_alpha'] then
+		hookedViewers[viewerKey .. '_alpha'] = true
+		viewer:SetAlpha(0)
+		hooksecurefunc(viewer, 'SetAlpha', function(self, alpha)
+			if alpha > 0 then self:SetAlpha(0) end
+		end)
 
-	if needsCapture then
-		container:SetAlpha(1)
+		-- Hide Edit Mode selection handles (the small crosses)
+		local selection = viewer.Selection
+		if selection then
+			selection:Hide()
+			selection:SetAlpha(0)
+			hooksecurefunc(selection, 'Show', function(self)
+				self:Hide()
+			end)
+		end
 	end
+
+	LayoutContainer(viewerKey, hasNew)
 end
 
 -- Hook setup
 local layoutPending = false
 
-local function ScheduleRelayout()
+function ScheduleRelayout()
 	if layoutPending then return end
 	layoutPending = true
 	C_Timer.After(0.05, function()
@@ -498,6 +487,15 @@ local function ScheduleRelayout()
 end
 
 local function OnCDMEvent(_, event, unit)
+	if event == 'PLAYER_REGEN_DISABLED' then
+		inCombat = true
+		TUI:UpdateCDMVisibility()
+		return
+	elseif event == 'PLAYER_REGEN_ENABLED' then
+		inCombat = false
+		TUI:UpdateCDMVisibility()
+		return
+	end
 	if event == 'UNIT_AURA' and unit ~= 'player' then return end
 	ScheduleRelayout()
 end
@@ -510,6 +508,29 @@ local function HookViewer(viewerKey)
 	hooksecurefunc(viewer, 'RefreshLayout', function()
 		ScheduleRelayout()
 	end)
+end
+
+-- Visibility
+local function ShouldShowContainer(viewerKey)
+	local vdb = GetViewerDB(viewerKey)
+	if not vdb then return true end
+
+	local vis = vdb.visibleSetting or 'ALWAYS'
+	if vis == 'HIDDEN' then return false end
+	if vis == 'INCOMBAT' then return inCombat end
+	return true
+end
+
+function TUI:UpdateCDMVisibility()
+	local db = GetDB()
+	if not db or not db.enabled then return end
+
+	for viewerKey in pairs(VIEWER_KEYS) do
+		local container = containers[viewerKey]
+		if container then
+			container:SetShown(ShouldShowContainer(viewerKey))
+		end
+	end
 end
 
 -- Public API
@@ -548,7 +569,11 @@ function TUI:InitCooldownManager()
 		eventFrame:RegisterEvent('UNIT_AURA')
 		eventFrame:RegisterEvent('SPELL_UPDATE_COOLDOWN')
 		eventFrame:RegisterEvent('SPELLS_CHANGED')
+		eventFrame:RegisterEvent('PLAYER_REGEN_DISABLED')
+		eventFrame:RegisterEvent('PLAYER_REGEN_ENABLED')
 		eventFrame:SetScript('OnEvent', OnCDMEvent)
+
+		TUI:UpdateCDMVisibility()
 	end)
 end
 
@@ -560,7 +585,6 @@ end
 
 -- Config hooks
 local configCloseHooked = false
-local cdmTabActive = false
 
 local function TryHookConfigClose()
 	if configCloseHooked then return end

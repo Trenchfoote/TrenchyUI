@@ -116,7 +116,7 @@ do -- LFG Timer Skin
 		if timerBarRef.text then
 			local fontPath = LSM:Fetch('font', s.fontName) or s.fontName
 			local flags = (s.outline and s.outline ~= 'NONE') and s.outline or ''
-			timerBarRef.text:SetFont(fontPath, s.fontSize, flags)
+			timerBarRef.text:SetFont(fontPath, s.fontSize, flags) -- raw SetFont: BigWigs applies its own shadow
 			timerBarRef.text:SetTextColor(s.barText[1], s.barText[2], s.barText[3], s.barText[4] or 1)
 			if s.barTextShadow then
 				timerBarRef.text:SetShadowColor(s.barTextShadow[1], s.barTextShadow[2], s.barTextShadow[3], s.barTextShadow[4] or 1)
@@ -128,7 +128,7 @@ do -- LFG Timer Skin
 			bf:SetPoint('TOPLEFT', timerBarRef, 'TOPLEFT', 0, 1)
 			bf:SetPoint('BOTTOMRIGHT', timerBarRef, 'BOTTOMRIGHT', 0, -1)
 			bf:SetFrameLevel(timerBarRef:GetFrameLevel() + 1)
-			bf:SetBackdrop({ edgeFile = 'Interface\\BUTTONS\\WHITE8X8', edgeSize = 1 })
+			bf:SetBackdrop({ edgeFile = E.media.blankTex, edgeSize = 1 })
 			bf:SetBackdropBorderColor(0, 0, 0, 1)
 			timerBarRef.borderFrame = bf
 		end

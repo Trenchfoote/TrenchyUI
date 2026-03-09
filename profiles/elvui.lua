@@ -706,7 +706,6 @@ local function SetupProfileDB()
     E.db.movers.BossButton = "BOTTOM,ElvUIParent,BOTTOM,-174,546"
     E.db.movers.BossHeaderMover = "TOPRIGHT,ElvUIParent,TOPRIGHT,-2,-508"
     E.db.movers.BuffsMover = "TOPLEFT,ElvUIParent,TOPLEFT,2,-2"
-    E.db.movers.CDM_BuffBars_Mover = "BOTTOM,UIParent,BOTTOM,0,225"
     E.db.movers.CDM_Essentials_Mover = "BOTTOM,ElvUIParent,BOTTOM,-6,455"
     E.db.movers.CDM_Utility_Mover = "TOP,UIParent,TOP,4,368"
     E.db.movers.ClassBarMover = "BOTTOM,ElvUIParent,BOTTOM,0,454"
@@ -2323,7 +2322,7 @@ local function SetupProfileDB()
     E.db.unitframe.units.player.power.powerPrediction = true
     E.db.unitframe.units.player.power.smoothbars = true
     E.db.unitframe.units.player.power.strataAndLevel.frameStrata = "BACKGROUND"
-    E.db.unitframe.units.player.power.text_format = "[classcolor][curpp]"
+    E.db.unitframe.units.player.power.text_format = "[powercolor][tui-smartpower]"
     E.db.unitframe.units.player.power.width = "inset"
     E.db.unitframe.units.player.power.detachFromFrame = true
     E.db.unitframe.units.player.power.position = "CENTER"

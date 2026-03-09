@@ -911,7 +911,7 @@ local function CreateStandaloneWindow(win, db, savedW, savedH)
     end
 
     local moverLabel = i == 1 and "TDM" or ("TDM " .. i)
-    E:CreateMover(window, winName, moverLabel, nil, nil, nil, 'ALL,GENERAL', nil, 'TrenchyUI,damageMeter')
+    E:CreateMover(window, winName, moverLabel, nil, nil, nil, 'ALL,TRENCHYUI', nil, 'TrenchyUI,damageMeter')
 
     local holder = E:GetMoverHolder(winName)
     if holder and holder.mover then
@@ -1493,8 +1493,14 @@ function TUI:InitDamageMeter()
         evFrame:RegisterEvent("DAMAGE_METER_CURRENT_SESSION_UPDATED")
         evFrame:RegisterEvent("DAMAGE_METER_RESET")
         evFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+        evFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
         evFrame:SetScript("OnEvent", function(_, event)
-            if event == "PLAYER_ENTERING_WORLD" then
+            if event == "PLAYER_REGEN_DISABLED" then
+                for _, w in pairs(windows) do
+                    ExitDrillDown(w)
+                end
+                return
+            elseif event == "PLAYER_ENTERING_WORLD" then
                 wipe(classCache)
                 for _, w in pairs(windows) do
                     wipe(w.positionCache)

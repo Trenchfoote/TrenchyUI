@@ -62,37 +62,26 @@ TUI.defaults = {
             selectedViewer = 'essential',
             viewers = {
                 essential = {
+                    visibleSetting = 'ALWAYS',
                     iconWidth = 30, iconHeight = 30, iconZoom = 0, spacing = 2, iconsPerRow = 12, growthDirection = 'DOWN',
                     cooldownText = { font = 'Expressway', fontSize = 16, fontOutline = 'OUTLINE', classColor = false, color = { r = 1, g = 1, b = 1 }, position = 'CENTER', xOffset = 0, yOffset = 0 },
                     countText    = { font = 'Expressway', fontSize = 11, fontOutline = 'OUTLINE', classColor = false, color = { r = 1, g = 1, b = 1 }, position = 'BOTTOMRIGHT', xOffset = 0, yOffset = 0 },
+                    glow = { enabled = false, type = 'pixel', color = { r = 0.95, g = 0.95, b = 0.32, a = 1 }, lines = 8, speed = 0.25, thickness = 2, length = nil, particles = 4, scale = 1, startAnim = true },
                 },
                 utility = {
+                    visibleSetting = 'ALWAYS',
                     iconWidth = 30, iconHeight = 30, iconZoom = 0, spacing = 2, iconsPerRow = 12, growthDirection = 'DOWN',
                     cooldownText = { font = 'Expressway', fontSize = 16, fontOutline = 'OUTLINE', classColor = false, color = { r = 1, g = 1, b = 1 }, position = 'CENTER', xOffset = 0, yOffset = 0 },
                     countText    = { font = 'Expressway', fontSize = 11, fontOutline = 'OUTLINE', classColor = false, color = { r = 1, g = 1, b = 1 }, position = 'BOTTOMRIGHT', xOffset = 0, yOffset = 0 },
+                    glow = { enabled = false, type = 'pixel', color = { r = 0.95, g = 0.95, b = 0.32, a = 1 }, lines = 8, speed = 0.25, thickness = 2, length = nil, particles = 4, scale = 1, startAnim = true },
                 },
                 buffIcon = {
+                    visibleSetting = 'ALWAYS',
                     iconWidth = 30, iconHeight = 30, iconZoom = 0, spacing = 2, iconsPerRow = 12, growthDirection = 'DOWN',
                     cooldownText = { font = 'Expressway', fontSize = 16, fontOutline = 'OUTLINE', classColor = false, color = { r = 1, g = 1, b = 1 }, position = 'CENTER', xOffset = 0, yOffset = 0 },
                     countText    = { font = 'Expressway', fontSize = 11, fontOutline = 'OUTLINE', classColor = false, color = { r = 1, g = 1, b = 1 }, position = 'BOTTOMRIGHT', xOffset = 0, yOffset = 0 },
+                    glow = { enabled = false, type = 'pixel', color = { r = 0.95, g = 0.95, b = 0.32, a = 1 }, lines = 8, speed = 0.25, thickness = 2, length = nil, particles = 4, scale = 1, startAnim = true },
                 },
-                buffBar = {
-                    iconWidth = 30, iconHeight = 30, iconZoom = 0, spacing = 2, iconsPerRow = 12, growthDirection = 'DOWN',
-                    cooldownText = { font = 'Expressway', fontSize = 16, fontOutline = 'OUTLINE', classColor = false, color = { r = 1, g = 1, b = 1 }, position = 'CENTER', xOffset = 0, yOffset = 0 },
-                    countText    = { font = 'Expressway', fontSize = 11, fontOutline = 'OUTLINE', classColor = false, color = { r = 1, g = 1, b = 1 }, position = 'BOTTOMRIGHT', xOffset = 0, yOffset = 0 },
-                },
-            },
-            glow = {
-                enabled   = false,
-                type      = 'pixel',
-                color     = { r = 0.95, g = 0.95, b = 0.32, a = 1 },
-                lines     = 8,
-                speed     = 0.25,
-                thickness = 2,
-                length    = nil,
-                particles = 4,
-                scale     = 1,
-                startAnim = true,
             },
         },
         damageMeter = {
@@ -266,7 +255,9 @@ function TUI:BuildConfig()
         diffDisabled
     )
 
-    qolDiff.colorHeader = ACH:Header("Difficulty Colors", 5)
+    qolDiff.colors = ACH:Group("Difficulty Colors", nil, 5)
+    qolDiff.colors.inline = true
+    local diffColors = qolDiff.colors.args
 
     local function getDiffColor(key)
         local colors = TUI.db.profile.qol.difficultyColors
@@ -280,57 +271,57 @@ function TUI:BuildConfig()
         return qol.difficultyColors[key]
     end
 
-    qolDiff.diffNormal = ACH:Color(
-        "Normal", "Color for Normal difficulty.", 6, nil, nil,
+    diffColors.diffNormal = ACH:Color(
+        "Normal", "Color for Normal difficulty.", 1, nil, nil,
         function() local c = getDiffColor("normal") or ensureDiffColor("normal"); return c.r, c.g, c.b end,
         function(_, r, g, b) local c = ensureDiffColor("normal"); c.r, c.g, c.b = r, g, b end,
         diffDisabled
     )
 
-    qolDiff.diffHeroic = ACH:Color(
-        "Heroic", "Color for Heroic difficulty.", 7, nil, nil,
+    diffColors.diffHeroic = ACH:Color(
+        "Heroic", "Color for Heroic difficulty.", 2, nil, nil,
         function() local c = getDiffColor("heroic") or ensureDiffColor("heroic"); return c.r, c.g, c.b end,
         function(_, r, g, b) local c = ensureDiffColor("heroic"); c.r, c.g, c.b = r, g, b end,
         diffDisabled
     )
 
-    qolDiff.diffMythic = ACH:Color(
-        "Mythic", "Color for Mythic (non-keystone) difficulty.", 8, nil, nil,
+    diffColors.diffMythic = ACH:Color(
+        "Mythic", "Color for Mythic (non-keystone) difficulty.", 3, nil, nil,
         function() local c = getDiffColor("mythic") or ensureDiffColor("mythic"); return c.r, c.g, c.b end,
         function(_, r, g, b) local c = ensureDiffColor("mythic"); c.r, c.g, c.b = r, g, b end,
         diffDisabled
     )
 
-    qolDiff.diffKeystone = ACH:Color(
-        "Mythic+", "Color for Mythic Keystone (M+) text and level number.", 9, nil, nil,
+    diffColors.diffKeystone = ACH:Color(
+        "Mythic+", "Color for Mythic Keystone (M+) text and level number.", 4, nil, nil,
         function() local c = getDiffColor("keystoneMod") or ensureDiffColor("keystoneMod"); return c.r, c.g, c.b end,
         function(_, r, g, b) local c = ensureDiffColor("keystoneMod"); c.r, c.g, c.b = r, g, b end,
         diffDisabled
     )
 
-    qolDiff.diffTimewalking = ACH:Color(
-        "Timewalking", "Color for Timewalking difficulty.", 10, nil, nil,
+    diffColors.diffTimewalking = ACH:Color(
+        "Timewalking", "Color for Timewalking difficulty.", 5, nil, nil,
         function() local c = getDiffColor("timewalking") or ensureDiffColor("timewalking"); return c.r, c.g, c.b end,
         function(_, r, g, b) local c = ensureDiffColor("timewalking"); c.r, c.g, c.b = r, g, b end,
         diffDisabled
     )
 
-    qolDiff.diffLFR = ACH:Color(
-        "LFR", "Color for Looking For Raid difficulty.", 11, nil, nil,
+    diffColors.diffLFR = ACH:Color(
+        "LFR", "Color for Looking For Raid difficulty.", 6, nil, nil,
         function() local c = getDiffColor("lfr") or ensureDiffColor("lfr"); return c.r, c.g, c.b end,
         function(_, r, g, b) local c = ensureDiffColor("lfr"); c.r, c.g, c.b = r, g, b end,
         diffDisabled
     )
 
-    qolDiff.diffFollower = ACH:Color(
-        "Follower", "Color for Follower Dungeon difficulty.", 12, nil, nil,
+    diffColors.diffFollower = ACH:Color(
+        "Follower", "Color for Follower Dungeon difficulty.", 7, nil, nil,
         function() local c = getDiffColor("follower") or ensureDiffColor("follower"); return c.r, c.g, c.b end,
         function(_, r, g, b) local c = ensureDiffColor("follower"); c.r, c.g, c.b = r, g, b end,
         diffDisabled
     )
 
-    qolDiff.diffDelve = ACH:Color(
-        "Delve", "Color for Delve difficulty.", 13, nil, nil,
+    diffColors.diffDelve = ACH:Color(
+        "Delve", "Color for Delve difficulty.", 8, nil, nil,
         function() local c = getDiffColor("delve") or ensureDiffColor("delve"); return c.r, c.g, c.b end,
         function(_, r, g, b) local c = ensureDiffColor("delve"); c.r, c.g, c.b = r, g, b end,
         diffDisabled
@@ -350,23 +341,24 @@ function TUI:BuildConfig()
         function() return mbbDB().enabled end,
         function(_, value) mbbDB().enabled = value; E:StaticPopup_Show('CONFIG_RL') end)
 
-    mbb.layoutHeader = ACH:Header("Layout", 2)
+    mbb.layout = ACH:Group("Layout", nil, 2)
+    mbb.layout.inline = true
+    local mbbLayout = mbb.layout.args
 
-    mbb.orientation = ACH:Select(
-        "Orientation", "Primary direction the bar extends.", 3,
+    mbbLayout.orientation = ACH:Select(
+        "Orientation", "Primary direction the bar extends.", 1,
         { HORIZONTAL = 'Horizontal', VERTICAL = 'Vertical' }, nil, nil,
         function() return mbbDB().orientation or 'HORIZONTAL' end,
         function(_, v)
             mbbDB().orientation = v
-            -- Reset growth direction to a sensible default
             mbbDB().growthDirection = (v == 'HORIZONTAL') and 'RIGHTDOWN' or 'DOWNRIGHT'
             mbbUpdate()
         end,
         mbbDisabled
     )
 
-    mbb.growthDirection = ACH:Select(
-        "Growth Direction", "How buttons fill and wrap.", 4,
+    mbbLayout.growthDirection = ACH:Select(
+        "Growth Direction", "How buttons fill and wrap.", 2,
         function()
             if (mbbDB().orientation or 'HORIZONTAL') == 'HORIZONTAL' then
                 return { RIGHTDOWN = 'Right, then Down', RIGHTUP = 'Right, then Up', LEFTDOWN = 'Left, then Down', LEFTUP = 'Left, then Up' }
@@ -380,80 +372,86 @@ function TUI:BuildConfig()
         mbbDisabled
     )
 
-    mbb.buttonSize = ACH:Range("Button Size", "Size of each button.", 5, { min = 16, max = 48, step = 1 },
+    mbbLayout.buttonSize = ACH:Range("Button Size", "Size of each button.", 3, { min = 16, max = 48, step = 1 },
         nil, function() return mbbDB().buttonSize end,
         function(_, v) mbbDB().buttonSize = v; mbbUpdate() end, mbbDisabled)
 
-    mbb.buttonSpacing = ACH:Range("Button Spacing", "Space between buttons.", 6, { min = 0, max = 10, step = 1 },
+    mbbLayout.buttonSpacing = ACH:Range("Button Spacing", "Space between buttons.", 4, { min = 0, max = 10, step = 1 },
         nil, function() return mbbDB().buttonSpacing end,
         function(_, v) mbbDB().buttonSpacing = v; mbbUpdate() end, mbbDisabled)
 
-    mbb.buttonsPerRow = ACH:Range("Buttons Per Row", "Number of buttons before wrapping to the next row/column.", 7, { min = 1, max = 24, step = 1 },
+    mbbLayout.buttonsPerRow = ACH:Range("Buttons Per Row", "Number of buttons before wrapping to the next row/column.", 5, { min = 1, max = 24, step = 1 },
         nil, function() return mbbDB().buttonsPerRow end,
         function(_, v) mbbDB().buttonsPerRow = v; mbbUpdate() end, mbbDisabled)
 
-    mbb.btnHeader = ACH:Header("Button Appearance", 10)
+    mbb.buttonAppearance = ACH:Group("Button Appearance", nil, 10)
+    mbb.buttonAppearance.inline = true
+    local mbbBtn = mbb.buttonAppearance.args
 
-    mbb.buttonBackdrop = ACH:Toggle("Button Background", "Show a background behind each button icon.", 11, nil, nil, nil,
+    mbbBtn.buttonBackdrop = ACH:Toggle("Background", "Show a background behind each button icon.", 1, nil, nil, nil,
         function() return mbbDB().buttonBackdrop end,
         function(_, v) mbbDB().buttonBackdrop = v; mbbUpdate() end, mbbDisabled)
 
-    mbb.buttonBackdropColor = ACH:Color("Button BG Color", nil, 12, true, nil,
+    mbbBtn.buttonBackdropColor = ACH:Color("BG Color", nil, 2, true, nil,
         function() local c = mbbDB().buttonBackdropColor; return c.r, c.g, c.b, c.a end,
         function(_, r, g, b, a) local c = mbbDB().buttonBackdropColor; c.r, c.g, c.b, c.a = r, g, b, a; mbbUpdate() end,
         function() return mbbDisabled() or not mbbDB().buttonBackdrop end)
 
-    mbb.buttonBorder = ACH:Toggle("Button Border", "Show a border around each button.", 13, nil, nil, nil,
+    mbbBtn.buttonBorder = ACH:Toggle("Border", "Show a border around each button.", 3, nil, nil, nil,
         function() return mbbDB().buttonBorder end,
         function(_, v) mbbDB().buttonBorder = v; mbbUpdate() end, mbbDisabled)
 
-    mbb.buttonBorderColor = ACH:Color("Button Border Color", nil, 14, true, nil,
+    mbbBtn.buttonBorderColor = ACH:Color("Border Color", nil, 4, true, nil,
         function() local c = mbbDB().buttonBorderColor; return c.r, c.g, c.b, c.a end,
         function(_, r, g, b, a) local c = mbbDB().buttonBorderColor; c.r, c.g, c.b, c.a = r, g, b, a; mbbUpdate() end,
         function() return mbbDisabled() or not mbbDB().buttonBorder end)
 
-    mbb.buttonBorderSize = ACH:Range("Button Border Thickness", nil, 15, { min = 1, max = 4, step = 1 },
+    mbbBtn.buttonBorderSize = ACH:Range("Border Thickness", nil, 5, { min = 1, max = 4, step = 1 },
         nil, function() return mbbDB().buttonBorderSize end,
         function(_, v) mbbDB().buttonBorderSize = v; mbbUpdate() end,
         function() return mbbDisabled() or not mbbDB().buttonBorder end)
 
-    mbb.barHeader = ACH:Header("Bar Appearance", 20)
+    mbb.barAppearance = ACH:Group("Bar Appearance", nil, 20)
+    mbb.barAppearance.inline = true
+    local mbbBar = mbb.barAppearance.args
 
-    mbb.backdrop = ACH:Toggle("Bar Background", "Show a backdrop behind the button bar.", 21, nil, nil, nil,
+    mbbBar.backdrop = ACH:Toggle("Background", "Show a backdrop behind the button bar.", 1, nil, nil, nil,
         function() return mbbDB().backdrop end,
         function(_, v) mbbDB().backdrop = v; mbbUpdate() end, mbbDisabled)
 
-    mbb.backdropColor = ACH:Color("Bar BG Color", nil, 22, true, nil,
+    mbbBar.backdropColor = ACH:Color("BG Color", nil, 2, true, nil,
         function() local c = mbbDB().backdropColor; return c.r, c.g, c.b, c.a end,
         function(_, r, g, b, a) local c = mbbDB().backdropColor; c.r, c.g, c.b, c.a = r, g, b, a; mbbUpdate() end,
         function() return mbbDisabled() or not mbbDB().backdrop end)
 
-    mbb.border = ACH:Toggle("Bar Border", "Show a border around the button bar.", 23, nil, nil, nil,
+    mbbBar.border = ACH:Toggle("Border", "Show a border around the button bar.", 3, nil, nil, nil,
         function() return mbbDB().border end,
         function(_, v) mbbDB().border = v; mbbUpdate() end, mbbDisabled)
 
-    mbb.borderColor = ACH:Color("Bar Border Color", nil, 24, true, nil,
+    mbbBar.borderColor = ACH:Color("Border Color", nil, 4, true, nil,
         function() local c = mbbDB().borderColor; return c.r, c.g, c.b, c.a end,
         function(_, r, g, b, a) local c = mbbDB().borderColor; c.r, c.g, c.b, c.a = r, g, b, a; mbbUpdate() end,
         function() return mbbDisabled() or not mbbDB().border end)
 
-    mbb.borderSize = ACH:Range("Bar Border Thickness", nil, 25, { min = 1, max = 4, step = 1 },
+    mbbBar.borderSize = ACH:Range("Border Thickness", nil, 5, { min = 1, max = 4, step = 1 },
         nil, function() return mbbDB().borderSize end,
         function(_, v) mbbDB().borderSize = v; mbbUpdate() end,
         function() return mbbDisabled() or not mbbDB().border end)
 
-    mbb.visHeader = ACH:Header("Visibility", 30)
+    mbb.visibility = ACH:Group("Visibility", nil, 30)
+    mbb.visibility.inline = true
+    local mbbVis = mbb.visibility.args
 
-    mbb.mouseover = ACH:Toggle("Mouseover", "Only show the bar when mousing over it.", 31, nil, nil, nil,
+    mbbVis.mouseover = ACH:Toggle("Mouseover", "Only show the bar when mousing over it.", 1, nil, nil, nil,
         function() return mbbDB().mouseover end,
         function(_, v) mbbDB().mouseover = v; mbbUpdate() end, mbbDisabled)
 
-    mbb.mouseoverAlpha = ACH:Range("Mouseover Alpha", "Bar opacity when visible on mouseover.", 32, { min = 0, max = 1, step = 0.05, isPercent = true },
+    mbbVis.mouseoverAlpha = ACH:Range("Mouseover Alpha", "Bar opacity when visible on mouseover.", 2, { min = 0, max = 1, step = 0.05, isPercent = true },
         nil, function() return mbbDB().mouseoverAlpha end,
         function(_, v) mbbDB().mouseoverAlpha = v; mbbUpdate() end,
         function() return mbbDisabled() or not mbbDB().mouseover end)
 
-    mbb.hideInCombat = ACH:Toggle("Hide in Combat", "Automatically hide the button bar during combat.", 33, nil, nil, nil,
+    mbbVis.hideInCombat = ACH:Toggle("Hide in Combat", "Automatically hide the button bar during combat.", 3, nil, nil, nil,
         function() return mbbDB().hideInCombat end,
         function(_, v) mbbDB().hideInCombat = v; mbbUpdate() end, mbbDisabled)
 
@@ -829,37 +827,41 @@ function TUI:BuildConfig()
             selWinDisabled
         )
 
-        dmBars.fgHeader = ACH:Header("Foreground", 10)
+        dmBars.foreground = ACH:Group("Foreground", nil, 10)
+        dmBars.foreground.inline = true
+        local dmFG = dmBars.foreground.args
 
-        dmBars.barClassColor = ACH:Toggle(
+        dmFG.barClassColor = ACH:Toggle(
             "Class Color", "Use ElvUI class colors for bar foregrounds.",
-            11, nil, nil, nil,
+            1, nil, nil, nil,
             function() return winGet('barClassColor') end,
             function(_, value) winSet('barClassColor', value); winRefresh() end,
             selWinDisabled
         )
 
-        dmBars.barColor = ACH:Color(
+        dmFG.barColor = ACH:Color(
             "Color", "Fixed bar foreground color (used when Class Color is off).",
-            12, nil, nil,
+            2, nil, nil,
             function() return winGetColor('barColor') end,
             function(_, r, g, b) winSetColor('barColor', r, g, b); winRefresh() end,
             function() return selWinDisabled() or winGet('barClassColor') end
         )
 
-        dmBars.bgHeader = ACH:Header("Background", 20)
+        dmBars.background = ACH:Group("Background", nil, 20)
+        dmBars.background.inline = true
+        local dmBG = dmBars.background.args
 
-        dmBars.barBGClassColor = ACH:Toggle(
+        dmBG.barBGClassColor = ACH:Toggle(
             "Class Color", "Use ElvUI class colors for bar backgrounds.",
-            21, nil, nil, nil,
+            1, nil, nil, nil,
             function() return winGet('barBGClassColor') end,
             function(_, value) winSet('barBGClassColor', value); winRefresh() end,
             selWinDisabled
         )
 
-        dmBars.barBGColor = ACH:Color(
+        dmBG.barBGColor = ACH:Color(
             "Color", "Bar background color and alpha.",
-            22, true, nil,
+            2, true, nil,
             function() return winGetColor('barBGColor') end,
             function(_, r, g, b, a) winSetColor('barBGColor', r, g, b, a); winRefresh() end,
             function() return selWinDisabled() or winGet('barBGClassColor') end
@@ -891,65 +893,71 @@ function TUI:BuildConfig()
             selWinDisabled
         )
 
-        dmText.nameHeader = ACH:Header("Name", 10)
+        dmText.name = ACH:Group("Name", nil, 10)
+        dmText.name.inline = true
+        local dmName = dmText.name.args
 
-        dmText.textClassColor = ACH:Toggle(
+        dmName.textClassColor = ACH:Toggle(
             "Class Color", "Use ElvUI class colors for player name text.",
-            11, nil, nil, nil,
+            1, nil, nil, nil,
             function() return winGet('textClassColor') end,
             function(_, value) winSet('textClassColor', value); winRefresh() end,
             selWinDisabled
         )
 
-        dmText.textColor = ACH:Color(
+        dmName.textColor = ACH:Color(
             "Color", "Fixed name text color (used when Class Color is off).",
-            12, nil, nil,
+            2, nil, nil,
             function() return winGetColor('textColor') end,
             function(_, r, g, b) winSetColor('textColor', r, g, b); winRefresh() end,
             function() return selWinDisabled() or winGet('textClassColor') end
         )
 
-        dmText.valueHeader = ACH:Header("Value", 20)
+        dmText.value = ACH:Group("Value", nil, 20)
+        dmText.value.inline = true
+        local dmValue = dmText.value.args
 
-        dmText.valueClassColor = ACH:Toggle(
+        dmValue.valueClassColor = ACH:Toggle(
             "Class Color", "Use ElvUI class colors for value text.",
-            21, nil, nil, nil,
+            1, nil, nil, nil,
             function() return winGet('valueClassColor') end,
             function(_, value) winSet('valueClassColor', value); winRefresh() end,
             selWinDisabled
         )
 
-        dmText.valueColor = ACH:Color(
+        dmValue.valueColor = ACH:Color(
             "Color", "Fixed value text color (used when Class Color is off).",
-            22, nil, nil,
+            2, nil, nil,
             function() return winGetColor('valueColor') end,
             function(_, r, g, b) winSetColor('valueColor', r, g, b); winRefresh() end,
             function() return selWinDisabled() or winGet('valueClassColor') end
         )
 
-        dmText.rankHeader = ACH:Header("Rank", 30)
+        dmText.rank = ACH:Group("Rank", nil, 30)
+        dmText.rank.inline = true
+        local dmRank = dmText.rank.args
 
         local rankDisabled = function() return selWinDisabled() or not winGet('showRank') end
 
-        dmText.showRank = ACH:Toggle(
+        dmRank.showRank = ACH:Toggle(
             "Show Rank", "Show the rank number before each player name.",
-            31, nil, nil, nil,
+            1, nil, nil, nil,
             function() return winGet('showRank') end,
             function(_, value) winSet('showRank', value); winRefresh() end,
             selWinDisabled
         )
 
-        dmText.rankClassColor = ACH:Toggle(
+        dmRank.rankClassColor = ACH:Toggle(
             "Class Color", "Use ElvUI class colors for the rank number.",
-            32, nil, nil, nil,
+            2, nil, nil, nil,
             function() return winGet('rankClassColor') end,
             function(_, value) winSet('rankClassColor', value); winRefresh() end,
             rankDisabled
         )
 
-        dmText.rankColor = ACH:Color(
+        dmRank.rankColor = ACH:Color(
             "Color", "Fixed rank number color (used when Class Color is off).",
-            33, nil, nil,
+            3, nil, nil,
             function() return winGetColor('rankColor') end,
             function(_, r, g, b) winSetColor('rankColor', r, g, b); winRefresh() end,
             function() return rankDisabled() or winGet('rankClassColor') end
@@ -957,7 +965,7 @@ function TUI:BuildConfig()
     end
 
     do -- Cooldown Manager config
-        root.cooldownManager = ACH:Group("CDM", nil, 2.5, 'tab')
+        root.cooldownManager = ACH:Group("CDM", nil, 2.5)
 
         local cdmDB = function() return TUI.db.profile.cooldownManager end
         local cdmDisabled = function() return not cdmDB().enabled end
@@ -966,12 +974,13 @@ function TUI:BuildConfig()
         end
         local selVDB = function() return cdmDB().viewers[cdmDB().selectedViewer] end
 
-        local VIEWER_CHOICES = { essential = 'Essential', utility = 'Utility', buffIcon = 'Buff Icon', buffBar = 'Ext. Defensives' }
+        local VIEWER_CHOICES = { essential = 'Essential', utility = 'Utility', buffIcon = 'Buff Icon', buffBar = '|cff666666Buff Bar (WIP)|r' }
         local POSITIONS = { CENTER = 'Center', TOP = 'Top', BOTTOM = 'Bottom', LEFT = 'Left', RIGHT = 'Right',
             TOPLEFT = 'Top Left', TOPRIGHT = 'Top Right', BOTTOMLEFT = 'Bottom Left', BOTTOMRIGHT = 'Bottom Right' }
 
-        -- General tab
+        -- General
         root.cooldownManager.args.general = ACH:Group("General", nil, 1)
+        root.cooldownManager.args.general.inline = true
         local cdmGen = root.cooldownManager.args.general.args
 
         cdmGen.desc = ACH:Description(
@@ -999,18 +1008,20 @@ function TUI:BuildConfig()
             cdmDisabled
         )
 
-        -- Viewer tab — dropdown + settings for selected viewer
+        -- Viewer
         root.cooldownManager.args.viewer = ACH:Group("Viewer", nil, 2, nil, nil, nil, cdmDisabled)
+        root.cooldownManager.args.viewer.inline = true
         local cdmViewer = root.cooldownManager.args.viewer.args
 
         cdmViewer.selectedViewer = ACH:Select(
             "Viewer", "Select which CDM viewer to configure.", 1,
             VIEWER_CHOICES, nil, nil,
             function() return cdmDB().selectedViewer end,
-            function(_, value) cdmDB().selectedViewer = value end
+            function(_, value)
+                if value == 'buffBar' then return end
+                cdmDB().selectedViewer = value
+            end
         )
-
-        cdmViewer.spacer1 = ACH:Spacer(2)
 
         -- Layout group
         cdmViewer.layout = ACH:Group("Layout", nil, 3)
@@ -1058,6 +1069,17 @@ function TUI:BuildConfig()
             nil, nil,
             function() return selVDB().growthDirection end,
             function(_, value) selVDB().growthDirection = value; cdmRefresh() end
+        )
+
+        cdmLayout.visibleSetting = ACH:Select(
+            "Visibility", "When to show this viewer.", 7,
+            { ALWAYS = 'Always', INCOMBAT = 'In Combat', HIDDEN = 'Hidden' },
+            nil, nil,
+            function() return selVDB().visibleSetting end,
+            function(_, value)
+                selVDB().visibleSetting = value
+                if TUI.UpdateCDMVisibility then TUI:UpdateCDMVisibility() end
+            end
         )
 
         -- Cooldown Text group
@@ -1186,37 +1208,38 @@ function TUI:BuildConfig()
             function(_, value) selVDB().countText.yOffset = value; cdmRefresh() end
         )
 
-        -- Glow tab
-        root.cooldownManager.args.glow = ACH:Group("Glow", nil, 3, nil, nil, nil, cdmDisabled)
-        local cdmGlow = root.cooldownManager.args.glow.args
+        -- Proc Glow group (per-viewer, inside Viewer tab)
+        cdmViewer.glow = ACH:Group("Proc Glow", nil, 6)
+        cdmViewer.glow.inline = true
+        local cdmGlow = cdmViewer.glow.args
 
-        local glowDisabled = function() return not cdmDB().glow.enabled end
+        local glowDisabled = function() return not selVDB().glow.enabled end
 
         cdmGlow.enabled = ACH:Toggle(
-            function() return cdmDB().glow.enabled and "|cff00ff00Enable|r" or "Enable" end,
-            "Apply a glow effect to cooldown icons.",
+            function() return selVDB().glow.enabled and "|cff00ff00Enable|r" or "Enable" end,
+            "Apply a glow effect when abilities proc.",
             1, nil, nil, nil,
-            function() return cdmDB().glow.enabled end,
-            function(_, value) cdmDB().glow.enabled = value; cdmRefresh() end
+            function() return selVDB().glow.enabled end,
+            function(_, value) selVDB().glow.enabled = value; cdmRefresh() end
         )
 
         cdmGlow.type = ACH:Select(
             "Type", "Glow animation style.", 2,
             { pixel = 'Pixel', autocast = 'Autocast', button = 'Button', proc = 'Proc' },
             nil, nil,
-            function() return cdmDB().glow.type end,
-            function(_, value) cdmDB().glow.type = value; cdmRefresh() end,
+            function() return selVDB().glow.type end,
+            function(_, value) selVDB().glow.type = value; cdmRefresh() end,
             glowDisabled
         )
 
         cdmGlow.color = ACH:Color(
             "Color", "Glow color.", 3, true, nil,
             function()
-                local c = cdmDB().glow.color
+                local c = selVDB().glow.color
                 return c.r, c.g, c.b, c.a
             end,
             function(_, r, g, b, a)
-                local c = cdmDB().glow.color
+                local c = selVDB().glow.color
                 c.r, c.g, c.b, c.a = r, g, b, a
                 cdmRefresh()
             end,
@@ -1226,41 +1249,41 @@ function TUI:BuildConfig()
         cdmGlow.lines = ACH:Range(
             "Lines", "Number of glow lines (Pixel only).", 4,
             { min = 1, max = 20, step = 1 }, nil,
-            function() return cdmDB().glow.lines end,
-            function(_, value) cdmDB().glow.lines = value; cdmRefresh() end,
-            function() return glowDisabled() or cdmDB().glow.type ~= 'pixel' end
+            function() return selVDB().glow.lines end,
+            function(_, value) selVDB().glow.lines = value; cdmRefresh() end,
+            function() return glowDisabled() or selVDB().glow.type ~= 'pixel' end
         )
 
         cdmGlow.speed = ACH:Range(
             "Speed", "Animation speed.", 5,
             { min = 0.05, max = 2, step = 0.05 }, nil,
-            function() return cdmDB().glow.speed end,
-            function(_, value) cdmDB().glow.speed = value; cdmRefresh() end,
+            function() return selVDB().glow.speed end,
+            function(_, value) selVDB().glow.speed = value; cdmRefresh() end,
             glowDisabled
         )
 
         cdmGlow.thickness = ACH:Range(
             "Thickness", "Line thickness (Pixel only).", 6,
             { min = 1, max = 8, step = 1 }, nil,
-            function() return cdmDB().glow.thickness end,
-            function(_, value) cdmDB().glow.thickness = value; cdmRefresh() end,
-            function() return glowDisabled() or cdmDB().glow.type ~= 'pixel' end
+            function() return selVDB().glow.thickness end,
+            function(_, value) selVDB().glow.thickness = value; cdmRefresh() end,
+            function() return glowDisabled() or selVDB().glow.type ~= 'pixel' end
         )
 
         cdmGlow.particles = ACH:Range(
             "Particles", "Number of particles (Autocast only).", 7,
             { min = 1, max = 16, step = 1 }, nil,
-            function() return cdmDB().glow.particles end,
-            function(_, value) cdmDB().glow.particles = value; cdmRefresh() end,
-            function() return glowDisabled() or cdmDB().glow.type ~= 'autocast' end
+            function() return selVDB().glow.particles end,
+            function(_, value) selVDB().glow.particles = value; cdmRefresh() end,
+            function() return glowDisabled() or selVDB().glow.type ~= 'autocast' end
         )
 
         cdmGlow.scale = ACH:Range(
             "Scale", "Glow scale (Autocast only).", 8,
             { min = 0.5, max = 3, step = 0.1 }, nil,
-            function() return cdmDB().glow.scale end,
-            function(_, value) cdmDB().glow.scale = value; cdmRefresh() end,
-            function() return glowDisabled() or cdmDB().glow.type ~= 'autocast' end
+            function() return selVDB().glow.scale end,
+            function(_, value) selVDB().glow.scale = value; cdmRefresh() end,
+            function() return glowDisabled() or selVDB().glow.type ~= 'autocast' end
         )
     end
 
@@ -1538,10 +1561,6 @@ function TUI:BuildConfig()
         E:StaticPopup_Show('CONFIG_RL')
     end, nil, nil, nil, nil, nil, addonDisabled('ls_Toasts'))
 
-    indArgs.editMode = ACH:Execute("Edit Mode", "Shows the TrenchyUI Edit Mode layout string for you to import manually.", 5, function()
-        TUI:ShowEditModeString()
-    end, nil, nil, nil, nil, nil, function() return true end)
-
     root.info = ACH:Group("Information", nil, 7)
     local info = root.info.args
 
@@ -1559,6 +1578,7 @@ function TUI:BuildConfig()
     info.credits.args.desc = ACH:Description(
         E:TextGradient('Requiem', 0.13,0.37,0.13, 0.30,0.57,0.25) .. " — For entertaining me while making this...and he tested some stuff.\n\n"
         .. E:TextGradient('Menios', 0.64,0.19,0.79, 0.46,0.33,0.80) .. " — For the 10+ years of trolling and entertainment, and helping me kill 4+ Guilds during Legion.\n\n"
+        .. E:TextGradient('Nessa', 0.00,0.43,1.00, 0.30,0.65,1.00) .. " — For years of splashing me with the shaman heals and being the best healer ever.\n\n"
         .. E:TextGradient('Jiberish', 1.00,0.08,0.56, 1.00,0.41,0.71) .. " — For the encouragement to actually do this, and for the baller UI's.\n\n"
         .. "|cFFb8bb26Thurin|r — For bouncing all the ideas off of and balancing Jib's uncontrollable \"push the buttons\".\n\n"
         .. "|cffff2f3dThe ElvUI team|r ("

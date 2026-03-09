@@ -3,5 +3,7 @@ package-as: ElvUI_TrenchyUI
 ignore:
   - .github
   - .gitignore
+  - .claude
   - CLAUDE.md
+  - CODE_ORIGINALITY_AUDIT.txt
   - .pkgmeta
