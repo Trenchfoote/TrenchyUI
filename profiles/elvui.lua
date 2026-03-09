@@ -2876,9 +2876,9 @@ local function SetupTrenchyUI()
     E.db.TrenchyUI.pixelGlow.enabled = true
     E.db.TrenchyUI.pixelGlow.thickness = 3
     E.db.TrenchyUI.cooldownManager.enabled = true
-    E.db.TrenchyUI.cooldownManager.glow.enabled = true
     E.db.TrenchyUI.cooldownManager.hideSwipe = true
     E.db.TrenchyUI.cooldownManager.selectedViewer = "utility"
+    E.db.TrenchyUI.cooldownManager.viewers.buffIcon.keepSizeRatio = false
     E.db.TrenchyUI.cooldownManager.viewers.buffIcon.cooldownText.fontSize = 24
     E.db.TrenchyUI.cooldownManager.viewers.buffIcon.countText.classColor = true
     E.db.TrenchyUI.cooldownManager.viewers.buffIcon.countText.position = "TOP"
@@ -2888,6 +2888,7 @@ local function SetupTrenchyUI()
     E.db.TrenchyUI.cooldownManager.viewers.buffIcon.iconWidth = 45
     E.db.TrenchyUI.cooldownManager.viewers.buffIcon.iconZoom = 0.15
     E.db.TrenchyUI.cooldownManager.viewers.buffIcon.iconsPerRow = 4
+    E.db.TrenchyUI.cooldownManager.viewers.essential.keepSizeRatio = false
     E.db.TrenchyUI.cooldownManager.viewers.essential.cooldownText.fontSize = 25
     E.db.TrenchyUI.cooldownManager.viewers.essential.countText.classColor = true
     E.db.TrenchyUI.cooldownManager.viewers.essential.countText.fontSize = 10
@@ -2896,6 +2897,7 @@ local function SetupTrenchyUI()
     E.db.TrenchyUI.cooldownManager.viewers.essential.iconHeight = 35
     E.db.TrenchyUI.cooldownManager.viewers.essential.iconWidth = 45
     E.db.TrenchyUI.cooldownManager.viewers.essential.iconZoom = 0.26
+    E.db.TrenchyUI.cooldownManager.viewers.utility.keepSizeRatio = false
     E.db.TrenchyUI.cooldownManager.viewers.utility.iconHeight = 25
     E.db.TrenchyUI.cooldownManager.viewers.utility.iconWidth = 35
     E.db.TrenchyUI.cooldownManager.viewers.utility.iconZoom = 0.2
@@ -3068,6 +3070,11 @@ end
 
 function TUI:ApplyElvUIProfile()
     E.data:SetProfile(PROFILE_NAME)
+
+    -- Ensure TrenchyUI namespace and full nested defaults exist before writing.
+    -- On a new profile, OnNewProfile may not trigger MergeDefaults, so do it here.
+    if not E.db.TrenchyUI then E.db.TrenchyUI = {} end
+    self:UpdateProfileReference()
 
     SetupProfileDB()
     SetupTrenchyUI()

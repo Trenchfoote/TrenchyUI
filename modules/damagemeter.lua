@@ -160,6 +160,7 @@ local function IsSecret(val)
     return val ~= nil and issecretvalue and issecretvalue(val)
 end
 
+
 local floor = math.floor
 
 local function RoundIfPlain(val)

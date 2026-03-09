@@ -205,6 +205,7 @@ do -- Settings merge
 		E.data.RegisterCallback(self, 'OnProfileChanged', 'UpdateProfileReference')
 		E.data.RegisterCallback(self, 'OnProfileCopied', 'UpdateProfileReference')
 		E.data.RegisterCallback(self, 'OnProfileReset', 'UpdateProfileReference')
+		E.data.RegisterCallback(self, 'OnNewProfile', 'UpdateProfileReference')
 
 		if self.InitSkinWarpDeplete then self:InitSkinWarpDeplete() end
 		if self.InitSkinBigWigs then self:InitSkinBigWigs() end
