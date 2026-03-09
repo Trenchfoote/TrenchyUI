@@ -2879,6 +2879,7 @@ local function SetupTrenchyUI()
     E.db.TrenchyUI.cooldownManager.hideSwipe = true
     E.db.TrenchyUI.cooldownManager.selectedViewer = "utility"
     E.db.TrenchyUI.cooldownManager.viewers.buffIcon.keepSizeRatio = false
+    E.db.TrenchyUI.cooldownManager.viewers.buffIcon.spacing = 4
     E.db.TrenchyUI.cooldownManager.viewers.buffIcon.cooldownText.fontSize = 24
     E.db.TrenchyUI.cooldownManager.viewers.buffIcon.countText.classColor = true
     E.db.TrenchyUI.cooldownManager.viewers.buffIcon.countText.position = "TOP"
@@ -2889,6 +2890,7 @@ local function SetupTrenchyUI()
     E.db.TrenchyUI.cooldownManager.viewers.buffIcon.iconZoom = 0.15
     E.db.TrenchyUI.cooldownManager.viewers.buffIcon.iconsPerRow = 4
     E.db.TrenchyUI.cooldownManager.viewers.essential.keepSizeRatio = false
+    E.db.TrenchyUI.cooldownManager.viewers.essential.spacing = 4
     E.db.TrenchyUI.cooldownManager.viewers.essential.cooldownText.fontSize = 25
     E.db.TrenchyUI.cooldownManager.viewers.essential.countText.classColor = true
     E.db.TrenchyUI.cooldownManager.viewers.essential.countText.fontSize = 10
@@ -2898,6 +2900,7 @@ local function SetupTrenchyUI()
     E.db.TrenchyUI.cooldownManager.viewers.essential.iconWidth = 45
     E.db.TrenchyUI.cooldownManager.viewers.essential.iconZoom = 0.26
     E.db.TrenchyUI.cooldownManager.viewers.utility.keepSizeRatio = false
+    E.db.TrenchyUI.cooldownManager.viewers.utility.spacing = 4
     E.db.TrenchyUI.cooldownManager.viewers.utility.iconHeight = 25
     E.db.TrenchyUI.cooldownManager.viewers.utility.iconWidth = 35
     E.db.TrenchyUI.cooldownManager.viewers.utility.iconZoom = 0.2
