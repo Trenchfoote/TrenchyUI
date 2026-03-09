@@ -43,10 +43,6 @@ TUI.defaults = {
             castbarInterruptOnCD        = { r = 0.9, g = 0.4, b = 0.1 },
             castbarMarkerColor          = { r = 1.0, g = 1.0, b = 1.0 },
             disableFriendlyHighlight = false,
-            blizzAuraFilter = {
-                cc         = false,
-                noDuration = false,
-            },
             focusGlow = {
                 enabled = false,
                 color   = { r = 0.5, g = 0.3, b = 0.9, a = 0.3 },
@@ -1417,48 +1413,6 @@ function TUI:BuildConfig()
             c.r, c.g, c.b = r, g, b
         end,
         intDisabled
-    )
-
-    root.nameplates.args.auraExtras = ACH:Group("Aura Extras", nil, 3)
-    root.nameplates.args.auraExtras.inline = true
-    local npAura = root.nameplates.args.auraExtras.args
-
-    npAura.desc = ACH:Description(
-        "Additional nameplate aura filtering on top of ElvUI's own filters.\n\n"
-        .. "|cffff8800CC Separation|r moves crowd control effects from the Debuffs "
-        .. "element to the Custom aura element, so they display separately.\n\n"
-        .. "|cffff8800Hide Permanent Debuffs|r removes harmful auras with no duration "
-        .. "from nameplates.",
-        1, "medium"
-    )
-
-    local baf = function() return TUI.db.profile.nameplates.blizzAuraFilter end
-
-    npAura.cc = ACH:Toggle(
-        "CC Separation",
-        "Move crowd control debuffs from the Debuffs element to the Custom "
-        .. "aura element.\n\n"
-        .. "CC auras are excluded from Debuffs and only shown in Custom auras, "
-        .. "preventing duplication. Configure the Custom aura element in ElvUI's "
-        .. "nameplate settings to control their appearance.",
-        2, nil, nil, nil,
-        function() return baf().cc end,
-        function(_, value)
-            baf().cc = value
-            E:StaticPopup_Show('CONFIG_RL')
-        end
-    )
-
-    npAura.noDuration = ACH:Toggle(
-        "Hide Permanent Debuffs",
-        "Filter out harmful auras with no duration (permanent debuffs) from "
-        .. "nameplates.",
-        3, nil, nil, nil,
-        function() return baf().noDuration end,
-        function(_, value)
-            baf().noDuration = value
-            E:StaticPopup_Show('CONFIG_RL')
-        end
     )
 
     root.nameplates.args.highlight = ACH:Group("Hover Highlight", nil, 4)

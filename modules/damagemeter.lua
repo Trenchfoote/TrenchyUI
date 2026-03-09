@@ -622,13 +622,11 @@ end
 local function BuildSessionMenu(win)
     local menu = {}
 
-    -- Encounter sessions first (oldest = 1 at top)
+    -- Encounter sessions first (oldest at top, newest at bottom)
     if C_DamageMeter.GetAvailableCombatSessions then
         local ok, sessions = pcall(C_DamageMeter.GetAvailableCombatSessions)
         if ok and sessions and #sessions > 0 then
-            local count = #sessions
-            for i = count, 1, -1 do
-                local sess = sessions[i]
+            for _, sess in ipairs(sessions) do
                 local sid = sess.sessionId or sess.combatSessionId or sess.id or sess.sessionID
                 local label = sess.name or "Encounter"
                 local dur = sess.durationSeconds or sess.duration
@@ -944,13 +942,12 @@ local function GetSessionLabel(win)
         if C_DamageMeter.GetAvailableCombatSessions then
             local ok, sessions = pcall(C_DamageMeter.GetAvailableCombatSessions)
             if ok and sessions then
-                local count = #sessions
                 for i, sess in ipairs(sessions) do
                     local sid = sess.sessionId or sess.combatSessionId or sess.id or sess.sessionID
                     if sid == win.sessionId then
                         local label = sess.name or "Encounter"
                         if label == "Encounter" then
-                            label = "Encounter " .. (count - i + 1)
+                            label = "Encounter " .. i
                         end
                         return label
                     end
@@ -1049,7 +1046,8 @@ RefreshWindow = function(win)
                 bar.frame.drillSpellID = nil
             else
                 bar.frame:Show()
-                local spellID   = s.spellID or (type(s[1]) == "number" and s[1]) or nil
+                local rawSpellID = s.spellID or (type(s[1]) == "number" and s[1]) or nil
+                local spellID   = (rawSpellID and not issecretvalue(rawSpellID)) and rawSpellID or nil
                 local spellName = (type(s[1]) == "string" and s[1]) or nil
                 local amt       = s.totalAmount or s[2] or 0
 

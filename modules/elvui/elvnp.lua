@@ -1,7 +1,6 @@
 local E = unpack(ElvUI)
 local TUI = E:GetModule('TrenchyUI')
 local NP = E:GetModule('NamePlates')
-local UF = E:GetModule('UnitFrames')
 local LSM = E.Libs.LSM
 
 local CreateFrame = CreateFrame
@@ -40,10 +39,6 @@ function TUI:InitElvNP()
 		self:HookDisableFriendlyHighlight()
 	end
 
-	local baf = np.blizzAuraFilter
-	if baf and (baf.cc or baf.noDuration) then
-		self:HookBlizzAuraFiltering()
-	end
 end
 
 do -- Classification Instance Only
@@ -252,12 +247,12 @@ do -- Interrupt Spell Detection
 			end
 
 			local pos, clip = GetOrCreateCDPositioner(castbar)
-			local isReverse = castbar.channeling or castbar:GetReverseFill()
+			local reverseFill = castbar:GetReverseFill()
 
 			pos:ClearAllPoints()
 			pos:SetPoint('TOPLEFT', castbar, 'TOPLEFT')
 			pos:SetPoint('BOTTOMRIGHT', castbar, 'BOTTOMRIGHT')
-			pos:SetReverseFill(isReverse)
+			pos:SetReverseFill(reverseFill)
 			pos:SetMinMaxValues(0, castDuration:GetTotalDuration())
 			pos:SetValue(cdDuration:GetRemainingDuration())
 			clip:SetAlpha(markerAlpha)
@@ -269,7 +264,7 @@ do -- Interrupt Spell Detection
 			marker:SetColorTexture(mc.r, mc.g, mc.b)
 			marker:SetSize(3, castbar:GetHeight())
 			marker:ClearAllPoints()
-			if isReverse then
+			if reverseFill then
 				marker:SetPoint('RIGHT', pos:GetStatusBarTexture(), 'LEFT', 0, 0)
 			else
 				marker:SetPoint('LEFT', pos:GetStatusBarTexture(), 'RIGHT', 0, 0)
@@ -277,13 +272,16 @@ do -- Interrupt Spell Detection
 			marker:Show()
 		end
 
-		local function UpdateMarkerAlpha(castbar)
+		local function UpdateMarker(castbar)
 			if not castbar.TUI_CDClipper then return end
 			local cdDuration = C_Spell_GetSpellCooldownDuration(currentInterrupt)
 			local isReady = cdDuration:IsZero()
 			local notInt = castbar.notInterruptible
 			local showAlpha = EvalColorBool(isReady, 0, 1)
 			castbar.TUI_CDClipper:SetAlpha(EvalColorBool(notInt, 0, showAlpha))
+			if castbar.TUI_InterruptMarker then
+				castbar.TUI_InterruptMarker:SetAlpha(showAlpha)
+			end
 		end
 
 		local function CheckInterruptWrapper(castbar, unit)
@@ -312,7 +310,7 @@ do -- Interrupt Spell Detection
 				local cdDuration2 = C_Spell_GetSpellCooldownDuration(currentInterrupt)
 				local isReady2 = cdDuration2:IsZero()
 				ApplyInterruptColor(castbar, notInt2, isReady2)
-				UpdateMarkerAlpha(castbar)
+				UpdateMarker(castbar)
 			end)
 		end
 
@@ -405,45 +403,4 @@ do -- Disable Friendly Highlight
 	end
 end
 
-do -- Nameplate Aura Extras (CC separation + noDuration)
-	local function NameplateAuraFilter(element, unit, button, aura, name, icon, count, debuffType, duration, expiration, source, isStealable, nameplateShowPersonal, spellID, canApplyAura, isBossAura, castByPlayer, nameplateShowAll)
-		if aura and name then
-			local baf = TUI.db.profile.nameplates.blizzAuraFilter
-			if baf then
-				if baf.noDuration and aura.auraIsHarmful and not button.auraDuration then
-					return false
-				end
 
-				if baf.cc then
-					local elType = element.type
-					if elType == 'debuffs' and aura.auraIsCrowdControl then
-						return false
-					elseif elType == 'auras' then
-						button.priority = 0
-						return aura.auraIsHarmful and aura.auraIsCrowdControl
-					end
-				end
-			end
-		end
-
-		return UF.AuraFilter(element, unit, button, aura, name, icon, count, debuffType, duration, expiration, source, isStealable, nameplateShowPersonal, spellID, canApplyAura, isBossAura, castByPlayer, nameplateShowAll)
-	end
-
-	local function ApplyNameplateFilter(element)
-		if element and element.isNameplate then
-			element.CustomFilter = NameplateAuraFilter
-		end
-	end
-
-	function TUI:HookBlizzAuraFiltering()
-		if self._hookedBlizzAuraFilter then return end
-		self._hookedBlizzAuraFilter = true
-
-		hooksecurefunc(NP, 'Configure_Auras', function(_, nameplate)
-			if not nameplate then return end
-			ApplyNameplateFilter(nameplate.Auras)
-			ApplyNameplateFilter(nameplate.Buffs)
-			ApplyNameplateFilter(nameplate.Debuffs)
-		end)
-	end
-end

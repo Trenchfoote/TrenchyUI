@@ -2946,8 +2946,6 @@ local function SetupTrenchyUI()
     E.db.TrenchyUI.minimapButtonBar.growthDirection = "UPLEFT"
     E.db.TrenchyUI.minimapButtonBar.mouseoverAlpha = 0.45
     E.db.TrenchyUI.minimapButtonBar.orientation = "VERTICAL"
-    E.db.TrenchyUI.nameplates.blizzAuraFilter.cc = true
-    E.db.TrenchyUI.nameplates.blizzAuraFilter.noDuration = true
     E.db.TrenchyUI.nameplates.castbarInterruptOnCD.b = 0
     E.db.TrenchyUI.nameplates.castbarInterruptOnCD.g = 0.54509806632996
     E.db.TrenchyUI.nameplates.castbarInterruptOnCD.r = 1
