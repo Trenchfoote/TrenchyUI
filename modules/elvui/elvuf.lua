@@ -258,7 +258,7 @@ end
 
 -- Guardian Druid Ironfur Bar
 local IRONFUR_SPELL = 192081
-local IRONFUR_BASE_DUR = 7 -- base duration in seconds
+local IRONFUR_BASE_DUR = 7
 local ifBar, ifHolder, ifEventFrame
 local ifExpiry, ifDuration = 0, 0
 local ifAnimGroup
@@ -362,7 +362,6 @@ local function LayoutIronfurBar()
 
 	local holderH = cbdb.height or 10
 
-	-- Skip layout if dimensions haven't changed
 	if CLASSBAR_WIDTH == ifCachedW and holderH == ifCachedH then return end
 	ifCachedW, ifCachedH = CLASSBAR_WIDTH, holderH
 
@@ -390,7 +389,6 @@ local function LayoutIronfurBar()
 		UF:SetStatusBarColor(ifBar, cc.r, cc.g, cc.b, custom_backdrop)
 	end
 
-	-- Read actual aura data out of combat
 	local aura = C_UnitAuras.GetPlayerAuraBySpellID(IRONFUR_SPELL)
 	if aura and aura.duration and aura.duration > 0 then
 		ifDuration = aura.duration
@@ -417,15 +415,11 @@ local function CreateIronfurBar()
 	ifBar.bg:SetTexture(E.media.blankTex)
 	ifBar.bg:SetInside(ifBar.backdrop)
 
-	-- Ticker frame for smooth drain
+	-- Ticker frame for smooth drain (updates every frame)
 	local ticker = CreateFrame('Frame')
 	ticker:Hide()
-	local tickElapsed = 0
-	ticker:SetScript('OnUpdate', function(_, dt)
+	ticker:SetScript('OnUpdate', function()
 		if ifExpiry == 0 then ticker:Hide() return end
-		tickElapsed = tickElapsed + dt
-		if tickElapsed < 0.1 then return end -- 10fps
-		tickElapsed = 0
 		local remaining = ifExpiry - GetTime()
 		if remaining > 0 then
 			ifBar:SetValue(remaining)
@@ -460,10 +454,8 @@ local function ShowIronfurBar()
 	ifEventFrame:RegisterEvent('PLAYER_REGEN_ENABLED')
 	ifEventFrame:RegisterEvent('UPDATE_SHAPESHIFT_FORM')
 
-	-- Show only if in Bear Form
 	UpdateIronfurVisibility()
 
-	-- Try to read aura data (works out of combat)
 	if GetShapeshiftForm() == BEAR_FORM then
 		local aura = C_UnitAuras.GetPlayerAuraBySpellID(IRONFUR_SPELL)
 		if aura and aura.duration and aura.duration > 0 then

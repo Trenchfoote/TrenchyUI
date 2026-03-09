@@ -84,13 +84,26 @@ do -- Compat popup system
 		hideOnEscape = false,
 	}
 
+	-- Check if a conflict actually applies (addon-specific feature detection)
+	local function IsConflictActive(key, def)
+		if not C_AddOns_IsAddOnLoaded(def.addonName) then return false end
+
+		-- Eltruism: only conflict if their pixel glow is enabled
+		if key == 'auraHighlight' then
+			local eltDB = E.db and E.db.ElvUI_EltreumUI and E.db.ElvUI_EltreumUI.glow
+			return eltDB and eltDB.enable
+		end
+
+		return true
+	end
+
 	function TUI:ResolveCompat()
 		self.activeConflicts = {}
 		local db = self.db.profile.compat
 		local needsReload = false
 
 		for key, def in pairs(self.conflictDefs) do
-			if C_AddOns_IsAddOnLoaded(def.addonName) then
+			if IsConflictActive(key, def) then
 				self.activeConflicts[key] = def
 				if db[key] == nil then
 					compatPopupQueue[#compatPopupQueue + 1] = { key = key, def = def }

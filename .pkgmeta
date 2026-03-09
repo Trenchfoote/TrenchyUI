@@ -7,3 +7,4 @@ ignore:
   - CLAUDE.md
   - CODE_ORIGINALITY_AUDIT.txt
   - .pkgmeta
+  - TODO.md

@@ -55,7 +55,6 @@ local function StopGlow(itemFrame)
 	LCG.ButtonGlow_Stop(itemFrame)
 	LCG.ProcGlow_Stop(itemFrame, 'TUI_CDM')
 
-	-- Restore Blizzard's SpellActivationAlert if we previously hid it
 	if itemFrame.tuiAlertHidden then
 		itemFrame.tuiAlertHidden = nil
 		local alert = itemFrame.SpellActivationAlert
@@ -63,19 +62,17 @@ local function StopGlow(itemFrame)
 	end
 end
 
-local hookedAlerts = {} -- [itemFrame] = true — tracks which alerts we've hooked
+local hookedAlerts = {}
 
 local function ApplyGlow(itemFrame, glowDB)
 	if not LCG then return end
 
-	-- Glow on proc — mirror Blizzard's SpellActivationAlert
 	local alert = itemFrame.SpellActivationAlert
 	if not alert or not alert:IsShown() then
 		StopGlow(itemFrame)
 		return
 	end
 
-	-- Hide Blizzard's proc glow so only ours shows
 	alert:SetAlpha(0)
 	itemFrame.tuiAlertHidden = true
 
@@ -119,7 +116,6 @@ end
 
 local function ApplyIconZoom(itemFrame, zoom)
 	if not zoom or zoom <= 0 then return end
-	-- itemFrame.Icon is a Texture (icon viewers) or a Frame with .Icon sub-texture
 	local icon = itemFrame.Icon
 	if icon then
 		if icon.SetTexCoord then
@@ -172,7 +168,7 @@ local function ApplyCooldownText(cooldown, tdb)
 	end
 end
 
-local hookedSwipes = {} -- [cooldown] = true — tracks which cooldowns have SetDrawSwipe hooked
+local hookedSwipes = {}
 
 local function ApplySwipeOverride(cooldown, db)
 	if not cooldown then return end
@@ -238,11 +234,11 @@ local function ShowPreview()
 
 	for viewerKey in pairs(VIEWER_KEYS) do
 		local vdb = GetViewerDB(viewerKey)
-		local container = containers[viewerKey]
-		if container and vdb then
-			for _, child in ipairs({ container:GetChildren() }) do
-				if child and child.layoutIndex then
-					SetPreviewText(child, true, vdb)
+		local viewer = GetViewer(viewerKey)
+		if viewer and vdb then
+			for frame in viewer.itemFramePool:EnumerateActive() do
+				if frame and frame.layoutIndex then
+					SetPreviewText(frame, true, vdb)
 				end
 			end
 		end
@@ -254,11 +250,11 @@ local function HidePreview()
 	previewActive = false
 
 	for viewerKey in pairs(VIEWER_KEYS) do
-		local container = containers[viewerKey]
-		if container then
-			for _, child in ipairs({ container:GetChildren() }) do
-				if child and child.layoutIndex then
-					SetPreviewText(child, false)
+		local viewer = GetViewer(viewerKey)
+		if viewer then
+			for frame in viewer.itemFramePool:EnumerateActive() do
+				if frame and frame.layoutIndex then
+					SetPreviewText(frame, false)
 				end
 			end
 		end
@@ -274,7 +270,6 @@ local function ShowBlizzardCDMSettings()
 	if settings and not settings:IsShown() then
 		settings:Show()
 	end
-	-- Blizzard's Show/Hide triggers RefreshLayout, recapture into our containers
 	ScheduleRelayout()
 end
 
@@ -310,7 +305,7 @@ local function CreateContainer(viewerKey)
 	local info = VIEWER_KEYS[viewerKey]
 	local vdb = GetViewerDB(viewerKey)
 	local iconW = vdb and vdb.iconWidth or 30
-	local iconH = vdb and vdb.iconHeight or 30
+	local iconH = (vdb and vdb.keepSizeRatio and iconW) or (vdb and vdb.iconHeight or 30)
 
 	local frame = CreateFrame('Frame', info.mover .. 'Holder', E.UIParent)
 	frame:SetSize(iconW * 8, iconH * 2)
@@ -324,7 +319,6 @@ local function CreateContainer(viewerKey)
 	return frame
 end
 
--- Grid layout
 local function LayoutContainer(viewerKey, isCapture)
 	local container = containers[viewerKey]
 	if not container then return end
@@ -335,8 +329,11 @@ local function LayoutContainer(viewerKey, isCapture)
 	local vdb = GetViewerDB(viewerKey)
 	if not vdb then return end
 
+	local viewer = GetViewer(viewerKey)
+	if not viewer or not viewer.itemFramePool then return end
+
 	local iconW = E:Scale(vdb.iconWidth or 30)
-	local iconH = E:Scale(vdb.iconHeight or 30)
+	local iconH = (vdb.keepSizeRatio and iconW) or E:Scale(vdb.iconHeight or 30)
 	local perRow = vdb.iconsPerRow or 12
 
 	local spacing = E:Scale(vdb.spacing or 2)
@@ -346,9 +343,9 @@ local function LayoutContainer(viewerKey, isCapture)
 	if not icons then icons = {}; iconCache[viewerKey] = icons end
 	wipe(icons)
 
-	for _, child in ipairs({ container:GetChildren() }) do
-		if child and child:IsShown() and child.layoutIndex then
-			icons[#icons + 1] = child
+	for frame in viewer.itemFramePool:EnumerateActive() do
+		if frame and frame:IsShown() and frame.layoutIndex then
+			icons[#icons + 1] = frame
 		end
 	end
 
@@ -368,9 +365,9 @@ local function LayoutContainer(viewerKey, isCapture)
 	local iconZoom = vdb.iconZoom
 
 	for _, icon in ipairs(icons) do
+		icon:SetScale(1)
 		icon:SetSize(iconW, iconH)
 
-		-- Zoom runs every relayout — Blizzard resets texcoords on texture change
 		ApplyIconZoom(icon, iconZoom)
 
 		if applyStyle or not styledFrames[icon] then
@@ -378,11 +375,17 @@ local function LayoutContainer(viewerKey, isCapture)
 			styledFrames[icon] = viewerKey
 		end
 
-		-- Glow must run every relayout since proc state changes dynamically
 		if useGlow then
 			ApplyGlow(icon, vGlow)
 		else
 			StopGlow(icon)
+		end
+
+		if icon.DebuffBorder and not icon.tuiDebuffBorderKilled then
+			icon.DebuffBorder:Hide()
+			icon.DebuffBorder:SetAlpha(0)
+			hooksecurefunc(icon.DebuffBorder, 'Show', function(self) self:Hide() end)
+			icon.tuiDebuffBorderKilled = true
 		end
 	end
 
@@ -420,68 +423,18 @@ local function LayoutContainer(viewerKey, isCapture)
 	end
 end
 
--- Frame capture
-local function CaptureAndLayout(viewer, viewerKey)
-	local db = GetDB()
-	if not db or not db.enabled then return end
-
-	local container = containers[viewerKey]
-	if not container then return end
-
-	local hasNew = false
-
-	for _, child in ipairs({ viewer:GetChildren() }) do
-		if child and child.layoutIndex then
-			if child:GetParent() ~= container then
-				child:SetParent(container)
-				child:SetScale(1)
-				hasNew = true
-			end
-			if child.DebuffBorder and not child.tuiDebuffBorderKilled then
-				child.DebuffBorder:Hide()
-				child.DebuffBorder:SetAlpha(0)
-				hooksecurefunc(child.DebuffBorder, 'Show', function(self) self:Hide() end)
-				child.tuiDebuffBorderKilled = true
-			end
-		end
-	end
-
-	if not hookedViewers[viewerKey .. '_alpha'] then
-		hookedViewers[viewerKey .. '_alpha'] = true
-		viewer:SetAlpha(0)
-		hooksecurefunc(viewer, 'SetAlpha', function(self, alpha)
-			if alpha > 0 then self:SetAlpha(0) end
-		end)
-
-		-- Hide Edit Mode selection handles (the small crosses)
-		local selection = viewer.Selection
-		if selection then
-			selection:Hide()
-			selection:SetAlpha(0)
-			hooksecurefunc(selection, 'Show', function(self)
-				self:Hide()
-			end)
-		end
-	end
-
-	LayoutContainer(viewerKey, hasNew)
-end
-
 -- Hook setup
 local layoutPending = false
 
 function ScheduleRelayout()
 	if layoutPending then return end
 	layoutPending = true
-	C_Timer.After(0.05, function()
+	C_Timer.After(0, function()
 		layoutPending = false
 		local db = GetDB()
 		if not db or not db.enabled then return end
 		for viewerKey in pairs(VIEWER_KEYS) do
-			local viewer = GetViewer(viewerKey)
-			if viewer then
-				CaptureAndLayout(viewer, viewerKey)
-			end
+			LayoutContainer(viewerKey, false)
 		end
 	end)
 end
@@ -494,6 +447,7 @@ local function OnCDMEvent(_, event, unit)
 	elseif event == 'PLAYER_REGEN_ENABLED' then
 		inCombat = false
 		TUI:UpdateCDMVisibility()
+		ScheduleRelayout()
 		return
 	end
 	if event == 'UNIT_AURA' and unit ~= 'player' then return end
@@ -505,9 +459,38 @@ local function HookViewer(viewerKey)
 	if not viewer or hookedViewers[viewerKey] then return end
 	hookedViewers[viewerKey] = true
 
+	if viewer.itemFramePool then
+		hooksecurefunc(viewer.itemFramePool, 'Acquire', function()
+			ScheduleRelayout()
+		end)
+		hooksecurefunc(viewer.itemFramePool, 'Release', function()
+			ScheduleRelayout()
+		end)
+	end
+
+	if viewer.OnAcquireItemFrame then
+		hooksecurefunc(viewer, 'OnAcquireItemFrame', function(_, frame)
+			if frame and frame.SetScale then
+				frame:SetScale(1)
+			end
+			ScheduleRelayout()
+		end)
+	end
+
 	hooksecurefunc(viewer, 'RefreshLayout', function()
-		ScheduleRelayout()
+		local db = GetDB()
+		if not db or not db.enabled then return end
+		LayoutContainer(viewerKey, false)
 	end)
+
+	local selection = viewer.Selection
+	if selection then
+		selection:Hide()
+		selection:SetAlpha(0)
+		hooksecurefunc(selection, 'Show', function(self)
+			self:Hide()
+		end)
+	end
 end
 
 -- Visibility
@@ -526,9 +509,14 @@ function TUI:UpdateCDMVisibility()
 	if not db or not db.enabled then return end
 
 	for viewerKey in pairs(VIEWER_KEYS) do
+		local show = ShouldShowContainer(viewerKey)
 		local container = containers[viewerKey]
 		if container then
-			container:SetShown(ShouldShowContainer(viewerKey))
+			container:SetShown(show)
+		end
+		local viewer = GetViewer(viewerKey)
+		if viewer then
+			viewer:SetShown(show)
 		end
 	end
 end
@@ -540,6 +528,8 @@ function TUI:RefreshCDM()
 
 	wipe(styledFrames)
 	wipe(glowActive)
+	wipe(hookedAlerts)
+	wipe(hookedSwipes)
 
 	for viewerKey in pairs(VIEWER_KEYS) do
 		LayoutContainer(viewerKey, true)
@@ -559,10 +549,7 @@ function TUI:InitCooldownManager()
 		for viewerKey in pairs(VIEWER_KEYS) do
 			CreateContainer(viewerKey)
 			HookViewer(viewerKey)
-			local viewer = GetViewer(viewerKey)
-			if viewer then
-				CaptureAndLayout(viewer, viewerKey)
-			end
+			LayoutContainer(viewerKey, true)
 		end
 
 		local eventFrame = CreateFrame('Frame')

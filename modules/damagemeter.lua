@@ -849,8 +849,12 @@ local function CreateStandaloneWindow(win, db, savedW, savedH)
     window:SetSize(w, h)
     if i == 1 then
         window:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-    else
-        window:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -50, -200 - (i - 2) * (h + 10))
+    elseif i == 2 then
+        window:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -2, 189)
+    elseif i == 3 then
+        window:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -416, 2)
+    elseif i == 4 then
+        window:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -416, 189)
     end
     window:SetMovable(true)
     window:SetClampedToScreen(true)
@@ -1534,5 +1538,14 @@ function TUI:InitDamageMeter()
         end)
 
         TUI:RefreshMeter()
+    end)
+end
+
+SLASH_TUITDM1 = '/tdm'
+SlashCmdList['TUITDM'] = function()
+    local open = E.Libs.AceConfigDialog and E.Libs.AceConfigDialog.OpenFrames and E.Libs.AceConfigDialog.OpenFrames['ElvUI']
+    if not open then E:ToggleOptions('TrenchyUI') end
+    C_Timer.After(0.1, function()
+        E.Libs.AceConfigDialog:SelectGroup('ElvUI', 'TrenchyUI', 'damageMeter')
     end)
 end

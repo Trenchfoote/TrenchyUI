@@ -2,10 +2,11 @@
 ## Title: |cff1784d1ElvUI|r |cffff2f3dTrenchyUI|r
 ## Notes: ElvUI companion — addon skins, QoL tweaks, nameplate enhancements, damage meter
 ## Author: Trenchy
-## Version: 0.4
+## Version: 0.5
 ## IconTexture: Interface\AddOns\ElvUI_TrenchyUI\media\TrenchyUI_Tiny
 ## RequiredDeps: ElvUI
 ## OptionalDeps: WarpDeplete, BigWigs, Auctionator, BugSack, OPie, ls_Toasts
+## X-Wago-ID: RNLk7bGo
 ## SavedVariables:
 
 core.lua

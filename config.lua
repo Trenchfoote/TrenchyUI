@@ -63,21 +63,21 @@ TUI.defaults = {
             viewers = {
                 essential = {
                     visibleSetting = 'ALWAYS',
-                    iconWidth = 30, iconHeight = 30, iconZoom = 0, spacing = 2, iconsPerRow = 12, growthDirection = 'DOWN',
+                    keepSizeRatio = true, iconWidth = 30, iconHeight = 30, iconZoom = 0, spacing = 2, iconsPerRow = 12, growthDirection = 'DOWN',
                     cooldownText = { font = 'Expressway', fontSize = 16, fontOutline = 'OUTLINE', classColor = false, color = { r = 1, g = 1, b = 1 }, position = 'CENTER', xOffset = 0, yOffset = 0 },
                     countText    = { font = 'Expressway', fontSize = 11, fontOutline = 'OUTLINE', classColor = false, color = { r = 1, g = 1, b = 1 }, position = 'BOTTOMRIGHT', xOffset = 0, yOffset = 0 },
                     glow = { enabled = false, type = 'pixel', color = { r = 0.95, g = 0.95, b = 0.32, a = 1 }, lines = 8, speed = 0.25, thickness = 2, length = nil, particles = 4, scale = 1, startAnim = true },
                 },
                 utility = {
                     visibleSetting = 'ALWAYS',
-                    iconWidth = 30, iconHeight = 30, iconZoom = 0, spacing = 2, iconsPerRow = 12, growthDirection = 'DOWN',
+                    keepSizeRatio = true, iconWidth = 30, iconHeight = 30, iconZoom = 0, spacing = 2, iconsPerRow = 12, growthDirection = 'DOWN',
                     cooldownText = { font = 'Expressway', fontSize = 16, fontOutline = 'OUTLINE', classColor = false, color = { r = 1, g = 1, b = 1 }, position = 'CENTER', xOffset = 0, yOffset = 0 },
                     countText    = { font = 'Expressway', fontSize = 11, fontOutline = 'OUTLINE', classColor = false, color = { r = 1, g = 1, b = 1 }, position = 'BOTTOMRIGHT', xOffset = 0, yOffset = 0 },
                     glow = { enabled = false, type = 'pixel', color = { r = 0.95, g = 0.95, b = 0.32, a = 1 }, lines = 8, speed = 0.25, thickness = 2, length = nil, particles = 4, scale = 1, startAnim = true },
                 },
                 buffIcon = {
                     visibleSetting = 'ALWAYS',
-                    iconWidth = 30, iconHeight = 30, iconZoom = 0, spacing = 2, iconsPerRow = 12, growthDirection = 'DOWN',
+                    keepSizeRatio = true, iconWidth = 30, iconHeight = 30, iconZoom = 0, spacing = 2, iconsPerRow = 12, growthDirection = 'DOWN',
                     cooldownText = { font = 'Expressway', fontSize = 16, fontOutline = 'OUTLINE', classColor = false, color = { r = 1, g = 1, b = 1 }, position = 'CENTER', xOffset = 0, yOffset = 0 },
                     countText    = { font = 'Expressway', fontSize = 11, fontOutline = 'OUTLINE', classColor = false, color = { r = 1, g = 1, b = 1 }, position = 'BOTTOMRIGHT', xOffset = 0, yOffset = 0 },
                     glow = { enabled = false, type = 'pixel', color = { r = 0.95, g = 0.95, b = 0.32, a = 1 }, lines = 8, speed = 0.25, thickness = 2, length = nil, particles = 4, scale = 1, startAnim = true },
@@ -1028,43 +1028,49 @@ function TUI:BuildConfig()
         cdmViewer.layout.inline = true
         local cdmLayout = cdmViewer.layout.args
 
+        cdmLayout.keepSizeRatio = ACH:Toggle("Keep Size Ratio", nil, 1, nil, nil, nil,
+            function() return selVDB().keepSizeRatio end,
+            function(_, value) selVDB().keepSizeRatio = value; cdmRefresh() end
+        )
+
         cdmLayout.iconWidth = ACH:Range(
-            "Icon Width", nil, 1,
+            function() return selVDB().keepSizeRatio and "Icon Size" or "Icon Width" end, nil, 2,
             { min = 16, max = 80, step = 1 }, nil,
             function() return selVDB().iconWidth end,
             function(_, value) selVDB().iconWidth = value; cdmRefresh() end
         )
 
         cdmLayout.iconHeight = ACH:Range(
-            "Icon Height", nil, 2,
+            "Icon Height", nil, 3,
             { min = 16, max = 80, step = 1 }, nil,
             function() return selVDB().iconHeight end,
             function(_, value) selVDB().iconHeight = value; cdmRefresh() end
         )
+        cdmLayout.iconHeight.hidden = function() return selVDB().keepSizeRatio end
 
         cdmLayout.iconZoom = ACH:Range(
-            "Icon Zoom", "Crop the icon texture inward.", 3,
+            "Icon Zoom", "Crop the icon texture inward.", 4,
             { min = 0, max = 0.60, step = 0.01, isPercent = true }, nil,
             function() return selVDB().iconZoom end,
             function(_, value) selVDB().iconZoom = value; cdmRefresh() end
         )
 
         cdmLayout.spacing = ACH:Range(
-            "Spacing", "Gap between icons in pixels.", 4,
+            "Spacing", "Gap between icons in pixels.", 5,
             { min = 0, max = 20, step = 1 }, nil,
             function() return selVDB().spacing end,
             function(_, value) selVDB().spacing = value; cdmRefresh() end
         )
 
         cdmLayout.iconsPerRow = ACH:Range(
-            "Icons Per Row", nil, 5,
+            "Icons Per Row", nil, 6,
             { min = 1, max = 20, step = 1 }, nil,
             function() return selVDB().iconsPerRow end,
             function(_, value) selVDB().iconsPerRow = value; cdmRefresh() end
         )
 
         cdmLayout.growthDirection = ACH:Select(
-            "Vertical Growth", nil, 6,
+            "Vertical Growth", nil, 7,
             { DOWN = 'Down', UP = 'Up' },
             nil, nil,
             function() return selVDB().growthDirection end,
