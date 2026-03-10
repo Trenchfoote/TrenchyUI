@@ -1,5 +1,8 @@
 # TrenchyUI Changelog
 
+## v0.7.1
+- Changelogs now display properly on CurseForge and Wago
+
 ## v0.7
 
 ### Bug Fixes
