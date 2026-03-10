@@ -19,22 +19,48 @@ E:ConfigMode_AddGroup('TRENCHYUI', E:TextGradient('TrenchyUI', 1.00,0.18,0.24, 0
 
 TUI.conflictDefs = {
 	damageMeter = {
-		addonName  = 'Details',
-		addonLabel = 'Details!',
+		addons     = { { name = 'Details', label = 'Details!' } },
 		tuiFeature = 'Trenchy Damage Meter',
-		popupText  = 'Looks like you have |cffff2f3dDetails!|r and |cffff2f3dTrenchyUI|r installed.\nPlease select which damage meter you\'d prefer to use.',
+		category   = 'damage meter',
+		tuiCheck   = function(db) return db.damageMeter.enabled end,
+		tuiDisable = function(db) db.damageMeter.enabled = false end,
 	},
 	auraHighlight = {
-		addonName  = 'ElvUI_EltreumUI',
-		addonLabel = 'Eltruism',
+		addons     = { { name = 'ElvUI_EltreumUI', label = 'Eltruism' } },
 		tuiFeature = 'TUI Pixel Glow',
-		popupText  = 'Looks like you have |cffff2f3dEltruism|r and |cffff2f3dTrenchyUI|r installed.\nPlease select which pixel glow you\'d prefer to use.',
+		category   = 'pixel glow',
+		tuiCheck   = function(db) return db.pixelGlow.enabled end,
+		tuiDisable = function(db) db.pixelGlow.enabled = false end,
+		-- Eltruism: only conflict if their pixel glow is enabled
+		externalCheck = function()
+			local eltDB = E.db and E.db.ElvUI_EltreumUI and E.db.ElvUI_EltreumUI.glow
+			return eltDB and eltDB.enable
+		end,
+		-- Don't disable all of Eltruism — just turn off their glow feature.
+		tuiAccept = function()
+			if E.db and E.db.ElvUI_EltreumUI and E.db.ElvUI_EltreumUI.glow then
+				E.db.ElvUI_EltreumUI.glow.enable = false
+			end
+		end,
 	},
 	moveableFrames = {
-		addonName  = 'BlizzMove',
-		addonLabel = 'BlizzMove',
+		addons     = { { name = 'BlizzMove', label = 'BlizzMove' } },
 		tuiFeature = 'TUI Moveable Frames',
-		popupText  = 'Looks like you have |cffff2f3dBlizzMove|r and |cffff2f3dTrenchyUI|r installed.\nPlease select which moveable frames addon you\'d prefer to use.',
+		category   = 'moveable frames addon',
+		tuiCheck   = function(db) return db.qol.moveableFrames end,
+		tuiDisable = function(db) db.qol.moveableFrames = false end,
+	},
+	cooldownManager = {
+		addons     = {
+			{ name = 'Ayije_CDM', label = 'Ayije CDM' },
+			{ name = 'ArcUI_CDM', label = 'ArcUI CDM' },
+			{ name = 'BCDM', label = 'BCDM' },
+			{ name = 'CDMCentered', label = 'CDM Centered' },
+		},
+		tuiFeature = 'TUI Cooldown Manager',
+		category   = 'cooldown manager',
+		tuiCheck   = function(db) return db.cooldownManager.enabled end,
+		tuiDisable = function(db) db.cooldownManager.enabled = false end,
 	},
 }
 
@@ -46,8 +72,8 @@ do -- Compat popup system
 		if not entry then return end
 		local popup = E.PopupDialogs.TUI_COMPAT_CHOICE
 		popup.button1 = entry.def.tuiFeature
-		popup.button2 = entry.def.addonLabel
-		E:StaticPopup_Show('TUI_COMPAT_CHOICE', entry.def.popupText, nil, entry.key)
+		popup.button2 = entry.detectedLabel
+		E:StaticPopup_Show('TUI_COMPAT_CHOICE', entry.popupText, nil, entry.key)
 	end
 
 	local function OnCompatChoice(self, choice)
@@ -57,15 +83,21 @@ do -- Compat popup system
 		if TUI.db then TUI.db.profile.compat[key] = choice end
 
 		local def = TUI.conflictDefs[key]
-		if def and choice == 'tui' then
-			C_AddOns_DisableAddOn(def.addonName)
-		elseif def and choice == 'external' then
-			if key == 'damageMeter' and TUI.db then
-				TUI.db.profile.damageMeter.enabled = false
-			elseif key == 'auraHighlight' and TUI.db then
-				TUI.db.profile.pixelGlow.enabled = false
-			elseif key == 'moveableFrames' and TUI.db then
-				TUI.db.profile.qol.moveableFrames = false
+		if def then
+			if choice == 'tui' then
+				if def.tuiAccept then
+					-- Feature-level disable (e.g. turn off just Eltruism's glow, not the whole addon)
+					def.tuiAccept()
+				else
+					-- Disable the competing addon(s) entirely
+					for _, entry in pairs(def.addons) do
+						if C_AddOns_IsAddOnLoaded(entry.name) then
+							C_AddOns_DisableAddOn(entry.name)
+						end
+					end
+				end
+			elseif choice == 'external' then
+				def.tuiDisable(TUI.db.profile)
 			end
 		end
 
@@ -84,17 +116,25 @@ do -- Compat popup system
 		hideOnEscape = false,
 	}
 
-	-- Check if a conflict actually applies (addon-specific feature detection)
-	local function IsConflictActive(key, def)
-		if not C_AddOns_IsAddOnLoaded(def.addonName) then return false end
-
-		-- Eltruism: only conflict if their pixel glow is enabled
-		if key == 'auraHighlight' then
-			local eltDB = E.db and E.db.ElvUI_EltreumUI and E.db.ElvUI_EltreumUI.glow
-			return eltDB and eltDB.enable
+	-- Find loaded competing addons for a conflict def.
+	-- Returns the first detected addon entry, or nil if none loaded.
+	local function FindLoadedAddon(def)
+		for _, entry in pairs(def.addons) do
+			if C_AddOns_IsAddOnLoaded(entry.name) then return entry end
 		end
+		return nil
+	end
 
-		return true
+	-- Check if a conflict actually applies:
+	-- 1. Our module must be enabled
+	-- 2. At least one competing addon must be loaded
+	-- 3. Optional external feature check (e.g. Eltruism glow enabled)
+	local function IsConflictActive(def)
+		if not def.tuiCheck(TUI.db.profile) then return false, nil end
+		local found = FindLoadedAddon(def)
+		if not found then return false, nil end
+		if def.externalCheck and not def.externalCheck() then return false, nil end
+		return true, found
 	end
 
 	function TUI:ResolveCompat()
@@ -103,12 +143,28 @@ do -- Compat popup system
 		local needsReload = false
 
 		for key, def in pairs(self.conflictDefs) do
-			if IsConflictActive(key, def) then
+			local active, detectedAddon = IsConflictActive(def)
+			if active and detectedAddon then
 				self.activeConflicts[key] = def
 				if db[key] == nil then
-					compatPopupQueue[#compatPopupQueue + 1] = { key = key, def = def }
+					local label = detectedAddon.label
+					local text = 'Looks like you have |cffff2f3d' .. label
+						.. '|r and |cffff2f3dTrenchyUI|r installed.\nPlease select which '
+						.. def.category .. ' you\'d prefer to use.'
+					compatPopupQueue[#compatPopupQueue + 1] = {
+						key = key, def = def,
+						detectedLabel = label, popupText = text,
+					}
 				elseif db[key] == 'tui' then
-					C_AddOns_DisableAddOn(def.addonName)
+					if def.tuiAccept then
+						def.tuiAccept()
+					else
+						for _, entry in pairs(def.addons) do
+							if C_AddOns_IsAddOnLoaded(entry.name) then
+								C_AddOns_DisableAddOn(entry.name)
+							end
+						end
+					end
 					needsReload = true
 				end
 			end
@@ -212,7 +268,7 @@ do -- Settings merge
 		if self.InitQoL then self:InitQoL() end
 		if self.InitElvNP then self:InitElvNP() end
 		if self.InitSkinAuctionator then self:InitSkinAuctionator() end
-		if self.InitCooldownManager then self:InitCooldownManager() end
+		if not self:IsCompatBlocked('cooldownManager') and self.InitCooldownManager then self:InitCooldownManager() end
 		if self.InitSoulFragments then self:InitSoulFragments() end
 		if self.InitIronfurBar then self:InitIronfurBar() end
 		if not self:IsCompatBlocked('auraHighlight') and self.InitPixelGlow then self:InitPixelGlow() end
