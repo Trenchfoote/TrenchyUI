@@ -1610,7 +1610,9 @@ function TUI:BuildConfig()
             end
 
             E.db.TrenchyUI._profileJustInstalled = 'all'
-            ReloadUI()
+            -- Switch private profile last — triggers ReloadUI via ElvUI callback.
+            TUI:SwitchPrivateProfile()
+            ReloadUI() -- fallback if already on this private profile
         end,
         whileDead = 1,
         hideOnEscape = true,
@@ -1623,7 +1625,9 @@ function TUI:BuildConfig()
         OnAccept = function()
             TUI:ApplyElvUIProfile()
             E.db.TrenchyUI._profileJustInstalled = 'elvui'
-            ReloadUI()
+            -- Switch private profile last — triggers ReloadUI via ElvUI callback.
+            TUI:SwitchPrivateProfile()
+            ReloadUI() -- fallback if already on this private profile
         end,
         whileDead = 1,
         hideOnEscape = true,

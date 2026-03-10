@@ -2975,30 +2975,37 @@ local function SetupTrenchyUI()
     E.db.TrenchyUI.qol.moveableFrames = true
 end
 
-local function SetupPrivateDB()
-    E.private.general.chatBubbleFont = "Expressway"
-    E.private.general.chatBubbleFontOutline = "SHADOWOUTLINE"
-    E.private.general.chatBubbleFontSize = 14
-    E.private.general.chatBubbles = "disabled"
-    E.private.general.classColors = true
-    E.private.general.glossTex = "ElvUI Blank"
-    E.private.general.minimap.hideClassHallReport = true
-    E.private.general.minimap.hideTracking = true
-    E.private.general.nameplateFont = "Expressway"
-    E.private.general.nameplateFontOutline = "SHADOWOUTLINE"
-    E.private.general.nameplateFontSize = 14
-    E.private.general.nameplateLargeFont = "Expressway"
-    E.private.general.nameplateLargeFontOutline = "SHADOWOUTLINE"
-    E.private.general.nameplateLargeFontSize = 14
-    E.private.general.normTex = "ElvUI Blank"
-    E.private.general.raidUtility = false
-    E.private.general.replaceBubbleFont = false
-    E.private.general.replaceCombatText = true
-    E.private.general.totemTracker = false
-    E.private.install_complete = 13.97
-    E.private.skins.blizzard.cooldownManager = true
-    E.private.skins.parchmentRemoverEnable = true
-    E.private.theme = "class"
+local function SetupPrivateDB(p)
+    p = p or E.private
+    -- Ensure nested tables exist (needed when writing to a raw SavedVariables table).
+    p.general = p.general or {}
+    p.general.minimap = p.general.minimap or {}
+    p.skins = p.skins or {}
+    p.skins.blizzard = p.skins.blizzard or {}
+
+    p.general.chatBubbleFont = "Expressway"
+    p.general.chatBubbleFontOutline = "SHADOWOUTLINE"
+    p.general.chatBubbleFontSize = 14
+    p.general.chatBubbles = "disabled"
+    p.general.classColors = true
+    p.general.glossTex = "ElvUI Blank"
+    p.general.minimap.hideClassHallReport = true
+    p.general.minimap.hideTracking = true
+    p.general.nameplateFont = "Expressway"
+    p.general.nameplateFontOutline = "SHADOWOUTLINE"
+    p.general.nameplateFontSize = 14
+    p.general.nameplateLargeFont = "Expressway"
+    p.general.nameplateLargeFontOutline = "SHADOWOUTLINE"
+    p.general.nameplateLargeFontSize = 14
+    p.general.normTex = "ElvUI Blank"
+    p.general.raidUtility = false
+    p.general.replaceBubbleFont = false
+    p.general.replaceCombatText = true
+    p.general.totemTracker = false
+    p.install_complete = E.version
+    p.skins.blizzard.cooldownManager = true
+    p.skins.parchmentRemoverEnable = true
+    p.theme = "class"
 end
 
 local function SetupGlobalDB()
@@ -3081,13 +3088,23 @@ function TUI:ApplyElvUIProfile()
 
     SetupProfileDB()
     SetupTrenchyUI()
-    SetupPrivateDB()
     SetupGlobalDB()
 
     E.global.general.UIScale = E:PixelBestSize()
-    E.private.install_complete = E.version
 
     if E.db.TrenchyUI then
         E.db.TrenchyUI.installedProfileVersion = PROFILE_VERSION
     end
+
+    -- Create a dedicated private profile so we don't overwrite the user's existing one.
+    -- Write directly to the SavedVariables table; the caller switches profile before reload.
+    ElvPrivateDB.profiles = ElvPrivateDB.profiles or {}
+    ElvPrivateDB.profiles[PROFILE_NAME] = {}
+    SetupPrivateDB(ElvPrivateDB.profiles[PROFILE_NAME])
+end
+
+-- Switch the private (character) profile to TrenchyUI.
+-- E.charSettings:SetProfile fires OnProfileChanged → ReloadUI, so call this last.
+function TUI:SwitchPrivateProfile()
+    E.charSettings:SetProfile(PROFILE_NAME)
 end
