@@ -42,6 +42,10 @@ TUI.defaults = {
             castbarInterruptReady       = { r = 0.2, g = 0.8, b = 0.2 },
             castbarInterruptOnCD        = { r = 0.9, g = 0.4, b = 0.1 },
             castbarMarkerColor          = { r = 1.0, g = 1.0, b = 1.0 },
+            questColor = {
+                enabled = false,
+                color   = { r = 1.0, g = 0.8, b = 0.0 },
+            },
             disableFriendlyHighlight = false,
             focusGlow = {
                 enabled = false,
@@ -1489,6 +1493,35 @@ function TUI:BuildConfig()
         intDisabled
     )
 
+    root.nameplates.args.quest = ACH:Group(E.NewSign .. "Quest Color", nil, 3)
+    root.nameplates.args.quest.inline = true
+    local npQuest = root.nameplates.args.quest.args
+
+    npQuest.questColorEnabled = ACH:Toggle(
+        function() return TUI.db.profile.nameplates.questColor.enabled and "|cff00ff00Enable|r" or "Enable" end,
+        "Override the health bar color for quest NPCs with a custom color. "
+        .. "Overrides selection, classification, and threat colors.",
+        1, nil, nil, nil,
+        function() return TUI.db.profile.nameplates.questColor.enabled end,
+        function(_, value)
+            TUI.db.profile.nameplates.questColor.enabled = value
+            E:StaticPopup_Show('CONFIG_RL')
+        end
+    )
+
+    npQuest.questColorColor = ACH:Color(
+        "Color", "Health bar color for quest NPCs.", 2, nil, nil,
+        function()
+            local c = TUI.db.profile.nameplates.questColor.color
+            return c.r, c.g, c.b
+        end,
+        function(_, r, g, b)
+            local c = TUI.db.profile.nameplates.questColor.color
+            c.r, c.g, c.b = r, g, b
+        end,
+        function() return not TUI.db.profile.nameplates.questColor.enabled end
+    )
+
     root.nameplates.args.highlight = ACH:Group("Hover Highlight", nil, 4)
     root.nameplates.args.highlight.inline = true
     local npHL = root.nameplates.args.highlight.args
@@ -1570,7 +1603,9 @@ function TUI:BuildConfig()
     root.profiles = ACH:Group("Profiles", nil, 6)
     local prof = root.profiles.args
 
-    prof.installAll = ACH:Group("Install All", nil, 1)
+    prof.resWarning = ACH:Description("|cffff2f3dProfiles are designed for 1440p. If you use a different screen resolution, you will need to adjust frame positions and sizes.|r", 1, "medium")
+
+    prof.installAll = ACH:Group("Install All", nil, 2)
     prof.installAll.inline = true
     local allArgs = prof.installAll.args
 
@@ -1579,7 +1614,7 @@ function TUI:BuildConfig()
         E:StaticPopup_Show('TUI_INSTALL_ALL')
     end)
 
-    prof.individual = ACH:Group("Individual Profiles", nil, 2)
+    prof.individual = ACH:Group("Individual Profiles", nil, 3)
     prof.individual.inline = true
     local indArgs = prof.individual.args
 
