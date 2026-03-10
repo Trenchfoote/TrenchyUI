@@ -31,15 +31,15 @@ TUI.conflictDefs = {
 		category   = 'pixel glow',
 		tuiCheck   = function(db) return db.pixelGlow.enabled end,
 		tuiDisable = function(db) db.pixelGlow.enabled = false end,
-		-- Eltruism: only conflict if their pixel glow is enabled
+		-- Eltruism: only conflict if their unitframe glow is enabled
 		externalCheck = function()
 			local eltDB = E.db and E.db.ElvUI_EltreumUI and E.db.ElvUI_EltreumUI.glow
-			return eltDB and eltDB.enable
+			return eltDB and eltDB.enableUFs
 		end,
-		-- Don't disable all of Eltruism — just turn off their glow feature.
+		-- Don't disable all of Eltruism — just turn off their unitframe glow.
 		tuiAccept = function()
 			if E.db and E.db.ElvUI_EltreumUI and E.db.ElvUI_EltreumUI.glow then
-				E.db.ElvUI_EltreumUI.glow.enable = false
+				E.db.ElvUI_EltreumUI.glow.enableUFs = false
 			end
 		end,
 	},
