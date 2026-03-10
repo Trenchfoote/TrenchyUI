@@ -461,6 +461,14 @@ local function HookViewer(viewerKey)
 	if not viewer or hookedViewers[viewerKey] then return end
 	hookedViewers[viewerKey] = true
 
+	-- Clear stale Edit Mode anchors (e.g. old container names from previous versions)
+	local container = containers[viewerKey]
+	if container then
+		viewer:ClearAllPoints()
+		viewer:SetPoint('CENTER', container, 'CENTER', 0, 0)
+		viewer:SetParent(container)
+	end
+
 	if viewer.itemFramePool then
 		hooksecurefunc(viewer.itemFramePool, 'Acquire', function()
 			ScheduleRelayout()
