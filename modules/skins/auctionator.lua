@@ -380,7 +380,7 @@ end
 
 function TUI:InitSkinAuctionator()
 	if not self.db or not self.db.profile.addons or not self.db.profile.addons.skinAuctionator then return end
-	if not C_AddOns.IsAddOnLoaded('Auctionator') then return end
+	if not E:IsAddOnEnabled('Auctionator') then return end
 	if not AuctionatorAHFrameMixin then return end
 
 	local skinned = false

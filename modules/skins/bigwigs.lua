@@ -3,7 +3,6 @@ local TUI = E:GetModule('TrenchyUI')
 local LSM = E.Libs.LSM or LibStub('LibSharedMedia-3.0')
 
 local CreateFrame = CreateFrame
-local C_AddOns_LoadAddOn = C_AddOns and C_AddOns.LoadAddOn or LoadAddOn
 local ipairs = ipairs
 
 local DEFAULTS_BARS = {
@@ -22,6 +21,7 @@ local DEFAULTS_COLORS = {
 }
 
 do -- BigWigs settings helpers
+	local C_AddOns_LoadAddOn = C_AddOns and C_AddOns.LoadAddOn or LoadAddOn
 	local pluginsReady = false
 
 	local function EnsurePluginsLoaded()

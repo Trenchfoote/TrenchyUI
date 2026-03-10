@@ -203,7 +203,7 @@ local function SkinHost()
 end
 
 function TUI:InitSkinOPie()
-	if not C_AddOns.IsAddOnLoaded('OPie') then return end
+	if not E:IsAddOnEnabled('OPie') then return end
 	if not self.db or not self.db.profile.addons or not self.db.profile.addons.skinOPie then return end
 	if not _G.TenSettingsFrame then return end
 
