@@ -18,14 +18,10 @@ local VIEWER_KEYS = {
 }
 
 local containers = {}   -- [viewerKey] = container frame
-local hookedViewers = {}
 local styledFrames = {} -- [itemFrame] = viewerKey — tracks which frames already have text/glow applied
 local glowActive = {}   -- [itemFrame] = true — tracks which frames currently have our glow
-local iconCache = {}    -- [viewerKey] = reusable table for icon collection
-local glowColor = {}    -- reusable color table for glow
 local previewActive = false
-local cdmTabActive = false
-local inCombat = InCombatLockdown()
+local inCombat = false
 local ScheduleRelayout -- forward declaration
 
 local sortFunc = function(a, b) return (a.layoutIndex or 0) < (b.layoutIndex or 0) end
@@ -63,6 +59,8 @@ local function StopGlow(itemFrame)
 end
 
 local hookedAlerts = {}
+
+local glowColor = {}    -- reusable color table for glow
 
 local function ApplyGlow(itemFrame, glowDB)
 	if not LCG then return end
@@ -319,6 +317,8 @@ local function CreateContainer(viewerKey)
 	return frame
 end
 
+local iconCache = {}    -- [viewerKey] = reusable table for icon collection
+
 local function LayoutContainer(viewerKey, isCapture)
 	local container = containers[viewerKey]
 	if not container then return end
@@ -454,6 +454,8 @@ local function OnCDMEvent(_, event, unit)
 	ScheduleRelayout()
 end
 
+local hookedViewers = {}
+
 local function HookViewer(viewerKey)
 	local viewer = GetViewer(viewerKey)
 	if not viewer or hookedViewers[viewerKey] then return end
@@ -469,10 +471,7 @@ local function HookViewer(viewerKey)
 	end
 
 	if viewer.OnAcquireItemFrame then
-		hooksecurefunc(viewer, 'OnAcquireItemFrame', function(_, frame)
-			if frame and frame.SetScale then
-				frame:SetScale(1)
-			end
+		hooksecurefunc(viewer, 'OnAcquireItemFrame', function()
 			ScheduleRelayout()
 		end)
 	end
@@ -571,6 +570,7 @@ SlashCmdList['TUICDM'] = function()
 end
 
 -- Config hooks
+local cdmTabActive = false
 local configCloseHooked = false
 
 local function TryHookConfigClose()
@@ -591,10 +591,10 @@ local function TryHookConfigClose()
 end
 
 C_Timer.After(0, function()
-	-- Hook SelectGroup eagerly — ACD exists at load time
 	local ACD = E.Libs.AceConfigDialog
 	if ACD then
-		hooksecurefunc(ACD, 'SelectGroup', function(_, appName, ...)
+		-- Shared logic for detecting CDM tab navigation
+		local function HandleGroupChange(appName, pathContainsCDM)
 			if appName ~= 'ElvUI' then return end
 
 			-- Try to hook config close if we haven't yet (frame now exists)
@@ -602,6 +602,19 @@ C_Timer.After(0, function()
 				TryHookConfigClose()
 			end
 
+			if pathContainsCDM and not cdmTabActive then
+				cdmTabActive = true
+				ShowBlizzardCDMSettings()
+				ShowPreview()
+			elseif not pathContainsCDM and cdmTabActive then
+				cdmTabActive = false
+				HideBlizzardCDMSettings()
+				HidePreview()
+			end
+		end
+
+		-- Hook SelectGroup for programmatic navigation (e.g. /cdm, mover right-click)
+		hooksecurefunc(ACD, 'SelectGroup', function(_, appName, ...)
 			local isCDM = false
 			for i = 1, select('#', ...) do
 				if select(i, ...) == 'cooldownManager' then
@@ -609,28 +622,37 @@ C_Timer.After(0, function()
 					break
 				end
 			end
+			HandleGroupChange(appName, isCDM)
+		end)
 
-			if isCDM and not cdmTabActive then
-				cdmTabActive = true
-				C_Timer.After(0.3, function()
-					ShowBlizzardCDMSettings()
-					ShowPreview()
-				end)
-			elseif not isCDM and cdmTabActive then
-				cdmTabActive = false
-				HideBlizzardCDMSettings()
-				HidePreview()
+		-- Hook FeedGroup for user clicks — skip parent-level paths to avoid recursive undo
+		hooksecurefunc(ACD, 'FeedGroup', function(_, appName, _, _, _, path)
+			if appName ~= 'ElvUI' or type(path) ~= 'table' then return end
+			if #path == 0 then return end -- root level render, skip
+
+			local hasTrenchyUI = false
+			local isCDM = false
+			for i = 1, #path do
+				if path[i] == 'TrenchyUI' then hasTrenchyUI = true end
+				if path[i] == 'cooldownManager' then isCDM = true end
 			end
+
+			-- Skip parent TrenchyUI tree setup (path={'TrenchyUI'}) — it's just
+			-- rendering the tree container, not an actual tab selection
+			if hasTrenchyUI and not isCDM and #path < 2 then return end
+
+			-- Only react when navigating within TrenchyUI or away from CDM
+			if not hasTrenchyUI and not cdmTabActive then return end
+
+			HandleGroupChange(appName, isCDM)
 		end)
 	end
 
 	-- Mover right-click hook
 	hooksecurefunc(E, 'ToggleOptions', function(_, msg)
 		if msg == CDM_CONFIG_STRING then
-			C_Timer.After(0.3, function()
-				ShowBlizzardCDMSettings()
-				ShowPreview()
-			end)
+			ShowBlizzardCDMSettings()
+			ShowPreview()
 		end
 
 		-- Also try to hook config close from here as a fallback
