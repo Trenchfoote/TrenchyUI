@@ -1,7 +1,6 @@
 local E = unpack(ElvUI)
 local TUI = E:GetModule('TrenchyUI')
 local ACH = E.Libs.ACH
-local P = E.DF and E.DF.profile
 
 TUI.defaults = {
     profile = {
@@ -12,6 +11,7 @@ TUI.defaults = {
             autoFillDelete  = false,
             moveableFrames  = false,
             fastLoot        = false,
+            hideObjectiveInCombat = false,
             difficultyText  = false,
             difficultyFont    = 'Expressway',
             difficultyFontSize = 14,
@@ -97,15 +97,20 @@ TUI.defaults = {
             standaloneHeight = 180,
             windowEnabled    = { true, false, false, false },
             extraWindows     = {},
-            showBackdrop     = true,
-            showHeaderBorder = true,
+            showBackdrop        = true,
+            backdropColor       = { r = 0.06, g = 0.06, b = 0.06, a = 0.80 },
+            showHeaderBackdrop  = true,
+            showHeaderBorder    = true,
+            headerMouseover     = false,
             headerFont        = 'Expressway',
             headerFontSize    = 11,
             headerFontOutline = 'OUTLINE',
             headerBGColor   = { r = 0.06, g = 0.06, b = 0.06, a = 0.85 },
             headerFontColor = { r = 1.00, g = 1.00, b = 1.00 },
+            barTexture    = '',
             barClassColor = true,
             barColor      = { r = 0.60, g = 0.60, b = 0.60 },
+            barBGTexture  = '',
             barBGClassColor = true,
             barBGColor    = { r = 0.20, g = 0.20, b = 0.20, a = 0.35 },
             barFont        = 'Expressway',
@@ -144,6 +149,7 @@ TUI.defaults = {
     },
 }
 
+local P = E.DF and E.DF.profile
 if P then
     P.TrenchyUI = E:CopyTable({}, TUI.defaults.profile)
 end
@@ -203,6 +209,17 @@ function TUI:BuildConfig()
         function() return TUI.db.profile.qol.fastLoot end,
         function(_, value)
             TUI.db.profile.qol.fastLoot = value
+            E:StaticPopup_Show('CONFIG_RL')
+        end
+    )
+
+    qolGen.hideObjectiveInCombat = ACH:Toggle(
+        "Hide Objectives in Combat",
+        "Automatically hide the objective tracker when entering combat and restore it when leaving combat.",
+        5, nil, nil, nil,
+        function() return TUI.db.profile.qol.hideObjectiveInCombat end,
+        function(_, value)
+            TUI.db.profile.qol.hideObjectiveInCombat = value
             E:StaticPopup_Show('CONFIG_RL')
         end
     )
@@ -458,36 +475,12 @@ function TUI:BuildConfig()
     if C_DamageMeter and Enum.DamageMeterType then
         root.damageMeter = ACH:Group("TDM", nil, 2)
 
-        local DM_DEFAULTS = {
-            standaloneWidth  = 220,
-            standaloneHeight = 180,
-            showBackdrop     = true,
-            showHeaderBorder = true,
-            headerFont       = 'Expressway',
-            headerFontSize   = 11,
-            headerFontOutline = 'OUTLINE',
-            headerBGColor    = { r = 0.06, g = 0.06, b = 0.06, a = 0.85 },
-            headerFontColor  = { r = 1.00, g = 1.00, b = 1.00 },
-            barHeight        = 18,
-            barSpacing       = 1,
-            showClassIcon    = false,
-            barBorderEnabled = false,
-            barClassColor    = true,
-            barColor         = { r = 0.60, g = 0.60, b = 0.60 },
-            barBGClassColor  = true,
-            barBGColor       = { r = 0.20, g = 0.20, b = 0.20, a = 0.35 },
-            barFont          = 'Expressway',
-            barFontSize      = 11,
-            barFontOutline   = 'OUTLINE',
-            textClassColor   = false,
-            textColor        = { r = 1.00, g = 1.00, b = 1.00 },
-            valueClassColor  = false,
-            valueColor       = { r = 1.00, g = 1.00, b = 1.00 },
-            showRank         = true,
-            rankClassColor   = false,
-            rankColor        = { r = 0.60, g = 0.60, b = 0.60 },
-            showTimer        = false,
-        }
+        -- Per-window keys from the shared damageMeter defaults (excludes global-only keys)
+        local DM_SKIP = { enabled = true, modeIndex = true, autoResetOnComplete = true, embedded = true, windowEnabled = true, extraWindows = true }
+        local DM_DEFAULTS = {}
+        for k, v in pairs(TUI.defaults.profile.damageMeter) do
+            if not DM_SKIP[k] then DM_DEFAULTS[k] = v end
+        end
         TUI.DM_DEFAULTS = DM_DEFAULTS
 
         local dmDisabled = function() return not TUI.db.profile.damageMeter.enabled end
@@ -638,12 +631,16 @@ function TUI:BuildConfig()
         )
 
         dmWinSel.embedded = ACH:Toggle(
-            "Embed in Chat Panel",
+            "Embed in Right Chat Panel",
             "Nest the meter inside the ElvUI Right Chat Panel instead of a standalone window.",
             3, nil, nil, nil,
             function() return TUI.db.profile.damageMeter.embedded end,
             function(_, value)
                 TUI.db.profile.damageMeter.embedded = value
+                if value then
+                    TUI.db.profile.damageMeter.showBackdrop = false
+                    TUI.db.profile.damageMeter.showHeaderBackdrop = false
+                end
                 E:StaticPopup_Show('CONFIG_RL')
             end,
             function() return dmDisabled() or TUI._selectedMeterWindow ~= 1 end,
@@ -734,11 +731,19 @@ function TUI:BuildConfig()
         )
 
         dmWin.showBackdrop = ACH:Toggle(
-            "Window Backdrop", "Show a transparent backdrop matching the ElvUI chat panel style.",
+            "Window Backdrop", "Show a backdrop behind the bar area.",
             3, nil, nil, nil,
             function() return winGet('showBackdrop') end,
             function(_, value) winSet('showBackdrop', value); winUpdate() end,
             selWinDisabled
+        )
+
+        dmWin.backdropColor = ACH:Color(
+            "Backdrop Color", "Color and transparency of the window backdrop.",
+            4, true, nil,
+            function() return winGetColor('backdropColor') end,
+            function(_, r, g, b, a) winSetColor('backdropColor', r, g, b, a); winUpdate() end,
+            function() return selWinDisabled() or not winGet('showBackdrop') end
         )
 
         root.damageMeter.args.header = ACH:Group("Header", nil, 4, nil, nil, nil, selWinDisabled)
@@ -775,19 +780,35 @@ function TUI:BuildConfig()
             selWinDisabled
         )
 
+        dmHdr.showHeaderBackdrop = ACH:Toggle(
+            "Header Backdrop", "Show a backdrop behind the header bar.",
+            5, nil, nil, nil,
+            function() return winGet('showHeaderBackdrop') end,
+            function(_, value) winSet('showHeaderBackdrop', value); winUpdate() end,
+            selWinDisabled
+        )
+
         dmHdr.showHeaderBorder = ACH:Toggle(
             "Header Border", "Show a border around the header section.",
-            5, nil, nil, nil,
+            6, nil, nil, nil,
             function() return winGet('showHeaderBorder') end,
             function(_, value) winSet('showHeaderBorder', value); winUpdate() end,
             selWinDisabled
         )
 
         dmHdr.headerBGColor = ACH:Color(
-            "Background", "Background color and transparency of the header.",
-            6, true, nil,
+            "Backdrop Color", "Background color and transparency of the header.",
+            7, true, nil,
             function() return winGetColor('headerBGColor') end,
             function(_, r, g, b, a) winSetColor('headerBGColor', r, g, b, a); winUpdate() end,
+            selWinDisabled
+        )
+
+        dmHdr.headerMouseover = ACH:Toggle(
+            "Mouseover", "Hide the header until the meter is moused over.",
+            8, nil, nil, nil,
+            function() return winGet('headerMouseover') end,
+            function(_, value) winSet('headerMouseover', value); winUpdate() end,
             selWinDisabled
         )
 
@@ -847,6 +868,18 @@ function TUI:BuildConfig()
             function() return selWinDisabled() or winGet('barClassColor') end
         )
 
+        dmFG.barTexture = ACH:SharedMediaStatusbar(
+            "Texture", "Statusbar texture for bar foregrounds. Defaults to the ElvUI primary texture.",
+            3, nil,
+            function() local t = winGet('barTexture'); return (t and t ~= '') and t or E.private.general.normTex end,
+            function(_, value)
+                local def = E.private.general.normTex
+                winSet('barTexture', (value == def) and '' or value)
+                winUpdate()
+            end,
+            selWinDisabled
+        )
+
         dmBars.background = ACH:Group("Background", nil, 20)
         dmBars.background.inline = true
         local dmBG = dmBars.background.args
@@ -865,6 +898,18 @@ function TUI:BuildConfig()
             function() return winGetColor('barBGColor') end,
             function(_, r, g, b, a) winSetColor('barBGColor', r, g, b, a); winRefresh() end,
             function() return selWinDisabled() or winGet('barBGClassColor') end
+        )
+
+        dmBG.barBGTexture = ACH:SharedMediaStatusbar(
+            "Texture", "Statusbar texture for bar backgrounds. Defaults to the ElvUI primary texture.",
+            3, nil,
+            function() local t = winGet('barBGTexture'); return (t and t ~= '') and t or E.private.general.normTex end,
+            function(_, value)
+                local def = E.private.general.normTex
+                winSet('barBGTexture', (value == def) and '' or value)
+                winUpdate()
+            end,
+            selWinDisabled
         )
 
         root.damageMeter.args.text = ACH:Group("Text", nil, 6, nil, nil, nil, selWinDisabled)
@@ -1602,8 +1647,8 @@ function TUI:BuildConfig()
         button2 = "Cancel",
         OnAccept = function()
             TUI:ApplyElvUIProfile()
-            if C_AddOns.IsAddOnLoaded('WarpDeplete') and TUI.ApplyWarpDepleteProfile then TUI:ApplyWarpDepleteProfile() end
-            if C_AddOns.IsAddOnLoaded('ls_Toasts') and TUI.ApplyLSToastsProfile then TUI:ApplyLSToastsProfile() end
+            if E:IsAddOnEnabled('WarpDeplete') and TUI.ApplyWarpDepleteProfile then TUI:ApplyWarpDepleteProfile() end
+            if E:IsAddOnEnabled('ls_Toasts') and TUI.ApplyLSToastsProfile then TUI:ApplyLSToastsProfile() end
 
             if BigWigsAPI and TUI.ApplyBigWigsProfile then
                 E.db.TrenchyUI._pendingBigWigsProfile = true
