@@ -56,7 +56,6 @@ local function SetupProfileDB()
     E.db.actionbar.bar1.paging.WARLOCK = "[vehicleui] 16; [overridebar] 18;[possessbar] 16;[bonusbar:5] 11;"
     E.db.actionbar.bar1.paging.WARRIOR = "[vehicleui] 16; [overridebar] 18;[possessbar] 16;[bonusbar:5] 11;"
     E.db.actionbar.bar1.useCountColor = true
-    E.db.actionbar.bar1.visibility = ""
     E.db.actionbar.bar10.countFont = "Expressway"
     E.db.actionbar.bar10.countFontOutline = "SHADOWOUTLINE"
     E.db.actionbar.bar10.hotkeyFont = "Expressway"
@@ -66,7 +65,6 @@ local function SetupProfileDB()
     E.db.actionbar.bar10.macroTextPosition = "BOTTOM"
     E.db.actionbar.bar10.macroTextYOffset = 2
     E.db.actionbar.bar10.macrotext = true
-    E.db.actionbar.bar10.visibility = "[vehicleui] hide; [overridebar] hide; [petbattle] hide; show[combat][@target, exists]show;hide"
     E.db.actionbar.bar13.buttonHeight = 25
     E.db.actionbar.bar13.buttonSize = 35
     E.db.actionbar.bar13.buttonSpacing = 4
@@ -103,7 +101,6 @@ local function SetupProfileDB()
     E.db.actionbar.bar2.mouseover = true
     E.db.actionbar.bar2.paging.DRUID = ""
     E.db.actionbar.bar2.useCountColor = true
-    E.db.actionbar.bar2.visibility = ""
     E.db.actionbar.bar3.buttonHeight = 20
     E.db.actionbar.bar3.buttonSize = 35
     E.db.actionbar.bar3.buttons = 12
@@ -118,7 +115,6 @@ local function SetupProfileDB()
     E.db.actionbar.bar3.macroTextYOffset = 2
     E.db.actionbar.bar3.mouseover = true
     E.db.actionbar.bar3.paging.DRUID = ""
-    E.db.actionbar.bar3.visibility = "\n"
     E.db.actionbar.bar4.backdrop = false
     E.db.actionbar.bar4.buttonHeight = 20
     E.db.actionbar.bar4.buttonSize = 35
@@ -148,7 +144,6 @@ local function SetupProfileDB()
     E.db.actionbar.bar4.paging.WARLOCK = ""
     E.db.actionbar.bar4.paging.WARRIOR = ""
     E.db.actionbar.bar4.point = "BOTTOMLEFT"
-    E.db.actionbar.bar4.visibility = ""
     E.db.actionbar.bar5.buttonHeight = 25
     E.db.actionbar.bar5.buttonSize = 35
     E.db.actionbar.bar5.buttonSpacing = 1
@@ -170,7 +165,6 @@ local function SetupProfileDB()
     E.db.actionbar.bar5.paging.PALADIN = "[vehicleui] 16; [overridebar] 18; [possessbar] 16;[bonusbar:5] 11;"
     E.db.actionbar.bar5.paging.WARRIOR = "[vehicleui] 16; [overridebar] 18;[possessbar] 16;[bonusbar:5] 11;\n"
     E.db.actionbar.bar5.showGrid = false
-    E.db.actionbar.bar5.visibility = "[vehicleui] hide; [overridebar] show; [possessbar] show; [petbattle] hide; show;"
     E.db.actionbar.bar6.enabled = false
     E.db.actionbar.bar6.buttonHeight = 24
     E.db.actionbar.bar6.buttonSpacing = 3
@@ -199,7 +193,6 @@ local function SetupProfileDB()
     E.db.actionbar.bar7.macroTextPosition = "BOTTOM"
     E.db.actionbar.bar7.macroTextYOffset = 2
     E.db.actionbar.bar7.macrotext = true
-    E.db.actionbar.bar7.visibility = "[vehicleui] hide; [bonusbar:5] hide; [overridebar] hide; [possessbar] hide; [petbattle] hide; show"
     E.db.actionbar.bar8.buttonHeight = 30
     E.db.actionbar.bar8.buttonSize = 35
     E.db.actionbar.bar8.countFont = "Expressway"
@@ -212,7 +205,6 @@ local function SetupProfileDB()
     E.db.actionbar.bar8.macroTextPosition = "BOTTOM"
     E.db.actionbar.bar8.macroTextYOffset = 2
     E.db.actionbar.bar8.macrotext = true
-    E.db.actionbar.bar8.visibility = "[vehicleui] hide; [bonusbar:5] hide; [overridebar] hide; [possessbar] hide; [petbattle] hide; show"
     E.db.actionbar.bar9.countFont = "Expressway"
     E.db.actionbar.bar9.countFontOutline = "SHADOWOUTLINE"
     E.db.actionbar.bar9.hotkeyFont = "Expressway"
@@ -222,7 +214,6 @@ local function SetupProfileDB()
     E.db.actionbar.bar9.macroTextPosition = "BOTTOM"
     E.db.actionbar.bar9.macroTextYOffset = 2
     E.db.actionbar.bar9.macrotext = true
-    E.db.actionbar.bar9.visibility = "[vehicleui] hide; [bonusbar:5] hide; [overridebar] hide; [possessbar] hide; [petbattle] hide; show"
     E.db.actionbar.barPet.backdrop = false
     E.db.actionbar.barPet.backdropSpacing = 0
     E.db.actionbar.barPet.buttonHeight = 25
@@ -235,7 +226,6 @@ local function SetupProfileDB()
     E.db.actionbar.barPet.hotkeyFontOutline = "SHADOWOUTLINE"
     E.db.actionbar.barPet.keepSizeRatio = false
     E.db.actionbar.barPet.mouseover = true
-    E.db.actionbar.barPet.visibility = "[vehicleui] hide; [overridebar] hide; [possessbar] hide; [petbattle] hide; [@pet,exists] show; hide"
     E.db.actionbar.desaturateOnCooldown = true
     E.db.actionbar.extraActionButton.clean = true
     E.db.actionbar.extraActionButton.hotkeyFont = "Expressway"
@@ -252,7 +242,6 @@ local function SetupProfileDB()
     E.db.actionbar.microbar.keepSizeRatio = true
     E.db.actionbar.microbar.mouseover = true
     E.db.actionbar.microbar.useIcons = false
-    E.db.actionbar.microbar.visibility = "[combat] hide; show"
     E.db.actionbar.noPowerColor.b = 0.29019607843137
     E.db.actionbar.noPowerColor.g = 0.14509803921569
     E.db.actionbar.noPowerColor.r = 0.14509803921569
@@ -274,7 +263,6 @@ local function SetupProfileDB()
     E.db.actionbar.stanceBar.keepSizeRatio = false
     E.db.actionbar.stanceBar.mouseover = true
     E.db.actionbar.stanceBar.style = "classic"
-    E.db.actionbar.stanceBar.visibility = "[vehicleui] hide; [bonusbar:5] hide; [overridebar] hide; [possessbar] hide; [petbattle] hide; show"
     E.db.actionbar.transparent = true
     E.db.actionbar.useRangeColorText = true
     E.db.actionbar.vehicleExitButton.hotkeyFont = "Expressway"
@@ -735,7 +723,7 @@ local function SetupProfileDB()
     E.db.movers.ElvUF_PetMover = "BOTTOM,ElvUIParent,BOTTOM,-252,346"
     E.db.movers.ElvUF_PetTargetMover = "BOTTOMRIGHT,UIParent,BOTTOMRIGHT,-750,380"
     E.db.movers.ElvUF_PlayerAuraMover = "BOTTOM,ElvUIParent,BOTTOM,0,484"
-    E.db.movers.ElvUF_PlayerCastbarMover = "BOTTOM,ElvUIParent,BOTTOM,0,316"
+    E.db.movers.ElvUF_PlayerCastbarMover = "BOTTOM,ElvUIParent,BOTTOM,0,315"
     E.db.movers.ElvUF_PlayerMover = "BOTTOM,ElvUIParent,BOTTOM,0,400"
     E.db.movers.ElvUF_Raid1Mover = "BOTTOMLEFT,ElvUIParent,BOTTOMLEFT,4,399"
     E.db.movers.ElvUF_Raid2Mover = "TOPLEFT,UIParent,TOPLEFT,104,-328"
@@ -1006,7 +994,6 @@ local function SetupProfileDB()
     E.db.nameplates.units.ENEMY_NPC.castbar.iconPosition = "LEFT"
     E.db.nameplates.units.ENEMY_NPC.castbar.iconSize = 29
     E.db.nameplates.units.ENEMY_NPC.castbar.showIcon = false
-    E.db.nameplates.units.ENEMY_NPC.castbar.smoothbars = true
     E.db.nameplates.units.ENEMY_NPC.castbar.textPosition = "ONBAR"
     E.db.nameplates.units.ENEMY_NPC.castbar.textXOffset = 3
     E.db.nameplates.units.ENEMY_NPC.castbar.textYOffset = 1
@@ -1037,7 +1024,6 @@ local function SetupProfileDB()
     E.db.nameplates.units.ENEMY_NPC.eliteIcon.xOffset = 0
     E.db.nameplates.units.ENEMY_NPC.eliteIcon.yOffset = 18
     E.db.nameplates.units.ENEMY_NPC.health.height = 25
-    E.db.nameplates.units.ENEMY_NPC.health.smoothbars = true
     E.db.nameplates.units.ENEMY_NPC.health.text.font = "Expressway"
     E.db.nameplates.units.ENEMY_NPC.health.text.fontOutline = "SHADOWOUTLINE"
     E.db.nameplates.units.ENEMY_NPC.health.text.fontSize = 18
@@ -1142,7 +1128,6 @@ local function SetupProfileDB()
     E.db.nameplates.units.ENEMY_PLAYER.castbar.iconPosition = "LEFT"
     E.db.nameplates.units.ENEMY_PLAYER.castbar.iconSize = 29
     E.db.nameplates.units.ENEMY_PLAYER.castbar.showIcon = false
-    E.db.nameplates.units.ENEMY_PLAYER.castbar.smoothbars = true
     E.db.nameplates.units.ENEMY_PLAYER.castbar.textPosition = "ONBAR"
     E.db.nameplates.units.ENEMY_PLAYER.castbar.textXOffset = 3
     E.db.nameplates.units.ENEMY_PLAYER.castbar.textYOffset = 1
@@ -1171,7 +1156,6 @@ local function SetupProfileDB()
     E.db.nameplates.units.ENEMY_PLAYER.debuffs.xOffset = 41
     E.db.nameplates.units.ENEMY_PLAYER.debuffs.yOffset = 1
     E.db.nameplates.units.ENEMY_PLAYER.health.height = 25
-    E.db.nameplates.units.ENEMY_PLAYER.health.smoothbars = true
     E.db.nameplates.units.ENEMY_PLAYER.health.text.font = "Expressway"
     E.db.nameplates.units.ENEMY_PLAYER.health.text.fontOutline = "SHADOWOUTLINE"
     E.db.nameplates.units.ENEMY_PLAYER.health.text.fontSize = 18
@@ -1335,7 +1319,6 @@ local function SetupProfileDB()
     E.db.nameplates.units.FRIENDLY_PLAYER.debuffs.priority = "Blacklist,Dispellable,CCDebuffs,RaidDebuffs"
     E.db.nameplates.units.FRIENDLY_PLAYER.debuffs.size = 25
     E.db.nameplates.units.FRIENDLY_PLAYER.debuffs.yOffset = 38
-    E.db.nameplates.units.FRIENDLY_PLAYER.health.smoothbars = true
     E.db.nameplates.units.FRIENDLY_PLAYER.health.text.enable = false
     E.db.nameplates.units.FRIENDLY_PLAYER.health.text.font = "Expressway"
     E.db.nameplates.units.FRIENDLY_PLAYER.health.text.fontOutline = "SHADOWOUTLINE"
@@ -1690,7 +1673,6 @@ local function SetupProfileDB()
     E.db.unitframe.units.arena.fader.enable = false
     E.db.unitframe.units.arena.fader.minAlpha = 0.8
     E.db.unitframe.units.arena.healPrediction.enable = false
-    E.db.unitframe.units.arena.health.smoothbars = true
     E.db.unitframe.units.arena.health.text_format = ""
     E.db.unitframe.units.arena.health.xOffset = 0
     E.db.unitframe.units.arena.height = 50
@@ -1739,7 +1721,6 @@ local function SetupProfileDB()
     E.db.unitframe.units.assist.debuffs.countFont = "Expressway"
     E.db.unitframe.units.assist.debuffs.countFontOutline = "SHADOWOUTLINE"
     E.db.unitframe.units.assist.enable = false
-    E.db.unitframe.units.assist.health.smoothbars = true
     E.db.unitframe.units.assist.height = 25
     E.db.unitframe.units.assist.name.text_format = ""
     E.db.unitframe.units.assist.rdebuffs.enable = false
@@ -1896,7 +1877,6 @@ local function SetupProfileDB()
     E.db.unitframe.units.focus.disableMouseoverGlow = true
     E.db.unitframe.units.focus.disableTargetGlow = true
     E.db.unitframe.units.focus.healPrediction.enable = false
-    E.db.unitframe.units.focus.health.smoothbars = true
     E.db.unitframe.units.focus.height = 25
     E.db.unitframe.units.focus.name.text_format = "[name:eltruism:gradientshort] [eltruism:IconOutline:player] [eltruism:raidmarker]"
     E.db.unitframe.units.focus.power.attachTextTo = "Power"
@@ -1914,7 +1894,6 @@ local function SetupProfileDB()
     E.db.unitframe.units.focustarget.buffs.priority = "Blacklist,Personal,PlayerBuffs,Dispellable"
     E.db.unitframe.units.focustarget.debuffs.countFont = "Expressway"
     E.db.unitframe.units.focustarget.debuffs.countFontOutline = "SHADOWOUTLINE"
-    E.db.unitframe.units.focustarget.health.smoothbars = true
     E.db.unitframe.units.focustarget.power.enable = false
     E.db.unitframe.units.focustarget.power.text_format = "[power:current:shortvalue]"
     E.db.unitframe.units.party.CombatIcon.color.b = 1
@@ -2011,7 +1990,6 @@ local function SetupProfileDB()
     E.db.unitframe.units.party.healPrediction.anchorPoint = "CENTER"
     E.db.unitframe.units.party.healPrediction.enable = true
     E.db.unitframe.units.party.health.position = "RIGHT"
-    E.db.unitframe.units.party.health.smoothbars = true
     E.db.unitframe.units.party.health.text_format = ""
     E.db.unitframe.units.party.health.xOffset = -9
     E.db.unitframe.units.party.height = 35
@@ -2036,7 +2014,6 @@ local function SetupProfileDB()
     E.db.unitframe.units.party.power.attachTextTo = "Frame"
     E.db.unitframe.units.party.power.height = 5
     E.db.unitframe.units.party.power.onlyHealer = true
-    E.db.unitframe.units.party.power.smoothbars = true
     E.db.unitframe.units.party.power.text_format = ""
     E.db.unitframe.units.party.power.xOffset = 0
     E.db.unitframe.units.party.privateAuras.borderScale = -5
@@ -2143,7 +2120,6 @@ local function SetupProfileDB()
     E.db.unitframe.units.pet.fader.minAlpha = 0
     E.db.unitframe.units.pet.fader.range = false
     E.db.unitframe.units.pet.health.colorHappiness = false
-    E.db.unitframe.units.pet.health.smoothbars = true
     E.db.unitframe.units.pet.height = 25
     E.db.unitframe.units.pet.name.position = "LEFT"
     E.db.unitframe.units.pet.name.text_format = ""
@@ -2155,7 +2131,6 @@ local function SetupProfileDB()
     E.db.unitframe.units.pettarget.buffs.countFontOutline = "SHADOWOUTLINE"
     E.db.unitframe.units.pettarget.debuffs.countFont = "Expressway"
     E.db.unitframe.units.pettarget.debuffs.countFontOutline = "SHADOWOUTLINE"
-    E.db.unitframe.units.pettarget.health.smoothbars = true
     E.db.unitframe.units.pettarget.power.enable = false
     E.db.unitframe.units.pettarget.power.text_format = "[power:current:shortvalue]"
     E.db.unitframe.units.player.CombatIcon.anchorPoint = "TOP"
@@ -2224,7 +2199,6 @@ local function SetupProfileDB()
     E.db.unitframe.units.player.castbar.iconAttachedTo = "Castbar"
     E.db.unitframe.units.player.castbar.iconSize = 27
     E.db.unitframe.units.player.castbar.iconXOffset = 0
-    E.db.unitframe.units.player.castbar.smoothbars = true
     E.db.unitframe.units.player.castbar.textColor.b = 0.23921570181847
     E.db.unitframe.units.player.castbar.textColor.g = 0.1843137294054
     E.db.unitframe.units.player.castbar.textColor.r = 1
@@ -2237,7 +2211,6 @@ local function SetupProfileDB()
     E.db.unitframe.units.player.classbar.detachedWidth = 300
     E.db.unitframe.units.player.classbar.fill = "spaced"
     E.db.unitframe.units.player.classbar.height = 15
-    E.db.unitframe.units.player.classbar.smoothbars = true
     E.db.unitframe.units.player.classbar.spacing = 2
     E.db.unitframe.units.player.customTexts["T-Health"].attachTextTo = "Health"
     E.db.unitframe.units.player.customTexts["T-Health"].enable = true
@@ -2301,7 +2274,6 @@ local function SetupProfileDB()
     E.db.unitframe.units.player.healPrediction.anchorPoint = "CENTER"
     E.db.unitframe.units.player.healPrediction.height = 35
     E.db.unitframe.units.player.health.position = "RIGHT"
-    E.db.unitframe.units.player.health.smoothbars = true
     E.db.unitframe.units.player.health.text_format = ""
     E.db.unitframe.units.player.health.xOffset = 0
     E.db.unitframe.units.player.height = 35
@@ -2320,7 +2292,6 @@ local function SetupProfileDB()
     E.db.unitframe.units.player.power.detachedWidth = 300
     E.db.unitframe.units.player.power.height = 15
     E.db.unitframe.units.player.power.powerPrediction = true
-    E.db.unitframe.units.player.power.smoothbars = true
     E.db.unitframe.units.player.power.strataAndLevel.frameStrata = "BACKGROUND"
     E.db.unitframe.units.player.power.text_format = "[powercolor][tui-smartpower]"
     E.db.unitframe.units.player.power.width = "inset"
@@ -2504,7 +2475,6 @@ local function SetupProfileDB()
     E.db.unitframe.units.raid2.growthDirection = "DOWN_RIGHT"
     E.db.unitframe.units.raid2.health.attachTextTo = "InfoPanel"
     E.db.unitframe.units.raid2.health.position = "TOPRIGHT"
-    E.db.unitframe.units.raid2.health.smoothbars = true
     E.db.unitframe.units.raid2.health.text_format = ""
     E.db.unitframe.units.raid2.health.xOffset = 0
     E.db.unitframe.units.raid2.health.yOffset = 0
@@ -2584,7 +2554,6 @@ local function SetupProfileDB()
     E.db.unitframe.units.raid3.growthDirection = "DOWN_LEFT"
     E.db.unitframe.units.raid3.health.attachTextTo = "InfoPanel"
     E.db.unitframe.units.raid3.health.position = "TOPRIGHT"
-    E.db.unitframe.units.raid3.health.smoothbars = true
     E.db.unitframe.units.raid3.health.text_format = ""
     E.db.unitframe.units.raid3.health.xOffset = 0
     E.db.unitframe.units.raid3.health.yOffset = 0
@@ -2629,7 +2598,6 @@ local function SetupProfileDB()
     E.db.unitframe.units.raidpet.buffs.countFontOutline = "SHADOWOUTLINE"
     E.db.unitframe.units.raidpet.debuffs.countFont = "Expressway"
     E.db.unitframe.units.raidpet.debuffs.countFontOutline = "SHADOWOUTLINE"
-    E.db.unitframe.units.raidpet.health.smoothbars = true
     E.db.unitframe.units.raidpet.horizontalSpacing = 0
     E.db.unitframe.units.raidpet.numGroups = 3
     E.db.unitframe.units.raidpet.rdebuffs.duration.position = "TOP"
@@ -2789,7 +2757,6 @@ local function SetupProfileDB()
     E.db.unitframe.units.target.healPrediction.absorbStyle = "REVERSED"
     E.db.unitframe.units.target.healPrediction.anchorPoint = "CENTER"
     E.db.unitframe.units.target.healPrediction.enable = false
-    E.db.unitframe.units.target.health.smoothbars = true
     E.db.unitframe.units.target.health.text_format = ""
     E.db.unitframe.units.target.health.xOffset = 0
     E.db.unitframe.units.target.height = 30
@@ -2835,7 +2802,6 @@ local function SetupProfileDB()
     E.db.unitframe.units.targettarget.disableMouseoverGlow = true
     E.db.unitframe.units.targettarget.enable = false
     E.db.unitframe.units.targettarget.health.position = "LEFT"
-    E.db.unitframe.units.targettarget.health.smoothbars = true
     E.db.unitframe.units.targettarget.health.xOffset = 2
     E.db.unitframe.units.targettarget.health.yOffset = 3
     E.db.unitframe.units.targettarget.height = 40
@@ -2860,7 +2826,6 @@ local function SetupProfileDB()
     E.db.unitframe.units.targettargettarget.buffs.countFontOutline = "SHADOWOUTLINE"
     E.db.unitframe.units.targettargettarget.debuffs.countFont = "Expressway"
     E.db.unitframe.units.targettargettarget.debuffs.countFontOutline = "SHADOWOUTLINE"
-    E.db.unitframe.units.targettargettarget.health.smoothbars = true
     E.db.unitframe.units.targettargettarget.height = 30
     E.db.unitframe.units.targettargettarget.name.text_format = ""
     E.db.unitframe.units.targettargettarget.power.enable = false
@@ -2967,6 +2932,10 @@ local function SetupTrenchyUI()
     E.db.TrenchyUI.nameplates.focusGlow.color.r = 0.678431391716
     E.db.TrenchyUI.nameplates.focusGlow.enabled = true
     E.db.TrenchyUI.nameplates.interruptCastbarColors = true
+    E.db.TrenchyUI.nameplates.questColor.enabled = true
+    E.db.TrenchyUI.nameplates.questColor.color.r = 1
+    E.db.TrenchyUI.nameplates.questColor.color.g = 0.52941179275513
+    E.db.TrenchyUI.nameplates.questColor.color.b = 0
     E.db.TrenchyUI.qol.autoFillDelete = true
     E.db.TrenchyUI.qol.difficultyFontSize = 24
     E.db.TrenchyUI.qol.difficultyText = true
