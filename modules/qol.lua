@@ -1,15 +1,9 @@
 local E = unpack(ElvUI)
 local TUI = E:GetModule('TrenchyUI')
-local LSM = E.Libs.LSM
 
 local CreateFrame = CreateFrame
 local hooksecurefunc = hooksecurefunc
 local pairs, ipairs = pairs, ipairs
-local select, tonumber, tostring = select, tonumber, tostring
-local floor, ceil, min = floor, ceil, min
-local GetInstanceInfo = GetInstanceInfo
-local IsInInstance = IsInInstance
-local InCombatLockdown = InCombatLockdown
 
 do -- Hide Talking Head
 	local function KillTalkingHead()
@@ -69,6 +63,8 @@ do -- Auto-fill DELETE confirmation
 end
 
 do -- Difficulty Text Replacement
+	local LSM, select, tonumber, GetInstanceInfo = E.Libs.LSM, select, tonumber, GetInstanceInfo
+
 	local DIFF_CATEGORY = {
 		[1]   = 'normal',  [14]  = 'normal',  [38]  = 'normal',
 		[173] = 'normal',  [198] = 'normal',  [201] = 'normal',
@@ -247,7 +243,34 @@ do -- Fast Loot
 	end
 end
 
+-- Hide Objective Tracker in Combat
+function TUI:InitHideObjectiveInCombat()
+	local tracker = ObjectiveTrackerFrame
+	if not tracker then return end
+
+	local BL = E:GetModule('Blizzard')
+	local wasCollapsed = false
+
+	local frame = CreateFrame('Frame')
+	frame:RegisterEvent('PLAYER_REGEN_DISABLED')
+	frame:RegisterEvent('PLAYER_REGEN_ENABLED')
+	frame:SetScript('OnEvent', function(_, event)
+		if event == 'PLAYER_REGEN_DISABLED' then
+			wasCollapsed = BL:ObjectiveTracker_IsCollapsed(tracker)
+			if not wasCollapsed then
+				BL:ObjectiveTracker_Collapse(tracker)
+			end
+		elseif event == 'PLAYER_REGEN_ENABLED' then
+			if not wasCollapsed then
+				BL:ObjectiveTracker_Expand(tracker)
+			end
+		end
+	end)
+end
+
 do -- Moveable Frames
+	local InCombatLockdown = InCombatLockdown
+
 	local hookedFrames = {}
 
 	local function MakeMoveable(frame)
@@ -358,6 +381,8 @@ do -- Moveable Frames
 end
 
 do -- Minimap Button Bar
+	local tostring, floor, ceil, min = tostring, math.floor, math.ceil, math.min
+
 	local mbbBar
 	local mbbButtons = {}
 	local mbbInCombat = false
@@ -639,5 +664,6 @@ function TUI:InitQoL()
 	if db.difficultyText then self:InitDifficultyText() end
 	if db.fastLoot then self:InitFastLoot() end
 	if db.moveableFrames and not self:IsCompatBlocked('moveableFrames') then self:InitMoveableFrames() end
+	if db.hideObjectiveInCombat then self:InitHideObjectiveInCombat() end
 	if self.InitMinimapButtonBar then self:InitMinimapButtonBar() end
 end
