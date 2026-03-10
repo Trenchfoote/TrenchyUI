@@ -2,16 +2,12 @@ local E = unpack(ElvUI)
 local TUI = E:GetModule('TrenchyUI')
 local UF = E:GetModule('UnitFrames')
 local LSM = E.Libs.LSM
-local LCG = E.Libs.CustomGlow
 
 local hooksecurefunc = hooksecurefunc
 local GetSpecialization = GetSpecialization
 local UnitClass = UnitClass
-local UnitPower = UnitPower
-local UnitPowerType = UnitPowerType
-local UnitPowerPercent = UnitPowerPercent
-local format = format
 
+local UnitPower, UnitPowerType, UnitPowerPercent, format = UnitPower, UnitPowerType, UnitPowerPercent, format
 local ScaleTo100 = CurveConstants and CurveConstants.ScaleTo100
 
 -- Smart Power tag: shows percentage for mana users, current value otherwise
@@ -34,7 +30,9 @@ hooksecurefunc(UF, 'Configure_ClassBar', function(_, frame)
 	if not bars then return end
 
 	local containerW = bars:GetWidth()
+	local containerH = bars:GetHeight()
 	if not containerW or containerW <= 0 then return end
+	if not containerH or containerH <= 0 then return end
 
 	local MAX_CLASS_BAR = frame.MAX_CLASS_BAR or 0
 	if MAX_CLASS_BAR < 1 then return end
@@ -43,7 +41,10 @@ hooksecurefunc(UF, 'Configure_ClassBar', function(_, frame)
 		local bar = bars[i]
 		if not bar then break end
 		if bar:GetWidth() > containerW then
-			bar:Width(containerW)
+			bar:SetWidth(containerW)
+		end
+		if bar:GetHeight() > containerH then
+			bar:SetHeight(containerH)
 		end
 	end
 end)
@@ -495,6 +496,7 @@ function TUI:InitIronfurBar()
 end
 
 -- Pixel Glow
+local LCG = E.Libs.CustomGlow
 local GLOW_KEY = 'TUI_PixelGlow'
 
 local function GetPixelGlowDB()

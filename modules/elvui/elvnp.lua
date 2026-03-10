@@ -1,18 +1,9 @@
 local E = unpack(ElvUI)
 local TUI = E:GetModule('TrenchyUI')
 local NP = E:GetModule('NamePlates')
-local LSM = E.Libs.LSM
 
 local CreateFrame = CreateFrame
-local UnitIsTapDenied = UnitIsTapDenied
-local UnitCanAttack = UnitCanAttack
-local UnitIsUnit = UnitIsUnit
-local IsInInstance = IsInInstance
-local C_NamePlate_GetNamePlates = C_NamePlate.GetNamePlates
-local C_NamePlate_GetNamePlateForUnit = C_NamePlate.GetNamePlateForUnit
 local C_Spell_GetSpellCooldownDuration = C_Spell.GetSpellCooldownDuration
-local C_SpellBook_IsSpellKnownOrInSpellBook = C_SpellBook.IsSpellKnownOrInSpellBook
-local EvalColorBool = C_CurveUtil.EvaluateColorValueFromBoolean
 local ipairs = ipairs
 
 function TUI:InitElvNP()
@@ -42,6 +33,8 @@ function TUI:InitElvNP()
 end
 
 do -- Classification Instance Only
+	local IsInInstance = IsInInstance
+
 	function TUI:HookClassificationInstanceOnly()
 		if self._hookedClassificationInstance then return end
 		self._hookedClassificationInstance = true
@@ -56,6 +49,8 @@ do -- Classification Instance Only
 end
 
 do -- Threat Override
+	local UnitIsTapDenied = UnitIsTapDenied
+
 	function TUI:HookNameplateThreat()
 		if self._hookedThreatPost then return end
 		self._hookedThreatPost = true
@@ -92,6 +87,10 @@ do -- Threat Override
 end
 
 do -- Interrupt Spell Detection
+	local UnitCanAttack = UnitCanAttack
+	local C_SpellBook_IsSpellKnownOrInSpellBook = C_SpellBook.IsSpellKnownOrInSpellBook
+	local EvalColorBool = C_CurveUtil.EvaluateColorValueFromBoolean
+
 	local interruptMap = {
 		DEATHKNIGHT = { 47528 },
 		DEMONHUNTER = { 183752 },
@@ -319,6 +318,11 @@ do -- Interrupt Spell Detection
 end
 
 do -- Focus Overlay
+	local LSM = E.Libs.LSM
+	local UnitIsUnit = UnitIsUnit
+	local C_NamePlate_GetNamePlates = C_NamePlate.GetNamePlates
+	local C_NamePlate_GetNamePlateForUnit = C_NamePlate.GetNamePlateForUnit
+
 	local function GetOrCreateFocusOverlay(nameplate)
 		if nameplate.TUI_FocusOverlay then
 			return nameplate.TUI_FocusOverlay
