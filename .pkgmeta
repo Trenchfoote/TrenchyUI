@@ -1,5 +1,8 @@
 package-as: ElvUI_TrenchyUI
 
+changelog-from: CHANGELOG.md
+changelog-markup: markdown
+
 ignore:
   - .github
   - .gitignore
