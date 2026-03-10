@@ -3081,8 +3081,7 @@ end
 function TUI:ApplyElvUIProfile()
     E.data:SetProfile(PROFILE_NAME)
 
-    -- Ensure TrenchyUI namespace and full nested defaults exist before writing.
-    -- On a new profile, OnNewProfile may not trigger MergeDefaults, so do it here.
+    -- Ensure TrenchyUI namespace and defaults exist before writing.
     if not E.db.TrenchyUI then E.db.TrenchyUI = {} end
     self:UpdateProfileReference()
 
@@ -3096,8 +3095,10 @@ function TUI:ApplyElvUIProfile()
         E.db.TrenchyUI.installedProfileVersion = PROFILE_VERSION
     end
 
-    -- Create a dedicated private profile so we don't overwrite the user's existing one.
-    -- Write directly to the SavedVariables table; the caller switches profile before reload.
+    -- Apply private settings to the active session immediately.
+    SetupPrivateDB(E.private)
+
+    -- Also write raw SV table so private values persist after profile switch + reload.
     ElvPrivateDB.profiles = ElvPrivateDB.profiles or {}
     ElvPrivateDB.profiles[PROFILE_NAME] = {}
     SetupPrivateDB(ElvPrivateDB.profiles[PROFILE_NAME])
