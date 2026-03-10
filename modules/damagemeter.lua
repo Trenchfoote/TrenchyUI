@@ -70,11 +70,6 @@ local MODE_SHORT = {
 if Enum.DamageMeterType.Deaths           then MODE_SHORT[Enum.DamageMeterType.Deaths]           = "Deaths"    end
 if Enum.DamageMeterType.EnemyDamageTaken then MODE_SHORT[Enum.DamageMeterType.EnemyDamageTaken] = "Enemy Dmg" end
 
-local SESSION_LABELS = {
-    [Enum.DamageMeterSessionType.Current] = "Current",
-    [Enum.DamageMeterSessionType.Overall] = "Overall",
-}
-
 StaticPopupDialogs["TRENCHYUI_METER_RESET"] = {
     text         = "Reset all Trenchy Damage Meter data?",
     button1      = ACCEPT,
@@ -93,23 +88,6 @@ local windows  = {}
 local testMode = false
 
 local classCache = {}
-local spellCache = {}
-
-local CLASS_ICON_COORDS = {
-    WARRIOR     = {0,      0.25,  0,     0.25},
-    MAGE        = {0.25,   0.5,   0,     0.25},
-    ROGUE       = {0.5,    0.75,  0,     0.25},
-    DRUID       = {0.75,   1,     0,     0.25},
-    HUNTER      = {0,      0.25,  0.25,  0.5 },
-    SHAMAN      = {0.25,   0.5,   0.25,  0.5 },
-    PRIEST      = {0.5,    0.75,  0.25,  0.5 },
-    WARLOCK     = {0.75,   1,     0.25,  0.5 },
-    PALADIN     = {0,      0.25,  0.5,   0.75},
-    DEATHKNIGHT = {0.25,   0.5,   0.5,   0.75},
-    MONK        = {0.5,    0.75,  0.5,   0.75},
-    DEMONHUNTER = {0.75,   1,     0.5,   0.75},
-    EVOKER      = {0,      0.25,  0.75,  1   },
-}
 
 TUI._meterTestMode = false
 
@@ -531,6 +509,40 @@ local function SetupScrollWheel(win)
     end)
 end
 
+local function FadeHeaderIn(win)
+    local db = GetWinDB(win.index)
+    if not db.headerMouseover then return end
+    if win.header then E:UIFrameFadeIn(win.header, 0.2, win.header:GetAlpha(), 1) end
+    if win.headerBorder then E:UIFrameFadeIn(win.headerBorder, 0.2, win.headerBorder:GetAlpha(), 1) end
+end
+
+local function FadeHeaderOut(win)
+    local db = GetWinDB(win.index)
+    if not db.headerMouseover then return end
+    if win.header then E:UIFrameFadeOut(win.header, 0.2, win.header:GetAlpha(), 0) end
+    if win.headerBorder then E:UIFrameFadeOut(win.headerBorder, 0.2, win.headerBorder:GetAlpha(), 0) end
+end
+
+local function SetupHeaderMouseover(win)
+    if win._headerMouseoverHooked then return end
+    win._headerMouseoverHooked = true
+
+    local function OnEnter() FadeHeaderIn(win) end
+    local function OnLeave() FadeHeaderOut(win) end
+
+    -- Hook header and its interactive children only
+    if win.header then
+        win.header:HookScript("OnEnter", OnEnter)
+        win.header:HookScript("OnLeave", OnLeave)
+        for _, child in pairs({ win.header.modeArea, win.header.sessArea, win.header.reset }) do
+            if child then
+                child:HookScript("OnEnter", OnEnter)
+                child:HookScript("OnLeave", OnLeave)
+            end
+        end
+    end
+end
+
 local function ApplyHeaderStyle(win, db)
     local header = win.header
     if not header then return end
@@ -539,7 +551,11 @@ local function ApplyHeaderStyle(win, db)
     local flags    = FontFlags(db.headerFontOutline)
 
     local hc = db.headerBGColor
-    header.bg:SetVertexColor(hc.r, hc.g, hc.b, hc.a)
+    if db.showHeaderBackdrop then
+        header.bg:SetVertexColor(hc.r, hc.g, hc.b, hc.a)
+    else
+        header.bg:SetVertexColor(0, 0, 0, 0)
+    end
 
     local tc = db.headerFontColor
     header.modeText:FontTemplate(fontPath, db.headerFontSize + 1, flags)
@@ -794,110 +810,65 @@ local function SetupHeaderContent(win, db)
     header.sessArea:SetScript("OnLeave", GameTooltip_Hide)
 end
 
-local function CreateEmbeddedWindow(win, db)
-    local panel    = _G.RightChatPanel
-    local tabPanel = _G.RightChatTab
-    if not panel or not tabPanel then return end
-
-    local fontPath = LSM:Fetch("font", db.barFont)
-    local flags    = FontFlags(db.barFontOutline)
-
-    -- Parent to panel (always visible) but anchor to tabPanel so we match its
-    -- position even when RightChatTab is hidden (e.g. panelBackdrop = "LEFT").
-    win.header = CreateFrame("Frame", "TrenchyUIMeterHeader", panel)
-    win.header:SetPoint("TOPLEFT", tabPanel, "TOPLEFT")
-    win.header:SetPoint("BOTTOMRIGHT", tabPanel, "BOTTOMRIGHT")
-    win.header:SetFrameLevel(tabPanel:GetFrameLevel() + 1)
-    win.header:EnableMouse(true)
-
-    SetupHeaderContent(win, db)
-
-    win.frame = CreateFrame("Frame", "TrenchyUIMeter", panel)
-    win.frame:SetFrameStrata("MEDIUM")
-    win.frame:SetClipsChildren(true)
-
-    for i = 1, MAX_BARS do
-        local bar = CreateBar(win.frame)
-        bar.leftText:FontTemplate(fontPath, db.barFontSize, flags)
-        bar.rightText:FontTemplate(fontPath, db.barFontSize, flags)
-        bar.pctText:FontTemplate(fontPath, db.barFontSize, flags)
-        ApplyBarIconLayout(bar, db)
-        ApplyBarBorder(bar, db)
-
-        local sp = max(0, db.barSpacing or 1)
-        if i == 1 then
-            bar.frame:SetPoint("TOPLEFT",  win.frame, "TOPLEFT",  0, -sp)
-            bar.frame:SetPoint("TOPRIGHT", win.frame, "TOPRIGHT", 0, -sp)
-        else
-            bar.frame:SetPoint("TOPLEFT",  win.bars[i-1].frame, "BOTTOMLEFT",  0, -sp)
-            bar.frame:SetPoint("TOPRIGHT", win.bars[i-1].frame, "BOTTOMRIGHT", 0, -sp)
-        end
-        win.bars[i] = bar
-        SetupBarInteraction(bar, win)
-    end
-
-    win.embedded = true
-    ResizeToPanel(win)
-    SetupScrollWheel(win)
-
-    -- Hide any chat window snapped to the right panel so it doesn't bleed through.
-    if CH.RightChatWindow then CH.RightChatWindow:Hide() end
-end
-
-local function CreateStandaloneWindow(win, db, savedW, savedH)
+local function SetupWindowContent(win, db, parent)
     local i       = win.index
     local winName = i == 1 and "TrenchyUIMeter" or ("TrenchyUIMeter" .. i)
     local hdrName = i == 1 and "TrenchyUIMeterHeader" or ("TrenchyUIMeterHeader" .. i)
 
-    local w = (savedW and savedW > 0) and savedW or db.standaloneWidth
-    local h = (savedH and savedH > 0) and savedH or db.standaloneHeight
+    -- Determine header anchor: embedded uses RightChatTab, standalone uses win.window
+    local headerAnchor = win.embedded and _G.RightChatTab or win.window
 
-    local window = CreateFrame("Frame", winName, UIParent, "BackdropTemplate")
-    window:SetSize(w, h)
-    if i == 1 then
-        window:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-    elseif i == 2 then
-        window:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -2, 189)
-    elseif i == 3 then
-        window:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -416, 2)
-    elseif i == 4 then
-        window:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -416, 189)
+    -- Header border (border-only, no fill)
+    local headerBorder = CreateFrame("Frame", nil, parent, "BackdropTemplate")
+    headerBorder:SetPoint("TOPLEFT",  headerAnchor, "TOPLEFT",  0, 0)
+    headerBorder:SetPoint("TOPRIGHT", headerAnchor, "TOPRIGHT", 0, 0)
+    if not win.embedded then headerBorder:SetHeight(HEADER_HEIGHT) end
+    if win.embedded then
+        headerBorder:SetPoint("BOTTOMRIGHT", headerAnchor, "BOTTOMRIGHT")
     end
-    window:SetMovable(true)
-    window:SetClampedToScreen(true)
-    window:SetFrameStrata('BACKGROUND')
-    window:SetFrameLevel(300)
-    win.window = window
-
-    if db.showBackdrop then
-        window:SetTemplate('Transparent')
-    end
-
-    local headerBorder = CreateFrame("Frame", nil, window, "BackdropTemplate")
-    headerBorder:SetPoint("TOPLEFT",  window, "TOPLEFT",  0, 0)
-    headerBorder:SetPoint("TOPRIGHT", window, "TOPRIGHT", 0, 0)
-    headerBorder:SetHeight(HEADER_HEIGHT)
-    headerBorder:SetFrameLevel(window:GetFrameLevel() + 1)
+    headerBorder:SetFrameLevel(headerAnchor:GetFrameLevel() + 1)
     win.headerBorder = headerBorder
     if db.showHeaderBorder then
         headerBorder:SetTemplate()
+        headerBorder:SetBackdropColor(0, 0, 0, 0)
     end
 
-    win.header = CreateFrame("Frame", hdrName, window)
-    win.header:SetPoint("TOPLEFT",  window, "TOPLEFT",  0, 0)
-    win.header:SetPoint("TOPRIGHT", window, "TOPRIGHT", 0, 0)
-    win.header:SetHeight(HEADER_HEIGHT)
+    -- Header
+    win.header = CreateFrame("Frame", hdrName, parent)
+    win.header:SetPoint("TOPLEFT",  headerAnchor, "TOPLEFT",  0, 0)
+    win.header:SetPoint("TOPRIGHT", headerAnchor, "TOPRIGHT", 0, 0)
+    if not win.embedded then win.header:SetHeight(HEADER_HEIGHT) end
+    if win.embedded then
+        win.header:SetPoint("BOTTOMRIGHT", headerAnchor, "BOTTOMRIGHT")
+    end
     win.header:SetFrameLevel(headerBorder:GetFrameLevel() + 1)
     win.header:EnableMouse(true)
 
     SetupHeaderContent(win, db)
 
-    win.frame = CreateFrame("Frame", nil, window)
-    win.frame:SetPoint("TOPLEFT",     window, "TOPLEFT",     0, -HEADER_HEIGHT)
-    win.frame:SetPoint("BOTTOMRIGHT", window, "BOTTOMRIGHT", 0,  0)
+    -- Bar area frame
+    local frameName = win.embedded and winName or nil
+    win.frame = CreateFrame("Frame", frameName, parent, "BackdropTemplate")
     win.frame:SetFrameStrata("MEDIUM")
     win.frame:SetClipsChildren(true)
+    if not win.embedded then
+        win.frame:SetPoint("TOPLEFT",     win.window, "TOPLEFT",     0, -HEADER_HEIGHT)
+        win.frame:SetPoint("BOTTOMRIGHT", win.window, "BOTTOMRIGHT", 0,  0)
+    end
 
+    -- Backdrop
+    if db.showBackdrop then
+        win.frame:SetTemplate('Transparent')
+        local bc = db.backdropColor
+        if bc then win.frame:SetBackdropColor(bc.r, bc.g, bc.b, bc.a) end
+    end
+
+    -- Header backdrop
+    if not db.showHeaderBackdrop and win.header.bg then
+        win.header.bg:Hide()
+    end
+
+    -- Bars
     local fontPath = LSM:Fetch("font", db.barFont)
     local flags    = FontFlags(db.barFontOutline)
 
@@ -911,8 +882,8 @@ local function CreateStandaloneWindow(win, db, savedW, savedH)
 
         local sp = max(0, db.barSpacing or 1)
         if j == 1 then
-            bar.frame:SetPoint("TOPLEFT",  win.frame, "TOPLEFT",  0, -sp)
-            bar.frame:SetPoint("TOPRIGHT", win.frame, "TOPRIGHT", 0, -sp)
+            bar.frame:SetPoint("TOPLEFT",  win.frame, "TOPLEFT",  0, 0)
+            bar.frame:SetPoint("TOPRIGHT", win.frame, "TOPRIGHT", 0, 0)
         else
             bar.frame:SetPoint("TOPLEFT",  win.bars[j-1].frame, "BOTTOMLEFT",  0, -sp)
             bar.frame:SetPoint("TOPRIGHT", win.bars[j-1].frame, "BOTTOMRIGHT", 0, -sp)
@@ -921,32 +892,73 @@ local function CreateStandaloneWindow(win, db, savedW, savedH)
         SetupBarInteraction(bar, win)
     end
 
-    local moverLabel = i == 1 and "TDM" or ("TDM " .. i)
-    E:CreateMover(window, winName, moverLabel, nil, nil, nil, 'ALL,TRENCHYUI', nil, 'TrenchyUI,damageMeter')
-
-    local holder = E:GetMoverHolder(winName)
-    if holder and holder.mover then
-        holder.mover:HookScript('OnMouseDown', function(_, button)
-            if button == 'RightButton' and not IsControlKeyDown() and not IsShiftKeyDown() then
-                TUI._selectedMeterWindow = i
-            end
-        end)
-    end
-
-    win.embedded = false
-    ResizeStandalone(win)
     SetupScrollWheel(win)
+
+    -- Header mouseover: set up hooks and apply initial alpha
+    SetupHeaderMouseover(win)
+    if db.headerMouseover then
+        win.header:SetAlpha(0)
+        if win.headerBorder then win.headerBorder:SetAlpha(0) end
+    end
 end
 
 local function CreateMeterFrame(win, isEmbedded)
     local db = GetWinDB(win.index)
+    win.embedded = isEmbedded
 
     if isEmbedded then
-        CreateEmbeddedWindow(win, db)
+        local panel = _G.RightChatPanel
+        if not panel or not _G.RightChatTab then return end
+
+        SetupWindowContent(win, db, panel)
+        ResizeToPanel(win)
+
+        -- Hide any chat window snapped to the right panel so it doesn't bleed through.
+        if CH.RightChatWindow then CH.RightChatWindow:Hide() end
     else
-        CreateStandaloneWindow(win, db, db.standaloneWidth, db.standaloneHeight)
+        local i       = win.index
+        local winName = i == 1 and "TrenchyUIMeter" or ("TrenchyUIMeter" .. i)
+
+        local w, h = db.standaloneWidth, db.standaloneHeight
+
+        local window = CreateFrame("Frame", winName, UIParent, "BackdropTemplate")
+        window:SetSize(w, h)
+        if i == 1 then
+            window:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+        elseif i == 2 then
+            window:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -2, 189)
+        elseif i == 3 then
+            window:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -416, 2)
+        elseif i == 4 then
+            window:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -416, 189)
+        end
+        window:SetMovable(true)
+        window:SetClampedToScreen(true)
+        window:SetFrameStrata('BACKGROUND')
+        window:SetFrameLevel(300)
+        win.window = window
+
+        SetupWindowContent(win, db, window)
+        ResizeStandalone(win)
+
+        local moverLabel = i == 1 and "TDM" or ("TDM " .. i)
+        E:CreateMover(window, winName, moverLabel, nil, nil, nil, 'ALL,TRENCHYUI', nil, 'TrenchyUI,damageMeter')
+
+        local holder = E:GetMoverHolder(winName)
+        if holder and holder.mover then
+            holder.mover:HookScript('OnMouseDown', function(_, button)
+                if button == 'RightButton' and not IsControlKeyDown() and not IsShiftKeyDown() then
+                    TUI._selectedMeterWindow = i
+                end
+            end)
+        end
     end
 end
+
+local SESSION_LABELS = {
+    [Enum.DamageMeterSessionType.Current] = "Current",
+    [Enum.DamageMeterSessionType.Overall] = "Overall",
+}
 
 local function GetSessionLabel(win)
     if win.sessionId then
@@ -984,6 +996,49 @@ GetSessionSource = function(win, meterType, guid)
     return C_DamageMeter.GetCombatSessionSourceFromType(win.sessionType, meterType, guid)
 end
 
+local spellCache = {}
+
+local CLASS_ICON_COORDS = {
+    WARRIOR     = {0,      0.25,  0,     0.25},
+    MAGE        = {0.25,   0.5,   0,     0.25},
+    ROGUE       = {0.5,    0.75,  0,     0.25},
+    DRUID       = {0.75,   1,     0,     0.25},
+    HUNTER      = {0,      0.25,  0.25,  0.5 },
+    SHAMAN      = {0.25,   0.5,   0.25,  0.5 },
+    PRIEST      = {0.5,    0.75,  0.25,  0.5 },
+    WARLOCK     = {0.75,   1,     0.25,  0.5 },
+    PALADIN     = {0,      0.25,  0.5,   0.75},
+    DEATHKNIGHT = {0.25,   0.5,   0.5,   0.75},
+    MONK        = {0.5,    0.75,  0.5,   0.75},
+    DEMONHUNTER = {0.75,   1,     0.5,   0.75},
+    EVOKER      = {0,      0.25,  0.75,  1   },
+}
+
+local function ApplySessionHighlight(win, db)
+    if win.sessionId then
+        win.header.sessText:SetTextColor(1, 0.3, 0.3)
+    else
+        win.header.sessText:SetTextColor(db.headerFontColor.r, db.headerFontColor.g, db.headerFontColor.b)
+    end
+end
+
+local function ResetDrillBar(bar, db)
+    bar._isDrill = nil
+    bar._drillHasIcon = nil
+    bar.pctText:Hide()
+    bar.rightText:ClearAllPoints()
+    bar.rightText:SetPoint("RIGHT", -4, 0)
+    bar.classIcon:SetTexture("Interface\\WorldStateFrame\\Icons-Classes")
+    ApplyBarIconLayout(bar, db)
+end
+
+local function ResetWindowState(win)
+    win.scrollOffset = 0
+    win.drillSource  = nil
+    win.sessionId    = nil
+    win.sessionType  = Enum.DamageMeterSessionType.Current
+end
+
 RefreshWindow = function(win)
     if not win or not win.frame or not win.header then return end
 
@@ -999,12 +1054,7 @@ RefreshWindow = function(win)
         local nameHex = cr and format("%02x%02x%02x", cr * 255, cg * 255, cb * 255) or "ffffff"
         win.header.modeText:SetText(format("|cff%s%s|r \226\128\148 %s", nameHex, ds.name, modeLabel))
         win.header.sessText:SetText(" (" .. sessLabel .. ")")
-        if win.sessionId then
-            win.header.sessText:SetTextColor(1, 0.3, 0.3)
-        else
-            local tc = GetWinDB(win.index).headerFontColor
-            win.header.sessText:SetTextColor(tc.r, tc.g, tc.b)
-        end
+        ApplySessionHighlight(win, db)
         win.header.timer:Hide()
 
         local spells
@@ -1071,8 +1121,8 @@ RefreshWindow = function(win)
                     else
                         local ok, name = pcall(C_Spell.GetSpellName, spellID)
                         if ok and name then spellName = name end
-                        local ok2, info = pcall(C_Spell.GetSpellInfo, spellID)
-                        if ok2 and info then iconID = info.iconID end
+                        local ok2, tex = pcall(C_Spell.GetSpellTexture, spellID)
+                        if ok2 and tex then iconID = tex end
                         spellCache[spellID] = { name = spellName, icon = iconID }
                     end
                 end
@@ -1177,15 +1227,7 @@ RefreshWindow = function(win)
                 FormatValueText(bar.rightText, td.value)
                 local vR, vG, vB = GetValueColor(db, td.class)
                 bar.rightText:SetTextColor(vR, vG, vB)
-                if bar._isDrill then
-                    bar._isDrill = nil
-                    bar._drillHasIcon = nil
-                    bar.pctText:Hide()
-                    bar.rightText:ClearAllPoints()
-                    bar.rightText:SetPoint("RIGHT", -4, 0)
-                    bar.classIcon:SetTexture("Interface\\WorldStateFrame\\Icons-Classes")
-                    ApplyBarIconLayout(bar, db)
-                end
+                if bar._isDrill then ResetDrillBar(bar, db) end
                 if db.showClassIcon then
                     local coords = CLASS_ICON_COORDS[td.class]
                     if coords then
@@ -1213,12 +1255,7 @@ RefreshWindow = function(win)
 
     win.header.modeText:SetText(modeLabel)
     win.header.sessText:SetText(" \226\128\148 " .. sessLabel)
-    if win.sessionId then
-        win.header.sessText:SetTextColor(1, 0.3, 0.3)
-    else
-        local tc = GetWinDB(win.index).headerFontColor
-        win.header.sessText:SetTextColor(tc.r, tc.g, tc.b)
-    end
+    ApplySessionHighlight(win, db)
 
     if win.sessionType then
         local dur = C_DamageMeter.GetSessionDurationSeconds(win.sessionType)
@@ -1319,15 +1356,7 @@ RefreshWindow = function(win)
                 end
                 local vR, vG, vB = GetValueColor(db, classFilename)
                 bar.rightText:SetTextColor(vR, vG, vB)
-                if bar._isDrill then
-                    bar._isDrill = nil
-                    bar._drillHasIcon = nil
-                    bar.pctText:Hide()
-                    bar.rightText:ClearAllPoints()
-                    bar.rightText:SetPoint("RIGHT", -4, 0)
-                    bar.classIcon:SetTexture("Interface\\WorldStateFrame\\Icons-Classes")
-                    ApplyBarIconLayout(bar, db)
-                end
+                if bar._isDrill then ResetDrillBar(bar, db) end
 
                 if db.showClassIcon then
                     local coords = classFilename and CLASS_ICON_COORDS[classFilename]
@@ -1382,14 +1411,7 @@ local function OnUpdate(_, dt)
 end
 
 function TUI:ResizeMeterWindow(index)
-    local win = windows[index]
-    if not win or not win.window then return end
-    local db = GetWinDB(index)
-    local w, h = db.standaloneWidth, db.standaloneHeight
-    win.window:SetSize(w, h)
-    if win.window.mover then
-        win.window.mover:SetSize(w, h)
-    end
+    ResizeStandalone(windows[index])
 end
 
 function TUI:CreateExtraWindow(index)
@@ -1420,8 +1442,8 @@ local function RespaceBarAnchors(win, db)
         if not bar then break end
         bar.frame:ClearAllPoints()
         if i == 1 then
-            bar.frame:SetPoint("TOPLEFT",  win.frame, "TOPLEFT",  0, -sp)
-            bar.frame:SetPoint("TOPRIGHT", win.frame, "TOPRIGHT", 0, -sp)
+            bar.frame:SetPoint("TOPLEFT",  win.frame, "TOPLEFT",  0, 0)
+            bar.frame:SetPoint("TOPRIGHT", win.frame, "TOPRIGHT", 0, 0)
         else
             bar.frame:SetPoint("TOPLEFT",  win.bars[i-1].frame, "BOTTOMLEFT",  0, -sp)
             bar.frame:SetPoint("TOPRIGHT", win.bars[i-1].frame, "BOTTOMRIGHT", 0, -sp)
@@ -1437,6 +1459,9 @@ function TUI:UpdateMeterLayout()
         local fontPath = LSM:Fetch("font", db.barFont)
         local flags    = FontFlags(db.barFontOutline)
 
+        local fgTex = (db.barTexture and db.barTexture ~= '') and LSM:Fetch("statusbar", db.barTexture) or E.media.normTex
+        local bgTex = (db.barBGTexture and db.barBGTexture ~= '') and LSM:Fetch("statusbar", db.barBGTexture) or E.media.normTex
+
         ApplyHeaderStyle(win, db)
         RespaceBarAnchors(win, db)
         for i = 1, MAX_BARS do
@@ -1445,23 +1470,51 @@ function TUI:UpdateMeterLayout()
                 bar.leftText:FontTemplate(fontPath, db.barFontSize, flags)
                 bar.rightText:FontTemplate(fontPath, db.barFontSize, flags)
                 bar.pctText:FontTemplate(fontPath, db.barFontSize, flags)
+                bar.statusbar:SetStatusBarTexture(fgTex)
+                bar.background:SetTexture(bgTex)
                 ApplyBarIconLayout(bar, db)
                 ApplyBarBorder(bar, db)
             end
         end
 
-        if not win.embedded and win.window then
+        if win.frame then
             if db.showBackdrop then
-                win.window:SetTemplate('Transparent')
-            else
-                win.window:SetBackdrop(nil)
-            end
-            if win.headerBorder then
-                if db.showHeaderBorder then
-                    win.headerBorder:SetTemplate()
-                else
-                    win.headerBorder:SetBackdrop(nil)
+                win.frame:SetTemplate('Transparent')
+                local bc = db.backdropColor
+                if bc then
+                    win.frame:SetBackdropColor(bc.r, bc.g, bc.b, bc.a)
                 end
+            else
+                win.frame:SetBackdrop(nil)
+            end
+        end
+
+        if win.headerBorder then
+            if db.showHeaderBorder then
+                win.headerBorder:SetTemplate()
+                win.headerBorder:SetBackdropColor(0, 0, 0, 0)
+            else
+                win.headerBorder:SetBackdrop(nil)
+            end
+        end
+
+        if win.header and win.header.bg then
+            if db.showHeaderBackdrop then
+                win.header.bg:Show()
+            else
+                win.header.bg:Hide()
+            end
+        end
+
+        -- Header mouseover: hide header unless moused over
+        if win.header then
+            SetupHeaderMouseover(win)
+            if db.headerMouseover then
+                win.header:SetAlpha(0)
+                if win.headerBorder then win.headerBorder:SetAlpha(0) end
+            else
+                win.header:SetAlpha(1)
+                if win.headerBorder then win.headerBorder:SetAlpha(1) end
             end
         end
 
@@ -1515,10 +1568,7 @@ function TUI:InitDamageMeter()
                 wipe(classCache)
                 for _, w in pairs(windows) do
                     wipe(w.positionCache)
-                    w.scrollOffset  = 0
-                    w.drillSource   = nil
-                    w.sessionId     = nil
-                    w.sessionType   = Enum.DamageMeterSessionType.Current
+                    ResetWindowState(w)
                 end
                 if TUI.db.profile.damageMeter.autoResetOnComplete then
                     local _, instanceType = IsInInstance()
@@ -1528,10 +1578,7 @@ function TUI:InitDamageMeter()
                 end
             elseif event == "DAMAGE_METER_RESET" then
                 for _, w in pairs(windows) do
-                    w.scrollOffset  = 0
-                    w.drillSource   = nil
-                    w.sessionId     = nil
-                    w.sessionType   = Enum.DamageMeterSessionType.Current
+                    ResetWindowState(w)
                 end
                 TUI:RefreshMeter()
             else
