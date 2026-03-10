@@ -1,7 +1,8 @@
 package-as: ElvUI_TrenchyUI
 
-changelog-from: CHANGELOG.md
-changelog-markup: markdown
+manual-changelog:
+  filename: CHANGELOG.md
+  markup-type: markdown
 
 ignore:
   - .github
