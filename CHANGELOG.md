@@ -1,5 +1,22 @@
 # TrenchyUI Changelog
 
+## v0.8
+
+### Bug Fixes
+- Cooldown Manager: Fixed error on fresh installs caused by stale frame anchors from previous versions
+
+### New Features
+- Nameplates: Added quest NPC color override — highlights quest mob health bars with a custom color (open world only, disabled in instances)
+
+### Improvements
+- Profiles: Disabled smooth bar animations across all unit frames and nameplates
+- Profiles: Removed action bar visibility overrides — bars now use ElvUI defaults
+- Profiles: Adjusted player castbar position
+- Profiles: Added resolution warning to the Profiles config tab (designed for 1440p)
+- QoL: Minimap button bar now automatically hides during pet battles
+- QoL: Internal code cleanup and performance improvements
+- General: New features now highlighted in ElvUI's "What's New" search
+
 ## v0.7.1
 - Changelogs now display properly on CurseForge and Wago
 
