@@ -4,9 +4,6 @@ local LSM = E.Libs.LSM
 local addon, ns = ...
 
 local pairs, select, type = pairs, select, type
-local tremove = tremove
-local C_AddOns_IsAddOnLoaded = C_AddOns.IsAddOnLoaded
-local C_AddOns_DisableAddOn = C_AddOns.DisableAddOn
 
 local mediaPath = 'Interface\\AddOns\\ElvUI_TrenchyUI\\media\\'
 LSM:Register('statusbar', 'TrenchyFocus', mediaPath .. 'statusbar\\TrenchyFocus')
@@ -65,6 +62,9 @@ TUI.conflictDefs = {
 }
 
 do -- Compat popup system
+	local tremove = tremove
+	local C_AddOns_IsAddOnLoaded = C_AddOns.IsAddOnLoaded
+	local C_AddOns_DisableAddOn = C_AddOns.DisableAddOn
 	local compatPopupQueue = {}
 
 	local function ShowNextCompatPopup()
@@ -86,10 +86,8 @@ do -- Compat popup system
 		if def then
 			if choice == 'tui' then
 				if def.tuiAccept then
-					-- Feature-level disable (e.g. turn off just Eltruism's glow, not the whole addon)
 					def.tuiAccept()
 				else
-					-- Disable the competing addon(s) entirely
 					for _, entry in pairs(def.addons) do
 						if C_AddOns_IsAddOnLoaded(entry.name) then
 							C_AddOns_DisableAddOn(entry.name)
@@ -116,19 +114,14 @@ do -- Compat popup system
 		hideOnEscape = false,
 	}
 
-	-- Find loaded competing addons for a conflict def.
-	-- Returns the first detected addon entry, or nil if none loaded.
+	-- Returns first loaded competing addon entry, or nil
 	local function FindLoadedAddon(def)
 		for _, entry in pairs(def.addons) do
 			if C_AddOns_IsAddOnLoaded(entry.name) then return entry end
 		end
-		return nil
 	end
 
-	-- Check if a conflict actually applies:
-	-- 1. Our module must be enabled
-	-- 2. At least one competing addon must be loaded
-	-- 3. Optional external feature check (e.g. Eltruism glow enabled)
+	-- Returns true if our module + a competing addon are both active
 	local function IsConflictActive(def)
 		if not def.tuiCheck(TUI.db.profile) then return false, nil end
 		local found = FindLoadedAddon(def)
@@ -180,7 +173,6 @@ function TUI:GetClassColor(classFilename)
 	if not classFilename then return nil end
 	local c = E:ClassColor(classFilename)
 	if c then return c.r, c.g, c.b end
-	return nil
 end
 
 function TUI:IsCompatBlocked(key)
