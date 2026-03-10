@@ -802,8 +802,11 @@ local function CreateEmbeddedWindow(win, db)
     local fontPath = LSM:Fetch("font", db.barFont)
     local flags    = FontFlags(db.barFontOutline)
 
-    win.header = CreateFrame("Frame", "TrenchyUIMeterHeader", tabPanel)
-    win.header:SetAllPoints(tabPanel)
+    -- Parent to panel (always visible) but anchor to tabPanel so we match its
+    -- position even when RightChatTab is hidden (e.g. panelBackdrop = "LEFT").
+    win.header = CreateFrame("Frame", "TrenchyUIMeterHeader", panel)
+    win.header:SetPoint("TOPLEFT", tabPanel, "TOPLEFT")
+    win.header:SetPoint("BOTTOMRIGHT", tabPanel, "BOTTOMRIGHT")
     win.header:SetFrameLevel(tabPanel:GetFrameLevel() + 1)
     win.header:EnableMouse(true)
 
@@ -836,6 +839,9 @@ local function CreateEmbeddedWindow(win, db)
     win.embedded = true
     ResizeToPanel(win)
     SetupScrollWheel(win)
+
+    -- Hide any chat window snapped to the right panel so it doesn't bleed through.
+    if CH.RightChatWindow then CH.RightChatWindow:Hide() end
 end
 
 local function CreateStandaloneWindow(win, db, savedW, savedH)
@@ -1535,7 +1541,10 @@ function TUI:InitDamageMeter()
         evFrame:SetScript("OnUpdate", OnUpdate)
 
         hooksecurefunc(CH, "PositionChats", function()
-            if db.embedded then ResizeToPanel(win1) end
+            if db.embedded then
+                ResizeToPanel(win1)
+                if CH.RightChatWindow then CH.RightChatWindow:Hide() end
+            end
         end)
 
         TUI:RefreshMeter()
