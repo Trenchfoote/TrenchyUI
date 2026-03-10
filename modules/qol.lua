@@ -63,7 +63,7 @@ do -- Auto-fill DELETE confirmation
 end
 
 do -- Difficulty Text Replacement
-	local LSM, select, tonumber, GetInstanceInfo = E.Libs.LSM, select, tonumber, GetInstanceInfo
+	local LSM = E.Libs.LSM
 
 	local DIFF_CATEGORY = {
 		[1]   = 'normal',  [14]  = 'normal',  [38]  = 'normal',
@@ -114,10 +114,10 @@ do -- Difficulty Text Replacement
 
 		E:CreateMover(diffTextFrame, 'TUI_DifficultyTextMover', 'Difficulty Text', nil, nil, nil, 'ALL,TRENCHYUI', nil, 'TrenchyUI,qol')
 
-		local db = TUI.db and TUI.db.profile and TUI.db.profile.qol
-		local fontPath = LSM:Fetch('font', db and db.difficultyFont or 'Expressway')
-		local fontSize = db and db.difficultyFontSize or 14
-		local fontOutline = db and db.difficultyFontOutline or 'OUTLINE'
+		local db = TUI.db.profile.qol
+		local fontPath = LSM:Fetch('font', db.difficultyFont or 'Expressway')
+		local fontSize = db.difficultyFontSize or 14
+		local fontOutline = db.difficultyFontOutline or 'OUTLINE'
 
 		diffFontString = diffTextFrame:CreateFontString(nil, 'OVERLAY')
 		diffFontString:FontTemplate(fontPath, fontSize, fontOutline)
@@ -132,13 +132,15 @@ do -- Difficulty Text Replacement
 
 	function TUI:UpdateDifficultyFont()
 		if not diffFontString then return end
-		local db = self.db and self.db.profile and self.db.profile.qol
-		local fontPath = LSM:Fetch('font', db and db.difficultyFont or 'Expressway')
-		local fontSize = db and db.difficultyFontSize or 14
-		local fontOutline = db and db.difficultyFontOutline or 'OUTLINE'
+		local db = self.db.profile.qol
+		local fontPath = LSM:Fetch('font', db.difficultyFont or 'Expressway')
+		local fontSize = db.difficultyFontSize or 14
+		local fontOutline = db.difficultyFontOutline or 'OUTLINE'
 		diffFontString:FontTemplate(fontPath, fontSize, fontOutline)
 		diffLevelString:FontTemplate(fontPath, fontSize, fontOutline)
 	end
+
+	local select, tonumber, GetInstanceInfo = select, tonumber, GetInstanceInfo
 
 	local function UpdateDifficultyText()
 		if not diffTextFrame then CreateDifficultyText() end
@@ -149,8 +151,8 @@ do -- Difficulty Text Replacement
 			return
 		end
 
-		local db = TUI.db and TUI.db.profile and TUI.db.profile.qol
-		local colors = db and db.difficultyColors or {}
+		local db = TUI.db.profile.qol
+		local colors = db.difficultyColors or {}
 		local category = DIFF_CATEGORY[difficultyID] or 'other'
 		local label = DIFF_LABEL[category] or '?'
 		local c = colors[category] or colors.other or { r = 1, g = 1, b = 1 }
@@ -300,8 +302,8 @@ do -- Moveable Frames
 				if button == 'LeftButton' then parent.tuiDragging = false end
 			end
 
-			frame:HookScript('OnMouseDown', function(self, button) StartDrag(self, button) end)
-			frame:HookScript('OnMouseUp', function(self, button) StopDrag(self, button) end)
+			frame:HookScript('OnMouseDown', StartDrag)
+			frame:HookScript('OnMouseUp', StopDrag)
 			frame:HookScript('OnUpdate', function(self)
 				if not self.tuiDragging then return end
 				local cx, cy = GetCursorPosition()
@@ -586,10 +588,11 @@ do -- Minimap Button Bar
 		if not mbbBar then return end
 		local db = GetMBBDB()
 
-		if db.hideInCombat then
-			if mbbInCombat then mbbBar:Hide(); return
-			elseif not mbbBar:IsShown() then mbbBar:Show() end
-		end
+		if C_PetBattles and C_PetBattles.IsInBattle() then mbbBar:Hide(); return end
+
+		if db.hideInCombat and mbbInCombat then mbbBar:Hide(); return end
+
+		if not mbbBar:IsShown() then mbbBar:Show() end
 
 		if db.mouseover then
 			mbbBar:SetAlpha(mbbBar:IsMouseOver() and db.mouseoverAlpha or 0)
@@ -643,8 +646,12 @@ do -- Minimap Button Bar
 			local evFrame = CreateFrame('Frame', 'TrenchyUIMBBEvents', E.UIParent)
 			evFrame:RegisterEvent('PLAYER_REGEN_DISABLED')
 			evFrame:RegisterEvent('PLAYER_REGEN_ENABLED')
+			evFrame:RegisterEvent('PET_BATTLE_OPENING_START')
+			evFrame:RegisterEvent('PET_BATTLE_CLOSE')
 			evFrame:SetScript('OnEvent', function(_, event)
-				mbbInCombat = (event == 'PLAYER_REGEN_DISABLED')
+				if event == 'PLAYER_REGEN_DISABLED' or event == 'PLAYER_REGEN_ENABLED' then
+					mbbInCombat = (event == 'PLAYER_REGEN_DISABLED')
+				end
 				UpdateVisibility()
 			end)
 
@@ -656,8 +663,7 @@ do -- Minimap Button Bar
 end
 
 function TUI:InitQoL()
-	local db = self.db and self.db.profile and self.db.profile.qol
-	if not db then return end
+	local db = self.db.profile.qol
 
 	if db.hideTalkingHead then self:InitHideTalkingHead() end
 	if db.autoFillDelete then self:InitAutoFillDelete() end
