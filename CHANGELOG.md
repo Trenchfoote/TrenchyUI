@@ -9,6 +9,7 @@
 - Profiles: Fixed Beacon of the Savior buff indicator position on party/raid frames
 - Profiles: Install button now shows your installed profile version and available updates
 - Profiles: Reinstalling a profile now properly resets all settings — previously, custom changes could persist through updates
+- Profiles: Removed stale third-party addon references (textures, sounds, mover positions) that could cause issues on clean installs
 - General: Updated credits and Discord link branding
 
 ## v0.9
