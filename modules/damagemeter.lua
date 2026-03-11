@@ -9,6 +9,7 @@ if not C_DamageMeter or not Enum.DamageMeterType then return end
 local MAX_BARS      = 40
 local PANEL_INSET   = 2
 local HEADER_HEIGHT = 22
+-- Use of Fabled class icons with permission from Jiberish, 2026-03-10
 local CLASS_ICONS   = 'Interface\\AddOns\\ElvUI_TrenchyUI\\media\\fabled'
 
 local COMBINED_DAMAGE  = "CombinedDamage"

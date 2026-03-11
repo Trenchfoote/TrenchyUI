@@ -90,7 +90,7 @@ do -- Threat Override
 	end
 end
 
-do -- Interrupt Spell Detection
+do -- Interrupt Spell Detection (adapted from mMediaTag with permission, 2026-03-07)
 	local UnitCanAttack = UnitCanAttack
 	local C_SpellBook_IsSpellKnownOrInSpellBook = C_SpellBook.IsSpellKnownOrInSpellBook
 	local EvalColorBool = C_CurveUtil.EvaluateColorValueFromBoolean
