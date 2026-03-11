@@ -1630,6 +1630,24 @@ function TUI:BuildConfig()
     prof.installAll.inline = true
     local allArgs = prof.installAll.args
 
+    local function elvuiVersionLabel()
+        local installed = E.db.TrenchyUI and E.db.TrenchyUI.installedProfileVersion
+        if not installed then return "ElvUI" end
+        if installed == TUI.profileVersion then
+            return "ElvUI (v" .. installed .. ")"
+        end
+        return "ElvUI (v" .. installed .. " → v" .. TUI.profileVersion .. ")"
+    end
+
+    local function elvuiVersionDesc()
+        local installed = E.db.TrenchyUI and E.db.TrenchyUI.installedProfileVersion
+        if not installed then return "Creates a new profile — your current profile is not modified." end
+        if installed == TUI.profileVersion then
+            return "Your TrenchyUI profile is up to date. Reinstalling will reset any customizations."
+        end
+        return "A profile update is available. Installing will overwrite your current TrenchyUI settings."
+    end
+
     allArgs.desc = ACH:Description("Apply ElvUI, BigWigs, WarpDeplete, and LS: Toasts profiles in one click.", 1, "medium")
     allArgs.install = ACH:Execute("Install All Profiles", nil, 2, function()
         E:StaticPopup_Show('TUI_INSTALL_ALL')
@@ -1639,7 +1657,7 @@ function TUI:BuildConfig()
     prof.individual.inline = true
     local indArgs = prof.individual.args
 
-    indArgs.installElvUI = ACH:Execute("ElvUI", "Creates a new profile — your current profile is not modified.", 1, function()
+    indArgs.installElvUI = ACH:Execute(elvuiVersionLabel, elvuiVersionDesc, 1, function()
         E:StaticPopup_Show('TUI_INSTALL_ELVUI')
     end)
 
@@ -1696,8 +1714,24 @@ function TUI:BuildConfig()
         1, "medium"
     )
 
+    local function installAllText()
+        local installed = E.db.TrenchyUI and E.db.TrenchyUI.installedProfileVersion
+        if not installed then
+            return "This will install the " .. tuiName .. " profile for ElvUI and all supported addons.\n\nYour current ElvUI profile will not be modified \226\128\148 a new one will be created.\n\nProceed?"
+        end
+        return "This will update the " .. tuiName .. " profile for ElvUI and all supported addons.\n\nYour current " .. tuiName .. " settings will be overwritten.\n\nProceed?"
+    end
+
+    local function installElvUIText()
+        local installed = E.db.TrenchyUI and E.db.TrenchyUI.installedProfileVersion
+        if not installed then
+            return "This will install the |cff1784d1ElvUI|r profile only.\n\nA new profile called " .. tuiName .. " will be created \226\128\148 your current profile is not modified.\n\nProceed?"
+        end
+        return "This will update the " .. tuiName .. " profile.\n\nYour current ElvUI settings will be overwritten.\n\nProceed?"
+    end
+
     E.PopupDialogs.TUI_INSTALL_ALL = {
-        text = "This will install the " .. tuiName .. " profile for ElvUI and all supported addons.\n\nYour current ElvUI profile will not be modified \226\128\148 a new one will be created.\n\nProceed?",
+        text = installAllText(),
         button1 = "Install",
         button2 = "Cancel",
         OnAccept = function()
@@ -1719,7 +1753,7 @@ function TUI:BuildConfig()
     }
 
     E.PopupDialogs.TUI_INSTALL_ELVUI = {
-        text = "This will install the |cff1784d1ElvUI|r profile only.\n\nA new profile called " .. tuiName .. " will be created \226\128\148 your current profile is not modified.\n\nProceed?",
+        text = installElvUIText(),
         button1 = "Install",
         button2 = "Cancel",
         OnAccept = function()

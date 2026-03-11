@@ -4,6 +4,8 @@ local TUI = E:GetModule('TrenchyUI')
 local PROFILE_VERSION = '1.0.0'
 local PROFILE_NAME = 'TrenchyUI'
 
+TUI.profileVersion = PROFILE_VERSION
+
 local function SetupProfileDB()
     -- Initialize custom entries not present in ElvUI defaults
     for unit, names in pairs({
@@ -3054,7 +3056,13 @@ local function SetupGlobalDB()
 end
 
 function TUI:ApplyElvUIProfile()
+    local isUpdate = E.data.profiles[PROFILE_NAME] ~= nil
     E.data:SetProfile(PROFILE_NAME)
+
+    -- Wipe to ElvUI defaults on update so removed keys don't persist.
+    if isUpdate then
+        E.data:ResetProfile(true, true)
+    end
 
     -- Ensure TrenchyUI namespace and defaults exist before writing.
     if not E.db.TrenchyUI then E.db.TrenchyUI = {} end
