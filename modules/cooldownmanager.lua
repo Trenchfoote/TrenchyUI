@@ -452,7 +452,7 @@ local function OnCDMEvent(_, event, unit, ...)
 					local container = containers[viewerKey]
 					if container then container:Hide() end
 				end
-				E:Print('|cffff2f3dTrenchyUI|r: Cooldown Manager requires Blizzard\'s Cooldown Viewer. Re-enable it in Edit Mode or /reload.')
+				E:Print('|cffff2f3dTrenchyUI|r: Cooldown Manager requires Blizzard\'s Cooldown Viewer. Re-enable it in Options > Gameplay Enhancements > Enable Cooldown Manager.')
 			else
 				cdmDisabledByCVar = false
 				TUI:UpdateCDMVisibility()
@@ -602,7 +602,7 @@ SlashCmdList['TUICDM'] = function()
 	local db = GetDB()
 	if not db or not db.enabled then return end
 	if cdmDisabledByCVar then
-		E:Print('|cffff2f3dTrenchyUI|r: Cooldown Manager requires Blizzard\'s Cooldown Viewer. Re-enable it in Edit Mode.')
+		E:Print('|cffff2f3dTrenchyUI|r: Cooldown Manager requires Blizzard\'s Cooldown Viewer. Re-enable it in Options > Gameplay Enhancements > Enable Cooldown Manager.')
 		return
 	end
 	OpenCDMConfig()
