@@ -253,6 +253,19 @@ local function IsSecret(val)
     return val ~= nil and issecretvalue and issecretvalue(val)
 end
 
+local UnitGUID = UnitGUID
+
+local function FindUnitByGUID(guid)
+    if UnitGUID('player') == guid then return 'player' end
+    for i = 1, 40 do
+        local unit = 'raid' .. i
+        if UnitGUID(unit) == guid then return unit end
+    end
+    for i = 1, 4 do
+        local unit = 'party' .. i
+        if UnitGUID(unit) == guid then return unit end
+    end
+end
 
 local floor = math.floor
 
@@ -559,20 +572,33 @@ local function SetupBarInteraction(bar, win)
             return
         end
 
-        GameTooltip_SetDefaultAnchor(GameTooltip, self)
-        if self.sourceName then
-            local cr, cg, cb = 1, 1, 1
-            local guid = self.sourceGUID
-            local cls = guid and classCache[guid]
-            if not cls and self.testIndex then
-                local td = GetTestData(win)[self.testIndex]
-                if td then cls = td.class end
+        local unitShown = false
+        local guid = self.sourceGUID
+        if guid then
+            local unit = FindUnitByGUID(guid)
+            if unit then
+                GameTooltip:SetOwner(self, "ANCHOR_NONE")
+                GameTooltip_SetDefaultAnchor(GameTooltip, self)
+                GameTooltip:SetUnit(unit)
+                unitShown = true
             end
-            if cls then
-                local r, g, b = TUI:GetClassColor(cls)
-                if r then cr, cg, cb = r, g, b end
+        end
+        if not unitShown then
+            GameTooltip_SetDefaultAnchor(GameTooltip, self)
+            if self.sourceName then
+                local cls = self.sourceClass
+                if not cls then cls = guid and classCache[guid] end
+                if not cls and self.testIndex then
+                    local td = GetTestData(win)[self.testIndex]
+                    if td then cls = td.class end
+                end
+                local cr, cg, cb = 1, 1, 1
+                if cls then
+                    local r, g, b = TUI:GetClassColor(cls)
+                    if r then cr, cg, cb = r, g, b end
+                end
+                GameTooltip:AddLine(self.sourceName, cr, cg, cb)
             end
-            GameTooltip:AddLine(self.sourceName, cr, cg, cb)
         end
         GameTooltip:AddLine("Click for spell breakdown", 0.7, 0.7, 0.7)
         GameTooltip:Show()
@@ -1367,6 +1393,7 @@ RefreshWindow = function(win)
                     bar.classIcon:Hide()
                 end
                 bar.frame.sourceGUID   = nil
+                bar.frame.sourceClass  = td.class
                 bar.frame.sourceName   = td.name
                 bar.frame.testIndex    = srcIdx
                 bar.frame.drillSpellID = nil
@@ -1430,6 +1457,7 @@ RefreshWindow = function(win)
                 elseif guid then
                     classFilename = classCache[guid]
                 end
+                bar.frame.sourceClass = classFilename
 
                 local fgR, fgG, fgB = GetBarFGColor(db, classFilename)
                 bar.statusbar:SetStatusBarColor(fgR, fgG, fgB)

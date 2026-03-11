@@ -574,6 +574,8 @@ end
 -- Slash command
 SLASH_TUICDM1 = '/cdm'
 SlashCmdList['TUICDM'] = function()
+	local db = GetDB()
+	if not db or not db.enabled then return end
 	OpenCDMConfig()
 end
 

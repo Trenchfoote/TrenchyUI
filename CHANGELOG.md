@@ -1,5 +1,12 @@
 # TrenchyUI Changelog
 
+## v0.9.1
+
+### Improvements
+- Damage Meter: Hovering a player bar now shows the full player tooltip (class, spec, ilvl, guild) when in group
+- Damage Meter: Player name tooltip is now class-colored in all cases
+- Damage Meter: New features now highlighted in ElvUI's "What's New" search
+
 ## v0.9
 
 ### New Features

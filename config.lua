@@ -579,7 +579,7 @@ function TUI:BuildConfig()
         )
 
         dmGen.hideInPetBattle = ACH:Toggle(
-            "Hide in Pet Battle", "Hide all meter windows during pet battles.",
+            E.NewSign .. "Hide in Pet Battle", "Hide all meter windows during pet battles.",
             5, nil, nil, nil,
             function() return TUI.db.profile.damageMeter.hideInPetBattle end,
             function(_, value) TUI.db.profile.damageMeter.hideInPetBattle = value end,
@@ -587,7 +587,7 @@ function TUI:BuildConfig()
         )
 
         dmGen.hideInFlight = ACH:Toggle(
-            "Hide in Flight", "Hide all meter windows while flying.",
+            E.NewSign .. "Hide in Flight", "Hide all meter windows while flying.",
             6, nil, nil, nil,
             function() return TUI.db.profile.damageMeter.hideInFlight end,
             function(_, value)
@@ -866,7 +866,7 @@ function TUI:BuildConfig()
         )
 
         dmBars.showClassIcon = ACH:Toggle(
-            "Class Icons", "Show a class icon to the left of each player name.",
+            E.NewSign .. "Class Icons", "Show Jiberish Fabled class icons to the left of each player name.",
             4, nil, nil, nil,
             function() return winGet('showClassIcon') end,
             function(_, value) winSet('showClassIcon', value); winUpdate() end,
