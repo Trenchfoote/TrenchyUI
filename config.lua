@@ -1686,7 +1686,7 @@ function TUI:BuildConfig()
         E:TextGradient('Requiem', 0.13,0.37,0.13, 0.30,0.57,0.25) .. " — For entertaining me while making this...and he tested some stuff.\n\n"
         .. E:TextGradient('Menios', 0.64,0.19,0.79, 0.46,0.33,0.80) .. " — For the 10+ years of trolling and entertainment, and helping me kill 4+ Guilds during Legion.\n\n"
         .. E:TextGradient('Nessa', 0.00,0.43,1.00, 0.30,0.65,1.00) .. " — For years of splashing me with the shaman heals and being the best healer ever.\n\n"
-        .. E:TextGradient('Jiberish', 1.00,0.08,0.56, 1.00,0.41,0.71) .. " — For the encouragement to actually do this, and for the baller UI's.\n\n"
+        .. E:TextGradient('Jiberish', 1.00,0.08,0.56, 1.00,0.41,0.71) .. " — For the encouragement to actually do this, permission to use his Fabled icons, and for the baller UI's.\n\n"
         .. "|cFFb8bb26Thurin|r — For bouncing all the ideas off of and balancing Jib's uncontrollable \"push the buttons\".\n\n"
         .. "|cffff2f3dThe ElvUI team|r ("
         .. E:TextGradient('Simpy but my name needs to be longer', 0.28,0.79,0.96, 0.50,0.77,0.38, 1.00,0.95,0.38, 0.96,0.53,0.37, 0.80,0.51,0.72, 0.34,0.80,0.96)
