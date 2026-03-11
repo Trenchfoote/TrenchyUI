@@ -1,5 +1,21 @@
 # TrenchyUI Changelog
 
+## v0.9
+
+### New Features
+- Damage Meter: Added Hide in Pet Battle toggle — automatically hides all meter windows during pet battles
+- Damage Meter: Added Hide in Flight toggle — hides meter windows while flying (polls every second)
+- Damage Meter: Class icons now use Jiberish Fabled artwork instead of default Blizzard icons
+
+### Improvements
+- Damage Meter: Test mode now shows healer bars for healing modes, and interrupt/dispel/death data for utility modes
+- Damage Meter: Test mode combined modes (DPS/Dmg, HPS/Heal) now display per-second format
+- Damage Meter: Fixed header and bar borders — border now visible above header backdrop, 1px overlap for zero-spacing bars
+- Tags: TrenchyUI custom tags now appear under their own branded category in Available Tags
+- Unit Frames: Power text now updates in sync with the power bar (removed 100ms delay)
+- Profiles: Updated damage meter defaults (spacing, class icons, backdrop colors, hide in flight/pet battle, hide objectives)
+- Profiles: Removed leftover Eltruism-specific movers, text formats, and textures
+
 ## v0.8
 
 ### Bug Fixes

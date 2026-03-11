@@ -19,7 +19,14 @@ E:AddTag('tui-smartpower', 'UNIT_DISPLAYPOWER UNIT_POWER_FREQUENT UNIT_MAXPOWER'
 		return UnitPower(unit)
 	end
 end)
-E:AddTagInfo('tui-smartpower', 'Power', 'Shows power percentage for mana specs, current power for others')
+E:AddTagInfo('tui-smartpower', E:TextGradient('TrenchyUI', 1.00,0.18,0.24, 0.80,0.10,0.20), 'Shows power percentage for mana specs, current power for others')
+
+-- Power tag responsiveness: bypass oUF's 100ms event batching delay
+hooksecurefunc(UF, 'Configure_Power', function(_, frame)
+	if frame and frame.Power and frame.Power.value then
+		frame.Power.value.frequentUpdates = 0.05
+	end
+end)
 
 -- Fake Power fix
 hooksecurefunc(UF, 'Configure_ClassBar', function(_, frame)

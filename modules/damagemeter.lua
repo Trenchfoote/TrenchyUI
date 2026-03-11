@@ -9,6 +9,7 @@ if not C_DamageMeter or not Enum.DamageMeterType then return end
 local MAX_BARS      = 40
 local PANEL_INSET   = 2
 local HEADER_HEIGHT = 22
+local CLASS_ICONS   = 'Interface\\AddOns\\ElvUI_TrenchyUI\\media\\fabled'
 
 local COMBINED_DAMAGE  = "CombinedDamage"
 local COMBINED_HEALING = "CombinedHealing"
@@ -86,12 +87,15 @@ StaticPopupDialogs["TRENCHYUI_METER_RESET"] = {
 
 local windows  = {}
 local testMode = false
+local meterHidden = false
+local flightTicker
 
 local classCache = {}
 
 TUI._meterTestMode = false
 
-local TEST_DATA = {
+-- Test data: damage / DPS
+local TEST_DAMAGE = {
     { name = "Deathknight",   value = 980000, class = "DEATHKNIGHT",
       spells = {{49020, 340000}, {49143, 280000}, {49184, 195000}, {196770, 110000}, {6603, 55000}} },
     { name = "Demonhunter",   value = 920000, class = "DEMONHUNTER",
@@ -133,6 +137,117 @@ local TEST_DATA = {
     { name = "Paladin2",      value = 40000,  class = "PALADIN",
       spells = {{85256, 18000}, {184575, 12000}, {6603, 10000}} },
 }
+
+-- Test data: healing / HPS / absorbs
+local TEST_HEALING = {
+    { name = "Priest",    value = 1250000, class = "PRIEST",
+      spells = {{2061, 420000}, {34861, 310000}, {596, 240000}, {139, 180000}, {47788, 100000}} },
+    { name = "Druid",     value = 1100000, class = "DRUID",
+      spells = {{774, 380000}, {48438, 290000}, {8936, 210000}, {33763, 140000}, {145205, 80000}} },
+    { name = "Paladin",   value = 980000,  class = "PALADIN",
+      spells = {{19750, 340000}, {82326, 260000}, {20473, 190000}, {85222, 120000}, {53563, 70000}} },
+    { name = "Shaman",    value = 870000,  class = "SHAMAN",
+      spells = {{77472, 300000}, {1064, 230000}, {61295, 170000}, {73920, 110000}, {5394, 60000}} },
+    { name = "Monk",      value = 760000,  class = "MONK",
+      spells = {{115175, 260000}, {191837, 200000}, {116670, 150000}, {124682, 100000}, {115310, 50000}} },
+    { name = "Evoker",    value = 650000,  class = "EVOKER",
+      spells = {{355916, 230000}, {364343, 170000}, {361469, 120000}, {382614, 80000}, {355913, 50000}} },
+    { name = "Priest2",   value = 540000,  class = "PRIEST",
+      spells = {{2061, 200000}, {34861, 150000}, {596, 100000}, {139, 90000}} },
+    { name = "Druid2",    value = 430000,  class = "DRUID",
+      spells = {{774, 160000}, {48438, 120000}, {8936, 90000}, {33763, 60000}} },
+    { name = "Paladin2",  value = 320000,  class = "PALADIN",
+      spells = {{19750, 130000}, {82326, 100000}, {20473, 90000}} },
+    { name = "Shaman2",   value = 210000,  class = "SHAMAN",
+      spells = {{77472, 90000}, {1064, 60000}, {61295, 60000}} },
+}
+
+-- Test data: interrupts
+local TEST_INTERRUPTS = {
+    { name = "Rogue",       value = 8, class = "ROGUE",
+      spells = {{1766, 8}} },
+    { name = "Shaman",      value = 7, class = "SHAMAN",
+      spells = {{57994, 7}} },
+    { name = "Deathknight", value = 6, class = "DEATHKNIGHT",
+      spells = {{47528, 6}} },
+    { name = "Mage",        value = 5, class = "MAGE",
+      spells = {{2139, 5}} },
+    { name = "Demonhunter", value = 5, class = "DEMONHUNTER",
+      spells = {{183752, 5}} },
+    { name = "Warrior",     value = 4, class = "WARRIOR",
+      spells = {{6552, 4}} },
+    { name = "Hunter",      value = 3, class = "HUNTER",
+      spells = {{147362, 3}} },
+    { name = "Monk",        value = 3, class = "MONK",
+      spells = {{116705, 3}} },
+    { name = "Paladin",     value = 2, class = "PALADIN",
+      spells = {{96231, 2}} },
+    { name = "Warlock",     value = 2, class = "WARLOCK",
+      spells = {{119910, 2}} },
+    { name = "Evoker",      value = 1, class = "EVOKER",
+      spells = {{351338, 1}} },
+    { name = "Druid",       value = 1, class = "DRUID",
+      spells = {{106839, 1}} },
+    { name = "Priest",      value = 0, class = "PRIEST",
+      spells = {} },
+}
+
+-- Test data: dispels
+local TEST_DISPELS = {
+    { name = "Priest",    value = 12, class = "PRIEST",
+      spells = {{527, 8}, {32375, 4}} },
+    { name = "Paladin",   value = 9, class = "PALADIN",
+      spells = {{4987, 9}} },
+    { name = "Shaman",    value = 7, class = "SHAMAN",
+      spells = {{51886, 7}} },
+    { name = "Druid",     value = 6, class = "DRUID",
+      spells = {{2782, 6}} },
+    { name = "Monk",      value = 5, class = "MONK",
+      spells = {{115450, 5}} },
+    { name = "Evoker",    value = 4, class = "EVOKER",
+      spells = {{365585, 4}} },
+    { name = "Mage",      value = 3, class = "MAGE",
+      spells = {{475, 3}} },
+    { name = "Warlock",   value = 2, class = "WARLOCK",
+      spells = {{89808, 2}} },
+    { name = "Hunter",    value = 1, class = "HUNTER",
+      spells = {{19801, 1}} },
+}
+
+-- Test data: deaths
+local TEST_DEATHS = {
+    { name = "Rogue",       value = 4, class = "ROGUE", spells = {} },
+    { name = "Mage",        value = 3, class = "MAGE", spells = {} },
+    { name = "Hunter",      value = 3, class = "HUNTER", spells = {} },
+    { name = "Warlock",     value = 2, class = "WARLOCK", spells = {} },
+    { name = "Priest",      value = 2, class = "PRIEST", spells = {} },
+    { name = "Demonhunter", value = 1, class = "DEMONHUNTER", spells = {} },
+    { name = "Warrior",     value = 1, class = "WARRIOR", spells = {} },
+    { name = "Evoker",      value = 1, class = "EVOKER", spells = {} },
+    { name = "Deathknight", value = 0, class = "DEATHKNIGHT", spells = {} },
+    { name = "Paladin",     value = 0, class = "PALADIN", spells = {} },
+    { name = "Shaman",      value = 0, class = "SHAMAN", spells = {} },
+    { name = "Monk",        value = 0, class = "MONK", spells = {} },
+    { name = "Druid",       value = 0, class = "DRUID", spells = {} },
+}
+
+-- Select appropriate test data based on display mode
+local function GetTestData(win)
+    local modeEntry = MODE_ORDER[win.modeIndex]
+    if modeEntry == Enum.DamageMeterType.HealingDone
+    or modeEntry == Enum.DamageMeterType.Hps
+    or modeEntry == COMBINED_HEALING
+    or modeEntry == Enum.DamageMeterType.Absorbs then
+        return TEST_HEALING
+    elseif modeEntry == Enum.DamageMeterType.Interrupts then
+        return TEST_INTERRUPTS
+    elseif modeEntry == Enum.DamageMeterType.Dispels then
+        return TEST_DISPELS
+    elseif Enum.DamageMeterType.Deaths and modeEntry == Enum.DamageMeterType.Deaths then
+        return TEST_DEATHS
+    end
+    return TEST_DAMAGE
+end
 
 local function IsSecret(val)
     return val ~= nil and issecretvalue and issecretvalue(val)
@@ -278,9 +393,9 @@ local function CreateBar(parent)
     bar.statusbar.smoothing = Enum.StatusBarInterpolation and Enum.StatusBarInterpolation.ExponentialEaseOut or nil
 
     bar.classIcon = bar.statusbar:CreateTexture(nil, "OVERLAY")
-    bar.classIcon:SetTexture("Interface\\WorldStateFrame\\Icons-Classes")
+    bar.classIcon:SetTexture(CLASS_ICONS)
     bar.classIcon:SetSize(16, 16)
-    bar.classIcon:SetPoint("LEFT", 2, 0)
+    bar.classIcon:SetPoint("LEFT", 1, 0)
     bar.classIcon:Hide()
 
     bar.pctText = bar.statusbar:CreateFontString(nil, "OVERLAY")
@@ -421,7 +536,8 @@ local function GetDrillSpellCount(win)
     if not ds then return 0 end
 
     if testMode then
-        for _, td in ipairs(TEST_DATA) do
+        local tdata = GetTestData(win)
+        for _, td in ipairs(tdata) do
             if td.name == ds.name then return td.spells and #td.spells or 0 end
         end
         return 0
@@ -449,7 +565,7 @@ local function SetupBarInteraction(bar, win)
             local guid = self.sourceGUID
             local cls = guid and classCache[guid]
             if not cls and self.testIndex then
-                local td = TEST_DATA[self.testIndex]
+                local td = GetTestData(win)[self.testIndex]
                 if td then cls = td.class end
             end
             if cls then
@@ -475,7 +591,7 @@ local function SetupBarInteraction(bar, win)
         if button == "LeftButton" then
             GameTooltip:Hide()
             if testMode and self.testIndex then
-                local td = TEST_DATA[self.testIndex]
+                local td = GetTestData(win)[self.testIndex]
                 if td then
                     EnterDrillDown(win, nil, td.name, td.class)
                 end
@@ -496,7 +612,7 @@ local function SetupScrollWheel(win)
         if win.drillSource then
             total = GetDrillSpellCount(win)
         elseif testMode then
-            total = #TEST_DATA
+            total = #GetTestData(win)
         else
             local meterType = ResolveMeterType(MODE_ORDER[win.modeIndex])
             local session   = GetSession(win, meterType)
@@ -822,16 +938,11 @@ local function SetupWindowContent(win, db, parent)
     local headerBorder = CreateFrame("Frame", nil, parent, "BackdropTemplate")
     headerBorder:SetPoint("TOPLEFT",  headerAnchor, "TOPLEFT",  0, 0)
     headerBorder:SetPoint("TOPRIGHT", headerAnchor, "TOPRIGHT", 0, 0)
-    if not win.embedded then headerBorder:SetHeight(HEADER_HEIGHT) end
+    if not win.embedded then headerBorder:SetHeight(HEADER_HEIGHT + 1) end
     if win.embedded then
         headerBorder:SetPoint("BOTTOMRIGHT", headerAnchor, "BOTTOMRIGHT")
     end
-    headerBorder:SetFrameLevel(headerAnchor:GetFrameLevel() + 1)
     win.headerBorder = headerBorder
-    if db.showHeaderBorder then
-        headerBorder:SetTemplate()
-        headerBorder:SetBackdropColor(0, 0, 0, 0)
-    end
 
     -- Header
     win.header = CreateFrame("Frame", hdrName, parent)
@@ -841,7 +952,14 @@ local function SetupWindowContent(win, db, parent)
     if win.embedded then
         win.header:SetPoint("BOTTOMRIGHT", headerAnchor, "BOTTOMRIGHT")
     end
-    win.header:SetFrameLevel(headerBorder:GetFrameLevel() + 1)
+    win.header:SetFrameLevel(headerAnchor:GetFrameLevel() + 1)
+
+    -- Header border sits above the header so it renders over the backdrop
+    headerBorder:SetFrameLevel(win.header:GetFrameLevel() + 1)
+    if db.showHeaderBorder then
+        headerBorder:SetTemplate()
+        headerBorder:SetBackdropColor(0, 0, 0, 0)
+    end
     win.header:EnableMouse(true)
 
     SetupHeaderContent(win, db)
@@ -881,12 +999,13 @@ local function SetupWindowContent(win, db, parent)
         ApplyBarBorder(bar, db)
 
         local sp = max(0, db.barSpacing or 1)
+        local borderAdj = (db.barBorderEnabled and sp == 0) and 1 or 0
         if j == 1 then
             bar.frame:SetPoint("TOPLEFT",  win.frame, "TOPLEFT",  0, 0)
             bar.frame:SetPoint("TOPRIGHT", win.frame, "TOPRIGHT", 0, 0)
         else
-            bar.frame:SetPoint("TOPLEFT",  win.bars[j-1].frame, "BOTTOMLEFT",  0, -sp)
-            bar.frame:SetPoint("TOPRIGHT", win.bars[j-1].frame, "BOTTOMRIGHT", 0, -sp)
+            bar.frame:SetPoint("TOPLEFT",  win.bars[j-1].frame, "BOTTOMLEFT",  0, -sp + borderAdj)
+            bar.frame:SetPoint("TOPRIGHT", win.bars[j-1].frame, "BOTTOMRIGHT", 0, -sp + borderAdj)
         end
         win.bars[j] = bar
         SetupBarInteraction(bar, win)
@@ -998,20 +1117,21 @@ end
 
 local spellCache = {}
 
+-- 8-value texcoords: ULx, ULy, LLx, LLy, URx, URy, LRx, LRy
 local CLASS_ICON_COORDS = {
-    WARRIOR     = {0,      0.25,  0,     0.25},
-    MAGE        = {0.25,   0.5,   0,     0.25},
-    ROGUE       = {0.5,    0.75,  0,     0.25},
-    DRUID       = {0.75,   1,     0,     0.25},
-    HUNTER      = {0,      0.25,  0.25,  0.5 },
-    SHAMAN      = {0.25,   0.5,   0.25,  0.5 },
-    PRIEST      = {0.5,    0.75,  0.25,  0.5 },
-    WARLOCK     = {0.75,   1,     0.25,  0.5 },
-    PALADIN     = {0,      0.25,  0.5,   0.75},
-    DEATHKNIGHT = {0.25,   0.5,   0.5,   0.75},
-    MONK        = {0.5,    0.75,  0.5,   0.75},
-    DEMONHUNTER = {0.75,   1,     0.5,   0.75},
-    EVOKER      = {0,      0.25,  0.75,  1   },
+    WARRIOR     = { 0,     0,     0,     0.125, 0.125, 0,     0.125, 0.125 },
+    MAGE        = { 0.125, 0,     0.125, 0.125, 0.25,  0,     0.25,  0.125 },
+    ROGUE       = { 0.25,  0,     0.25,  0.125, 0.375, 0,     0.375, 0.125 },
+    DRUID       = { 0.375, 0,     0.375, 0.125, 0.5,   0,     0.5,   0.125 },
+    EVOKER      = { 0.5,   0,     0.5,   0.125, 0.625, 0,     0.625, 0.125 },
+    HUNTER      = { 0,     0.125, 0,     0.25,  0.125, 0.125, 0.125, 0.25  },
+    SHAMAN      = { 0.125, 0.125, 0.125, 0.25,  0.25,  0.125, 0.25,  0.25  },
+    PRIEST      = { 0.25,  0.125, 0.25,  0.25,  0.375, 0.125, 0.375, 0.25  },
+    WARLOCK     = { 0.375, 0.125, 0.375, 0.25,  0.5,   0.125, 0.5,   0.25  },
+    PALADIN     = { 0,     0.25,  0,     0.375, 0.125, 0.25,  0.125, 0.375 },
+    DEATHKNIGHT = { 0.125, 0.25,  0.125, 0.375, 0.25,  0.25,  0.25,  0.375 },
+    MONK        = { 0.25,  0.25,  0.25,  0.375, 0.375, 0.25,  0.375, 0.375 },
+    DEMONHUNTER = { 0.375, 0.25,  0.375, 0.375, 0.5,   0.25,  0.5,   0.375 },
 }
 
 local function ApplySessionHighlight(win, db)
@@ -1028,7 +1148,7 @@ local function ResetDrillBar(bar, db)
     bar.pctText:Hide()
     bar.rightText:ClearAllPoints()
     bar.rightText:SetPoint("RIGHT", -4, 0)
-    bar.classIcon:SetTexture("Interface\\WorldStateFrame\\Icons-Classes")
+    bar.classIcon:SetTexture(CLASS_ICONS)
     ApplyBarIconLayout(bar, db)
 end
 
@@ -1059,7 +1179,8 @@ RefreshWindow = function(win)
 
         local spells
         if testMode then
-            for _, td in ipairs(TEST_DATA) do
+            local tdata = GetTestData(win)
+            for _, td in ipairs(tdata) do
                 if td.name == ds.name then spells = td.spells; break end
             end
         else
@@ -1196,15 +1317,16 @@ RefreshWindow = function(win)
         win.header.modeText:SetText("|cffff6600[Test Mode]|r")
         win.header.sessText:SetText("")
         win.header.timer:Hide()
+        local tdata      = GetTestData(win)
         local numVisible = ComputeNumVisible(win)
-        local maxVal     = TEST_DATA[1].value
-        local total      = #TEST_DATA
+        local maxVal     = tdata[1] and tdata[1].value or 1
+        local total      = #tdata
         win.scrollOffset = max(0, min(win.scrollOffset, max(0, total - numVisible)))
         for i = 1, MAX_BARS do
             local bar = win.bars[i]
             if not bar then break end
             local srcIdx = win.scrollOffset + i
-            local td     = TEST_DATA[srcIdx]
+            local td     = tdata[srcIdx]
             if i > numVisible or not td then
                 bar.frame:Hide()
             else
@@ -1224,7 +1346,12 @@ RefreshWindow = function(win)
                     bar.leftText:SetText(td.name)
                 end
                 bar.leftText:SetTextColor(tR, tG, tB)
-                FormatValueText(bar.rightText, td.value)
+                local modeEntry = MODE_ORDER[win.modeIndex]
+                if modeEntry == COMBINED_DAMAGE or modeEntry == COMBINED_HEALING then
+                    FormatCombinedText(bar.rightText, td.value, td.value / 20)
+                else
+                    FormatValueText(bar.rightText, td.value)
+                end
                 local vR, vG, vB = GetValueColor(db, td.class)
                 bar.rightText:SetTextColor(vR, vG, vB)
                 if bar._isDrill then ResetDrillBar(bar, db) end
@@ -1390,6 +1517,58 @@ function TUI:SetMeterTestMode(enabled)
     TUI:RefreshMeter()
 end
 
+-- Hide/show all TDM windows based on pet battle and flight state
+function TUI:UpdateMeterVisibility()
+    local db = TUI.db.profile.damageMeter
+    local shouldHide = false
+    if db.hideInPetBattle and C_PetBattles and C_PetBattles.IsInBattle() then
+        shouldHide = true
+    elseif db.hideInFlight and IsFlying() then
+        shouldHide = true
+    end
+
+    if shouldHide == meterHidden then return end
+    meterHidden = shouldHide
+
+    for _, win in pairs(windows) do
+        if shouldHide then
+            if win.embedded then
+                if win.frame then win.frame:Hide() end
+                if win.header then win.header:Hide() end
+                if win.headerBorder then win.headerBorder:Hide() end
+            elseif win.window then
+                win.window:Hide()
+            end
+        else
+            local wdb = GetWinDB(win.index)
+            if win.embedded then
+                if win.frame then win.frame:Show() end
+                if win.header then win.header:Show() end
+                if win.headerBorder then win.headerBorder:Show() end
+            elseif win.window then
+                win.window:Show()
+            end
+            if wdb.headerMouseover then
+                if win.header then win.header:SetAlpha(0) end
+                if win.headerBorder then win.headerBorder:SetAlpha(0) end
+            end
+        end
+    end
+
+end
+
+-- Start or stop flight polling based on the hideInFlight setting
+function TUI:UpdateFlightTicker()
+    local db = TUI.db.profile.damageMeter
+    if db.hideInFlight and not flightTicker then
+        flightTicker = C_Timer.NewTicker(0.25, function() TUI:UpdateMeterVisibility() end)
+    elseif not db.hideInFlight and flightTicker then
+        flightTicker:Cancel()
+        flightTicker = nil
+        TUI:UpdateMeterVisibility()
+    end
+end
+
 local timerElapsed = 0
 local function OnUpdate(_, dt)
     timerElapsed = timerElapsed + dt
@@ -1437,6 +1616,7 @@ end
 
 local function RespaceBarAnchors(win, db)
     local sp = max(0, db.barSpacing or 1)
+    local borderAdj = (db.barBorderEnabled and sp == 0) and 1 or 0
     for i = 1, MAX_BARS do
         local bar = win.bars[i]
         if not bar then break end
@@ -1445,8 +1625,8 @@ local function RespaceBarAnchors(win, db)
             bar.frame:SetPoint("TOPLEFT",  win.frame, "TOPLEFT",  0, 0)
             bar.frame:SetPoint("TOPRIGHT", win.frame, "TOPRIGHT", 0, 0)
         else
-            bar.frame:SetPoint("TOPLEFT",  win.bars[i-1].frame, "BOTTOMLEFT",  0, -sp)
-            bar.frame:SetPoint("TOPRIGHT", win.bars[i-1].frame, "BOTTOMRIGHT", 0, -sp)
+            bar.frame:SetPoint("TOPLEFT",  win.bars[i-1].frame, "BOTTOMLEFT",  0, -sp + borderAdj)
+            bar.frame:SetPoint("TOPRIGHT", win.bars[i-1].frame, "BOTTOMRIGHT", 0, -sp + borderAdj)
         end
     end
 end
@@ -1558,8 +1738,13 @@ function TUI:InitDamageMeter()
         evFrame:RegisterEvent("DAMAGE_METER_RESET")
         evFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
         evFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
+        evFrame:RegisterEvent("PET_BATTLE_OPENING_START")
+        evFrame:RegisterEvent("PET_BATTLE_CLOSE")
         evFrame:SetScript("OnEvent", function(_, event)
-            if event == "PLAYER_REGEN_DISABLED" then
+            if event == "PET_BATTLE_OPENING_START" or event == "PET_BATTLE_CLOSE" then
+                TUI:UpdateMeterVisibility()
+                return
+            elseif event == "PLAYER_REGEN_DISABLED" then
                 for _, w in pairs(windows) do
                     ExitDrillDown(w)
                 end
@@ -1586,6 +1771,8 @@ function TUI:InitDamageMeter()
             end
         end)
         evFrame:SetScript("OnUpdate", OnUpdate)
+
+        TUI:UpdateFlightTicker()
 
         hooksecurefunc(CH, "PositionChats", function()
             if db.embedded then

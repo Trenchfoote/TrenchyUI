@@ -755,12 +755,6 @@ local function SetupProfileDB()
     E.db.movers.MinimapClusterMover = "TOPRIGHT,ElvUIParent,TOPRIGHT,-6,-6"
     E.db.movers.MinimapMover = "TOPRIGHT,ElvUIParent,TOPRIGHT,-2,-2"
     E.db.movers.MirrorTimer1Mover = "TOP,ElvUIParent,TOP,-1,-96"
-    E.db.movers.MoverEltruismBRES = "TOPLEFT,UIParent,TOPLEFT,374,-442"
-    E.db.movers.MoverEltruismInstanceDifficulty = "TOPRIGHT,UIParent,TOPRIGHT,-98,-190"
-    E.db.movers.MoverEltruismQuestItem = "BOTTOMLEFT,ElvUIParent,BOTTOMLEFT,764,608"
-    E.db.movers.MoverEltruismWA = "TOPLEFT,UIParent,TOPLEFT,294,-468"
-    E.db.movers.MoverEltruismWA2 = "TOPLEFT,ElvUIParent,TOPLEFT,294,-397"
-    E.db.movers.MoverEltruismWAConsumables = "BOTTOM,ElvUIParent,BOTTOM,-290,313"
     E.db.movers.MoverRaidBossEmoteFrame = "TOP,ElvUIParent,TOP,0,-237"
     E.db.movers.MoverRaidUtility = "TOPLEFT,ElvUIParent,TOPLEFT,242,-1"
     E.db.movers.MoverRaidWarningFrame = "TOP,UIParent,TOP,-1,-187"
@@ -1878,7 +1872,7 @@ local function SetupProfileDB()
     E.db.unitframe.units.focus.disableTargetGlow = true
     E.db.unitframe.units.focus.healPrediction.enable = false
     E.db.unitframe.units.focus.height = 25
-    E.db.unitframe.units.focus.name.text_format = "[name:eltruism:gradientshort] [eltruism:IconOutline:player] [eltruism:raidmarker]"
+    E.db.unitframe.units.focus.name.text_format = "[classcolor][name]"
     E.db.unitframe.units.focus.power.attachTextTo = "Power"
     E.db.unitframe.units.focus.power.enable = false
     E.db.unitframe.units.focus.power.height = 14
@@ -2139,7 +2133,7 @@ local function SetupProfileDB()
     E.db.unitframe.units.player.CombatIcon.color.g = 1
     E.db.unitframe.units.player.CombatIcon.enable = false
     E.db.unitframe.units.player.CombatIcon.size = 24
-    E.db.unitframe.units.player.CombatIcon.texture = "Eltruism14"
+    E.db.unitframe.units.player.CombatIcon.texture = "DEFAULT"
     E.db.unitframe.units.player.RestIcon.color.b = 0.22745099663734
     E.db.unitframe.units.player.RestIcon.color.g = 0.11764706671238
     E.db.unitframe.units.player.RestIcon.color.r = 0.76862752437592
@@ -2147,7 +2141,7 @@ local function SetupProfileDB()
     E.db.unitframe.units.player.RestIcon.enable = false
     E.db.unitframe.units.player.RestIcon.hideAtMaxLevel = true
     E.db.unitframe.units.player.RestIcon.size = 12
-    E.db.unitframe.units.player.RestIcon.texture = "Eltruism01"
+    E.db.unitframe.units.player.RestIcon.texture = "DEFAULT"
     E.db.unitframe.units.player.RestIcon.xOffset = 22
     E.db.unitframe.units.player.RestIcon.yOffset = -13
     E.db.unitframe.units.player.aurabar.abbrevName = true
@@ -2643,7 +2637,7 @@ local function SetupProfileDB()
     E.db.unitframe.units.tank.disableMouseoverGlow = true
     E.db.unitframe.units.tank.fader.minAlpha = 0.5
     E.db.unitframe.units.tank.height = 25
-    E.db.unitframe.units.tank.name.text_format = "[name:eltruism:gradient]"
+    E.db.unitframe.units.tank.name.text_format = "[classcolor][name]"
     E.db.unitframe.units.tank.raidicon.enable = false
     E.db.unitframe.units.tank.rdebuffs.duration.yOffset = 3
     E.db.unitframe.units.tank.rdebuffs.enable = false
@@ -2669,7 +2663,7 @@ local function SetupProfileDB()
     E.db.unitframe.units.target.CombatIcon.color.g = 1
     E.db.unitframe.units.target.CombatIcon.enable = false
     E.db.unitframe.units.target.CombatIcon.size = 24
-    E.db.unitframe.units.target.CombatIcon.texture = "Eltruism14"
+    E.db.unitframe.units.target.CombatIcon.texture = "DEFAULT"
     E.db.unitframe.units.target.aurabar.abbrevName = true
     E.db.unitframe.units.target.aurabar.attachTo = "DETACHED"
     E.db.unitframe.units.target.aurabar.clickThrough = true
@@ -2871,6 +2865,10 @@ local function SetupTrenchyUI()
     E.db.TrenchyUI.cooldownManager.viewers.utility.iconZoom = 0.2
     E.db.TrenchyUI.cooldownManager.viewers.utility.iconsPerRow = 6
     E.db.TrenchyUI.damageMeter.autoResetOnComplete = true
+    E.db.TrenchyUI.damageMeter.backdropColor.a = 1
+    E.db.TrenchyUI.damageMeter.backdropColor.b = 0.17254902422428
+    E.db.TrenchyUI.damageMeter.backdropColor.g = 0.17254902422428
+    E.db.TrenchyUI.damageMeter.backdropColor.r = 0.17254902422428
     E.db.TrenchyUI.damageMeter.barBGColor.a = 1
     E.db.TrenchyUI.damageMeter.barBGColor.b = 0.20000001788139
     E.db.TrenchyUI.damageMeter.barBGColor.g = 0.20000001788139
@@ -2883,18 +2881,21 @@ local function SetupTrenchyUI()
     E.db.TrenchyUI.damageMeter.barFontOutline = "SHADOWOUTLINE"
     E.db.TrenchyUI.damageMeter.barFontSize = 18
     E.db.TrenchyUI.damageMeter.barHeight = 30
-    E.db.TrenchyUI.damageMeter.barSpacing = 2
+    E.db.TrenchyUI.damageMeter.barSpacing = 0
     E.db.TrenchyUI.damageMeter.embedded = false
     E.db.TrenchyUI.damageMeter.enabled = true
-    E.db.TrenchyUI.damageMeter.headerBGColor.a = 0
-    E.db.TrenchyUI.damageMeter.headerBGColor.b = 0.05882353335619
-    E.db.TrenchyUI.damageMeter.headerBGColor.g = 0.05882353335619
-    E.db.TrenchyUI.damageMeter.headerBGColor.r = 0.05882353335619
+    E.db.TrenchyUI.damageMeter.headerBGColor.a = 1
+    E.db.TrenchyUI.damageMeter.headerBGColor.b = 0.17254902422428
+    E.db.TrenchyUI.damageMeter.headerBGColor.g = 0.17254902422428
+    E.db.TrenchyUI.damageMeter.headerBGColor.r = 0.17254902422428
     E.db.TrenchyUI.damageMeter.headerFontColor.b = 0.27058824896812
     E.db.TrenchyUI.damageMeter.headerFontColor.g = 0.76470595598221
     E.db.TrenchyUI.damageMeter.headerFontSize = 16
+    E.db.TrenchyUI.damageMeter.hideInFlight = true
+    E.db.TrenchyUI.damageMeter.hideInPetBattle = true
     E.db.TrenchyUI.damageMeter.modeIndex = 3
     E.db.TrenchyUI.damageMeter.rankClassColor = true
+    E.db.TrenchyUI.damageMeter.showClassIcon = true
     E.db.TrenchyUI.damageMeter.showRank = false
     E.db.TrenchyUI.damageMeter.standaloneHeight = 185
     E.db.TrenchyUI.damageMeter.standaloneWidth = 412
@@ -2940,6 +2941,7 @@ local function SetupTrenchyUI()
     E.db.TrenchyUI.qol.difficultyFontSize = 24
     E.db.TrenchyUI.qol.difficultyText = true
     E.db.TrenchyUI.qol.fastLoot = true
+    E.db.TrenchyUI.qol.hideObjectiveInCombat = true
     E.db.TrenchyUI.qol.hideTalkingHead = true
     E.db.TrenchyUI.qol.moveableFrames = true
 end

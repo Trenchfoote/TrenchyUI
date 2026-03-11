@@ -120,6 +120,8 @@ TUI.defaults = {
             barFont        = 'Expressway',
             barFontSize    = 11,
             barFontOutline = 'OUTLINE',
+            hideInPetBattle    = false,
+            hideInFlight       = false,
             barBorderEnabled   = false,
             textClassColor = false,
             textColor      = { r = 1.00, g = 1.00, b = 1.00 },
@@ -576,9 +578,28 @@ function TUI:BuildConfig()
             dmDisabled
         )
 
+        dmGen.hideInPetBattle = ACH:Toggle(
+            "Hide in Pet Battle", "Hide all meter windows during pet battles.",
+            5, nil, nil, nil,
+            function() return TUI.db.profile.damageMeter.hideInPetBattle end,
+            function(_, value) TUI.db.profile.damageMeter.hideInPetBattle = value end,
+            dmDisabled
+        )
+
+        dmGen.hideInFlight = ACH:Toggle(
+            "Hide in Flight", "Hide all meter windows while flying.",
+            6, nil, nil, nil,
+            function() return TUI.db.profile.damageMeter.hideInFlight end,
+            function(_, value)
+                TUI.db.profile.damageMeter.hideInFlight = value
+                TUI:UpdateFlightTicker()
+            end,
+            dmDisabled
+        )
+
         dmGen.testMode = ACH:Execute(
             "TDM Test", "Toggle placeholder bars to preview the meter appearance.",
-            5,
+            7,
             function() TUI:SetMeterTestMode(not TUI._meterTestMode) end,
             nil, nil, nil, nil, nil,
             dmDisabled
