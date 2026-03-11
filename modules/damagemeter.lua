@@ -91,7 +91,42 @@ local testMode = false
 local meterHidden = false
 local flightTicker
 
+local nameCache  = {}
 local classCache = {}
+local specNameCache = {}
+local specCollisions = {}
+
+local strsplit = strsplit
+local IsInGroup = IsInGroup
+local IsInRaid = IsInRaid
+local GetNumGroupMembers = GetNumGroupMembers
+
+local function ScanRoster()
+	local pg = UnitGUID('player')
+	if pg then
+		nameCache[pg] = UnitName('player')
+		classCache[pg] = select(2, UnitClass('player'))
+	end
+	if IsInRaid() then
+		for i = 1, GetNumGroupMembers() do
+			local unit = 'raid' .. i
+			local guid = UnitGUID(unit)
+			if guid then
+				nameCache[guid] = UnitName(unit)
+				classCache[guid] = select(2, UnitClass(unit))
+			end
+		end
+	elseif IsInGroup() then
+		for i = 1, GetNumGroupMembers() - 1 do
+			local unit = 'party' .. i
+			local guid = UnitGUID(unit)
+			if guid then
+				nameCache[guid] = UnitName(unit)
+				classCache[guid] = select(2, UnitClass(unit))
+			end
+		end
+	end
+end
 
 TUI._meterTestMode = false
 
@@ -277,29 +312,37 @@ local function RoundIfPlain(val)
     return val
 end
 
+-- Strip decimals from sub-1K abbreviated strings (e.g. "209.385" -> "209")
+-- Preserves suffixed values like "1.2K" which have intentional decimals
+local function TruncateDecimals(text)
+    if type(text) ~= 'string' or IsSecret(text) then return text end
+    if text:match('%a') then return text end
+    return (strsplit('.', text))
+end
+
 local function FormatValueText(fontString, val)
     if not val then
-        fontString:SetText("0")
+        fontString:SetText('0')
         return
     end
-    fontString:SetText(AbbreviateNumbers(RoundIfPlain(val)))
+    fontString:SetText(TruncateDecimals(AbbreviateNumbers(RoundIfPlain(val))))
 end
 
 local function FormatCombinedText(fontString, total, perSec)
     if not total and not perSec then
-        fontString:SetText("0")
+        fontString:SetText('0')
         return
     end
     local ok = pcall(function()
-        local p = perSec and AbbreviateNumbers(RoundIfPlain(perSec)) or "0"
-        local t = total and AbbreviateNumbers(RoundIfPlain(total)) or "0"
-        fontString:SetText(p .. " (" .. t .. ")")
+        local p = TruncateDecimals(perSec and AbbreviateNumbers(RoundIfPlain(perSec)) or '0')
+        local t = TruncateDecimals(total and AbbreviateNumbers(RoundIfPlain(total)) or '0')
+        fontString:SetText(p .. ' (' .. t .. ')')
     end)
     if not ok then
         if total then
-            fontString:SetText(AbbreviateNumbers(RoundIfPlain(total)))
+            fontString:SetText(TruncateDecimals(AbbreviateNumbers(RoundIfPlain(total))))
         else
-            fontString:SetText("0")
+            fontString:SetText('0')
         end
     end
 end
@@ -384,7 +427,6 @@ local function NewWindowState(index, savedModeIndex)
         sessionId     = nil,
         embedded      = false,
         scrollOffset  = 0,
-        positionCache = {},
         drillSource   = nil,
     }
 end
@@ -1325,9 +1367,9 @@ RefreshWindow = function(win)
                 bar.leftText:SetTextColor(tR, tG, tB)
 
                 local ok5 = pcall(function()
-                    bar.rightText:SetText(AbbreviateNumbers(RoundIfPlain(amt)))
+                    bar.rightText:SetText(TruncateDecimals(AbbreviateNumbers(RoundIfPlain(amt))))
                 end)
-                if not ok5 then bar.rightText:SetText("?") end
+                if not ok5 then bar.rightText:SetText('?') end
                 bar.rightText:SetTextColor(vR, vG, vB)
 
                 local ok4, pctStr = pcall(function()
@@ -1451,13 +1493,10 @@ RefreshWindow = function(win)
                 bar.frame.testIndex    = nil
                 bar.frame.drillSpellID = nil
 
-                local classFilename
-                if not IsSecret(src.classFilename) then
-                    classFilename = src.classFilename
-                    if guid and classFilename then classCache[guid] = classFilename end
-                elseif guid then
-                    classFilename = classCache[guid]
-                end
+                -- classFilename is NeverSecret per docs
+                local classFilename = src.classFilename
+                if not classFilename and guid then classFilename = classCache[guid] end
+                if guid and classFilename then classCache[guid] = classFilename end
                 bar.frame.sourceClass = classFilename
 
                 local fgR, fgG, fgB = GetBarFGColor(db, classFilename)
@@ -1468,39 +1507,47 @@ RefreshWindow = function(win)
                 local bgR, bgG, bgB, bgA = GetBarBGColor(db, classFilename)
                 bar.background:SetVertexColor(bgR, bgG, bgB, bgA)
 
-                local rawName = src.name
-                local nameIsSecret = IsSecret(rawName)
-                local isLocal = (not IsSecret(src.isLocalPlayer)) and src.isLocalPlayer
-                local plainName = nil
-
+                -- Name resolution: roster cache > specIcon cache > C_DamageMeter > secret fallback
+                local isLocal = src.isLocalPlayer
+                local specIcon = src.specIconID
+                local plainName
                 if isLocal then
-                    plainName = UnitName("player") or "?"
-                    win.positionCache[srcIdx] = plainName
-                elseif not nameIsSecret and rawName and rawName ~= "" then
-                    plainName = rawName
-                    win.positionCache[srcIdx] = plainName
-                elseif not nameIsSecret then
-                    plainName = win.positionCache[srcIdx] or "?"
+                    local pg = UnitGUID('player')
+                    plainName = (pg and nameCache[pg]) or UnitName('player') or '?'
+                elseif guid and nameCache[guid] then
+                    plainName = nameCache[guid]
+                elseif specIcon and not specCollisions[specIcon] and specNameCache[specIcon] then
+                    plainName = specNameCache[specIcon]
+                elseif not IsSecret(src.name) and src.name and src.name ~= '' then
+                    plainName = (strsplit('-', src.name))
                 end
-                bar.frame.sourceName = plainName or "?"
+                -- Populate specIcon cache; mark collision if two names share the same specIcon
+                if plainName and specIcon then
+                    local existing = specNameCache[specIcon]
+                    if existing and existing ~= plainName then
+                        specCollisions[specIcon] = true
+                    end
+                    specNameCache[specIcon] = plainName
+                end
+                bar.frame.sourceName = plainName or '?'
 
                 local tR, tG, tB = GetTextColor(db, classFilename)
                 if plainName then
                     if db.showRank then
                         local rr, rg, rb = GetRankColor(db, classFilename)
-                        bar.leftText:SetText(format("|cff%02x%02x%02x%d.|r %s",
+                        bar.leftText:SetText(format('|cff%02x%02x%02x%d.|r %s',
                             rr * 255, rg * 255, rb * 255, srcIdx, plainName))
                     else
                         bar.leftText:SetText(plainName)
                     end
-                elseif nameIsSecret then
+                elseif IsSecret(src.name) then
                     if db.showRank then
-                        bar.leftText:SetFormattedText("%d. %s", srcIdx, rawName)
+                        bar.leftText:SetFormattedText('%d. %s', srcIdx, src.name)
                     else
-                        bar.leftText:SetText(rawName)
+                        bar.leftText:SetFormattedText('%s', src.name)
                     end
                 else
-                    bar.leftText:SetText("?")
+                    bar.leftText:SetText('?')
                 end
                 bar.leftText:SetTextColor(tR, tG, tB)
 
@@ -1762,35 +1809,44 @@ function TUI:InitDamageMeter()
         local evFrame = win1.frame
         if not evFrame then return end
 
-        evFrame:RegisterEvent("DAMAGE_METER_COMBAT_SESSION_UPDATED")
-        evFrame:RegisterEvent("DAMAGE_METER_CURRENT_SESSION_UPDATED")
-        evFrame:RegisterEvent("DAMAGE_METER_RESET")
-        evFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-        evFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
-        evFrame:RegisterEvent("PET_BATTLE_OPENING_START")
-        evFrame:RegisterEvent("PET_BATTLE_CLOSE")
-        evFrame:SetScript("OnEvent", function(_, event)
-            if event == "PET_BATTLE_OPENING_START" or event == "PET_BATTLE_CLOSE" then
+        evFrame:RegisterEvent('DAMAGE_METER_COMBAT_SESSION_UPDATED')
+        evFrame:RegisterEvent('DAMAGE_METER_CURRENT_SESSION_UPDATED')
+        evFrame:RegisterEvent('DAMAGE_METER_RESET')
+        evFrame:RegisterEvent('PLAYER_ENTERING_WORLD')
+        evFrame:RegisterEvent('PLAYER_REGEN_DISABLED')
+        evFrame:RegisterEvent('PLAYER_REGEN_ENABLED')
+        evFrame:RegisterEvent('GROUP_ROSTER_UPDATE')
+        evFrame:RegisterEvent('PET_BATTLE_OPENING_START')
+        evFrame:RegisterEvent('PET_BATTLE_CLOSE')
+        ScanRoster()
+        evFrame:SetScript('OnEvent', function(_, event)
+            if event == 'PET_BATTLE_OPENING_START' or event == 'PET_BATTLE_CLOSE' then
                 TUI:UpdateMeterVisibility()
                 return
-            elseif event == "PLAYER_REGEN_DISABLED" then
+            elseif event == 'PLAYER_REGEN_DISABLED' then
                 for _, w in pairs(windows) do
                     ExitDrillDown(w)
                 end
                 return
-            elseif event == "PLAYER_ENTERING_WORLD" then
-                wipe(classCache)
+            elseif event == 'PLAYER_REGEN_ENABLED' then
+                ScanRoster()
+                TUI:RefreshMeter()
+                return
+            elseif event == 'GROUP_ROSTER_UPDATE' then
+                ScanRoster()
+                return
+            elseif event == 'PLAYER_ENTERING_WORLD' then
+                ScanRoster()
                 for _, w in pairs(windows) do
-                    wipe(w.positionCache)
                     ResetWindowState(w)
                 end
                 if TUI.db.profile.damageMeter.autoResetOnComplete then
                     local _, instanceType = IsInInstance()
-                    if instanceType == "party" or instanceType == "raid" or instanceType == "scenario" then
+                    if instanceType == 'party' or instanceType == 'raid' or instanceType == 'scenario' then
                         C_DamageMeter.ResetAllCombatSessions()
                     end
                 end
-            elseif event == "DAMAGE_METER_RESET" then
+            elseif event == 'DAMAGE_METER_RESET' then
                 for _, w in pairs(windows) do
                     ResetWindowState(w)
                 end
