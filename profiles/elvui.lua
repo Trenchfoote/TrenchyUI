@@ -3047,6 +3047,10 @@ local function SetupGlobalDB()
     E.global.unitframe.AuraBarColors[376907].color.g = 0.10980392992496
     E.global.unitframe.AuraBarColors[376907].color.r = 0
     E.global.unitframe.AuraBarColors[376907].enable = true
+    -- Aurawatch overrides
+    E.global.unitframe.aurawatch.PALADIN = E.global.unitframe.aurawatch.PALADIN or {}
+    E.global.unitframe.aurawatch.PALADIN[1244893] = E.global.unitframe.aurawatch.PALADIN[1244893] or {}
+    E.global.unitframe.aurawatch.PALADIN[1244893].point = "BOTTOMRIGHT"
 end
 
 function TUI:ApplyElvUIProfile()
