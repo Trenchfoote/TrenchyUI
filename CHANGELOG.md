@@ -7,6 +7,8 @@
 - Damage Meter: Player name tooltip is now class-colored in all cases
 - Damage Meter: New features now highlighted in ElvUI's "What's New" search
 - Profiles: Fixed Beacon of the Savior buff indicator position on party/raid frames
+- Profiles: Install button now shows your installed profile version and available updates
+- Profiles: Reinstalling a profile now properly resets all settings — previously, custom changes could persist through updates
 - General: Updated credits and Discord link branding
 
 ## v0.9
