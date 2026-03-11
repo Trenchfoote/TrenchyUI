@@ -398,6 +398,7 @@ local function SetupProfileDB()
     E.db.chat.customTimeColor.g = 0.76470595598221
     E.db.chat.customTimeColor.r = 1
     E.db.chat.editBoxPosition = "ABOVE_CHAT_INSIDE"
+    E.db.chat.fade = false
     E.db.chat.fadeChatToggles = false
     E.db.chat.fadeUndockedTabs = true
     E.db.chat.font = "Expressway"
