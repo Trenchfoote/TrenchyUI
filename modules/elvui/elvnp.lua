@@ -223,8 +223,10 @@ do -- Interrupt Spell Detection (adapted from mMediaTag with permission, 2026-03
 		local function PlaceMarker(castbar, unit)
 			local cdDuration = C_Spell_GetSpellCooldownDuration(currentInterrupt)
 			local isReady = cdDuration:IsZero()
+			local notInt = castbar.notInterruptible
 
 			local markerAlpha = EvalColorBool(isReady, 0, 1)
+			markerAlpha = EvalColorBool(notInt, 0, markerAlpha)
 
 			local castDuration = UnitCastingDuration(unit) or UnitChannelDuration(unit)
 			if not castDuration then
