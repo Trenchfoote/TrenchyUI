@@ -439,7 +439,29 @@ function ScheduleRelayout()
 	end)
 end
 
-local function OnCDMEvent(_, event, unit)
+local cdmDisabledByCVar = false
+
+local function OnCDMEvent(_, event, unit, ...)
+	if event == 'CVAR_UPDATE' then
+		local cvar = unit
+		if cvar == 'cooldownViewerEnabled' then
+			local val = ...
+			if val == '0' then
+				cdmDisabledByCVar = true
+				for viewerKey in pairs(VIEWER_KEYS) do
+					local container = containers[viewerKey]
+					if container then container:Hide() end
+				end
+				E:Print('|cffff2f3dTrenchyUI|r: Cooldown Manager requires Blizzard\'s Cooldown Viewer. Re-enable it in Edit Mode or /reload.')
+			else
+				cdmDisabledByCVar = false
+				TUI:UpdateCDMVisibility()
+				ScheduleRelayout()
+			end
+		end
+		return
+	end
+	if cdmDisabledByCVar then return end
 	if event == 'PLAYER_REGEN_DISABLED' then
 		inCombat = true
 		TUI:UpdateCDMVisibility()
@@ -552,6 +574,8 @@ function TUI:InitCooldownManager()
 	local db = GetDB()
 	if not db or not db.enabled then return end
 
+	SetCVar('cooldownViewerEnabled', 1)
+
 	C_Timer.After(0, function()
 		for viewerKey in pairs(VIEWER_KEYS) do
 			CreateContainer(viewerKey)
@@ -565,6 +589,7 @@ function TUI:InitCooldownManager()
 		eventFrame:RegisterEvent('SPELLS_CHANGED')
 		eventFrame:RegisterEvent('PLAYER_REGEN_DISABLED')
 		eventFrame:RegisterEvent('PLAYER_REGEN_ENABLED')
+		eventFrame:RegisterEvent('CVAR_UPDATE')
 		eventFrame:SetScript('OnEvent', OnCDMEvent)
 
 		TUI:UpdateCDMVisibility()
