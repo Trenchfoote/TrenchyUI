@@ -59,34 +59,23 @@ do -- Threat Override
 		if self._hookedThreatPost then return end
 		self._hookedThreatPost = true
 
-		local origPostUpdate = NP.ThreatIndicator_PostUpdate
-
-		local function ThreatWrapper(Indicator, unit, status)
-			if not status then
-				return origPostUpdate(Indicator, unit, status)
-			end
+		hooksecurefunc(NP, 'ThreatIndicator_PostUpdate', function(Indicator, unit, status)
+			if not status then return end
 
 			local nameplate = Indicator.__owner
 			local db = NP.db.threat
-			if not db or not db.enable or not db.useThreatColor or UnitIsTapDenied(unit) then
-				return origPostUpdate(Indicator, unit, status)
-			end
+			if not db or not db.enable or not db.useThreatColor or UnitIsTapDenied(unit) then return end
 
 			local isTank = Indicator.isTank
 			local isGoodThreat = isTank and (status == 3) or (not isTank and status == 0)
-
-			if not isGoodThreat then
-				return origPostUpdate(Indicator, unit, status)
-			end
+			if not isGoodThreat then return end
 
 			nameplate.threatStatus = status
 			nameplate.threatScale = 1
 			NP:ScalePlate(nameplate, 1)
 			NP:Health_SetColors(nameplate, false)
 			NP.Health_UpdateColor(nameplate, nil, unit)
-		end
-
-		NP.ThreatIndicator_PostUpdate = ThreatWrapper
+		end)
 	end
 end
 
@@ -219,23 +208,17 @@ do -- Interrupt Spell Detection (adapted from mMediaTag with permission, 2026-03
 		if self._hookedCastbarInterrupt then return end
 		self._hookedCastbarInterrupt = true
 
-		local origPostCastFail = NP.Castbar_PostCastFail
-		NP.Castbar_PostCastFail = function(castbar, ...)
+		hooksecurefunc(NP, 'Castbar_PostCastFail', function(castbar)
 			ResetInterruptOverlay(castbar)
-			origPostCastFail(castbar, ...)
 			castbar.TUI_WasInterrupted = true
-		end
+		end)
 
-		local origPostCastInterrupted = NP.Castbar_PostCastInterrupted
-		NP.Castbar_PostCastInterrupted = function(castbar, ...)
+		hooksecurefunc(NP, 'Castbar_PostCastInterrupted', function(castbar)
 			ResetInterruptOverlay(castbar)
-			origPostCastInterrupted(castbar, ...)
 			castbar.TUI_WasInterrupted = true
 			local c = NP.db.colors.castInterruptedColor
 			if c then castbar:SetStatusBarColor(c.r, c.g, c.b) end
-		end
-
-		local origCheckInterrupt = NP.Castbar_CheckInterrupt
+		end)
 
 		local function PlaceMarker(castbar, unit)
 			local cdDuration = C_Spell_GetSpellCooldownDuration(currentInterrupt)
@@ -287,8 +270,7 @@ do -- Interrupt Spell Detection (adapted from mMediaTag with permission, 2026-03
 			end
 		end
 
-		local function CheckInterruptWrapper(castbar, unit)
-			origCheckInterrupt(castbar, unit)
+		hooksecurefunc(NP, 'Castbar_CheckInterrupt', function(castbar, unit)
 			unit = InterruptPreamble(castbar, unit)
 			if not unit then return end
 
@@ -315,9 +297,7 @@ do -- Interrupt Spell Detection (adapted from mMediaTag with permission, 2026-03
 				ApplyInterruptColor(castbar, notInt2, isReady2)
 				UpdateMarker(castbar)
 			end)
-		end
-
-		NP.Castbar_CheckInterrupt = CheckInterruptWrapper
+		end)
 	end
 end
 
