@@ -1,5 +1,17 @@
 # TrenchyUI Changelog
 
+## v0.9.3
+
+### Bug Fixes
+- Damage Meter: Player names no longer show realm suffixes — names are now cached from your group roster and displayed cleanly
+- Damage Meter: Damage/healing values now display as whole numbers instead of showing unnecessary decimals
+- Nameplates: Fixed interrupt marker occasionally snapping to the edge of the castbar on uninterruptible casts
+
+### Improvements
+- Cooldown Manager: Now automatically enables Blizzard's Cooldown Manager on startup and detects if it gets disabled — shows a warning and gracefully hides icons until re-enabled
+- Cooldown Manager: Config description now notes the Blizzard Cooldown Manager requirement
+- General: Converted internal ElvUI hooks to use safer hooking methods
+
 ## v0.9.2
 
 ### Improvements
