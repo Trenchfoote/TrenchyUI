@@ -601,6 +601,10 @@ SLASH_TUICDM1 = '/cdm'
 SlashCmdList['TUICDM'] = function()
 	local db = GetDB()
 	if not db or not db.enabled then return end
+	if cdmDisabledByCVar then
+		E:Print('|cffff2f3dTrenchyUI|r: Cooldown Manager requires Blizzard\'s Cooldown Viewer. Re-enable it in Edit Mode.')
+		return
+	end
 	OpenCDMConfig()
 end
 
