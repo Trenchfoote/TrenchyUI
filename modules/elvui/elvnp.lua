@@ -60,9 +60,15 @@ do -- Threat Override
 		self._hookedThreatPost = true
 
 		hooksecurefunc(NP, 'ThreatIndicator_PostUpdate', function(Indicator, unit, status)
-			if not status then return end
-
 			local nameplate = Indicator.__owner
+
+			if not status then
+				-- Abrupt combat drop (Shadowmeld, Feign Death, etc.): restore color flags
+				NP:Health_SetColors(nameplate, false)
+				NP.Health_UpdateColor(nameplate, nil, unit)
+				return
+			end
+
 			local db = NP.db.threat
 			if not db or not db.enable or not db.useThreatColor or UnitIsTapDenied(unit) then return end
 
@@ -156,6 +162,8 @@ do -- Interrupt Spell Detection (adapted from mMediaTag with permission from Bli
 		return pos, clip
 	end
 
+	local activeCastbars = {}
+
 	local function CancelInterruptTicker(castbar)
 		if castbar.TUI_InterruptTicker then
 			castbar.TUI_InterruptTicker:Cancel()
@@ -168,18 +176,7 @@ do -- Interrupt Spell Detection (adapted from mMediaTag with permission from Bli
 		if castbar.TUI_InterruptMarker then castbar.TUI_InterruptMarker:Hide() end
 		if castbar.TUI_CDClipper then castbar.TUI_CDClipper:Hide() end
 		castbar.TUI_InterruptUnit = nil
-	end
-
-	local function InterruptPreamble(castbar, unit)
-		ResetInterruptOverlay(castbar)
-		castbar.TUI_WasInterrupted = nil
-
-		if not castbar.casting and not castbar.channeling then return nil end
-		if unit == 'vehicle' then unit = 'player' end
-		if not UnitCanAttack('player', unit) then return nil end
-		if not currentInterrupt then return nil end
-
-		return unit
+		activeCastbars[castbar] = nil
 	end
 
 	local function ApplyInterruptColor(castbar, notInt, isReady)
@@ -204,18 +201,48 @@ do -- Interrupt Spell Detection (adapted from mMediaTag with permission from Bli
 		end
 	end
 
+	local function ResetAllOverlays(interrupted)
+		local cdDuration = currentInterrupt and C_Spell_GetSpellCooldownDuration(currentInterrupt)
+		for cb in pairs(activeCastbars) do
+			if cb == interrupted then
+				ResetInterruptOverlay(cb)
+			else
+				-- Hide marker but keep ticker alive for color updates
+				if cb.TUI_InterruptMarker then cb.TUI_InterruptMarker:Hide() end
+				if cb.TUI_CDClipper then cb.TUI_CDClipper:Hide() end
+				-- Immediately apply on-CD color so ElvUI can't override before next tick
+				if cdDuration then
+					local isReady = cdDuration:IsZero()
+					ApplyInterruptColor(cb, cb.notInterruptible, isReady)
+				end
+			end
+		end
+	end
+
+	local function InterruptPreamble(castbar, unit)
+		ResetInterruptOverlay(castbar)
+		castbar.TUI_WasInterrupted = nil
+
+		if not castbar.casting and not castbar.channeling then return nil end
+		if unit == 'vehicle' then unit = 'player' end
+		if not UnitCanAttack('player', unit) then return nil end
+		if not currentInterrupt then return nil end
+
+		return unit
+	end
+
 	function TUI:HookCastbarInterrupt()
 		if self._hookedCastbarInterrupt then return end
 		self._hookedCastbarInterrupt = true
 
 		hooksecurefunc(NP, 'Castbar_PostCastFail', function(castbar)
-			ResetInterruptOverlay(castbar)
 			castbar.TUI_WasInterrupted = true
+			ResetAllOverlays(castbar)
 		end)
 
 		hooksecurefunc(NP, 'Castbar_PostCastInterrupted', function(castbar)
-			ResetInterruptOverlay(castbar)
 			castbar.TUI_WasInterrupted = true
+			ResetAllOverlays(castbar)
 			local c = NP.db.colors.castInterruptedColor
 			if c then castbar:SetStatusBarColor(c.r, c.g, c.b) end
 		end)
@@ -273,6 +300,7 @@ do -- Interrupt Spell Detection (adapted from mMediaTag with permission from Bli
 		end
 
 		hooksecurefunc(NP, 'Castbar_CheckInterrupt', function(castbar, unit)
+			if castbar.TUI_WasInterrupted and not (castbar.casting or castbar.channeling) then return end
 			unit = InterruptPreamble(castbar, unit)
 			if not unit then return end
 
@@ -282,6 +310,7 @@ do -- Interrupt Spell Detection (adapted from mMediaTag with permission from Bli
 
 			ApplyInterruptColor(castbar, notInt, isReady)
 			castbar.TUI_InterruptUnit = unit
+			activeCastbars[castbar] = true
 			PlaceMarker(castbar, unit)
 
 			castbar.TUI_InterruptTicker = C_Timer.NewTicker(0.1, function()
