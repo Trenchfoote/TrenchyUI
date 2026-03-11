@@ -1055,7 +1055,8 @@ function TUI:BuildConfig()
 
         cdmGen.desc = ACH:Description(
             "Reparents Blizzard's CDM icons into TUI containers with ElvUI movers. "
-            .. "Overrides ElvUI's CDM text styling with per-viewer font settings.",
+            .. "Overrides ElvUI's CDM text styling with per-viewer font settings."
+            .. "\n\nRequires Blizzard's Cooldown Manager to be enabled (Edit Mode > Cooldown Manager).",
             1, "medium"
         )
 
