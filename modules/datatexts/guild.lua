@@ -65,15 +65,15 @@ local function AnchorToPanel(tt, panel)
 	local anchor, xOff, yOff = GetPanelAnchor(panel)
 	tt:ClearAllPoints()
 	if anchor == 'ANCHOR_TOP' or anchor == 'ANCHOR_TOPLEFT' or anchor == 'ANCHOR_TOPRIGHT' then
-		tt:SetPoint('BOTTOM', panel, 'TOP', xOff, 4 + yOff)
+		tt:SetPoint('BOTTOM', panel, 'TOP', xOff, 2 + yOff)
 	elseif anchor == 'ANCHOR_BOTTOM' or anchor == 'ANCHOR_BOTTOMLEFT' or anchor == 'ANCHOR_BOTTOMRIGHT' then
-		tt:SetPoint('TOP', panel, 'BOTTOM', xOff, -4 + yOff)
+		tt:SetPoint('TOP', panel, 'BOTTOM', xOff, -2 + yOff)
 	elseif anchor == 'ANCHOR_LEFT' then
-		tt:SetPoint('RIGHT', panel, 'LEFT', -4 + xOff, yOff)
+		tt:SetPoint('RIGHT', panel, 'LEFT', -2 + xOff, yOff)
 	elseif anchor == 'ANCHOR_RIGHT' then
-		tt:SetPoint('LEFT', panel, 'RIGHT', 4 + xOff, yOff)
+		tt:SetPoint('LEFT', panel, 'RIGHT', 2 + xOff, yOff)
 	else
-		tt:SetPoint('BOTTOM', panel, 'TOP', xOff, 4 + yOff)
+		tt:SetPoint('BOTTOM', panel, 'TOP', xOff, 2 + yOff)
 	end
 end
 
@@ -183,9 +183,7 @@ local function GetOrCreateRow(index)
 	row:SetScript('OnEnter', function(self)
 		CancelHide()
 		if self.memberName then
-			GameTooltip:SetOwner(_G.TooltipMover, 'ANCHOR_NONE')
-			GameTooltip:ClearAllPoints()
-			GameTooltip:SetPoint('BOTTOMLEFT', _G.TooltipMover, 'TOPLEFT', 0, 2)
+			GameTooltip_SetDefaultAnchor(GameTooltip, self)
 			local classc = self.memberClass and E:ClassColor(self.memberClass)
 			if classc then
 				GameTooltip:AddLine(self.memberName, classc.r, classc.g, classc.b)
