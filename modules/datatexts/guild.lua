@@ -171,24 +171,26 @@ local function GetOrCreateRow(index)
 
 	row:SetScript('OnEnter', function(self)
 		CancelHide()
-		if self.memberName and ownerPanel then
-			DT:SetupTooltip(ownerPanel)
+		if self.memberName then
+			GameTooltip:SetOwner(_G.TooltipMover, 'ANCHOR_NONE')
+			GameTooltip:ClearAllPoints()
+			GameTooltip:SetPoint('BOTTOMLEFT', _G.TooltipMover, 'TOPLEFT', 0, 2)
 			local classc = self.memberClass and E:ClassColor(self.memberClass)
 			if classc then
-				DT.tooltip:AddLine(self.memberName, classc.r, classc.g, classc.b)
+				GameTooltip:AddLine(self.memberName, classc.r, classc.g, classc.b)
 			else
-				DT.tooltip:AddLine(self.memberName, 1, 1, 1)
+				GameTooltip:AddLine(self.memberName, 1, 1, 1)
 			end
-			if self.memberRank then DT.tooltip:AddLine(self.memberRank, 0.5, 0.5, 0.5) end
-			DT.tooltip:AddLine(' ')
-			DT.tooltip:AddLine('Left-click: Whisper', 0.7, 0.7, 0.7)
-			DT.tooltip:AddLine('Right-click: Invite', 0.7, 0.7, 0.7)
-			DT.tooltip:Show()
+			if self.memberRank then GameTooltip:AddLine(self.memberRank, 0.5, 0.5, 0.5) end
+			GameTooltip:AddLine(' ')
+			GameTooltip:AddLine('Left-click: Whisper', 0.7, 0.7, 0.7)
+			GameTooltip:AddLine('Right-click: Invite', 0.7, 0.7, 0.7)
+			GameTooltip:Show()
 		end
 	end)
 	row:SetScript('OnLeave', function()
 		ScheduleHide()
-		DT.tooltip:Hide()
+		GameTooltip:Hide()
 	end)
 	row:SetScript('OnClick', function(self, button)
 		if not self.memberName then return end

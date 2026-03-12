@@ -72,7 +72,6 @@ local inactivezone = { r = 0.65, g = 0.65, b = 0.65 }
 local tooltip, headerText
 local rows = {}
 local hideTimer
-local ownerPanel
 
 local function CancelHide()
 	if hideTimer then hideTimer:Cancel(); hideTimer = nil end
@@ -258,36 +257,38 @@ local function GetOrCreateRow(index)
 
 	row:SetScript('OnEnter', function(self)
 		CancelHide()
-		if (self.friendName or self.friendBNetName) and ownerPanel then
-			DT:SetupTooltip(ownerPanel)
+		if self.friendName or self.friendBNetName then
+			GameTooltip:SetOwner(_G.TooltipMover, 'ANCHOR_NONE')
+			GameTooltip:ClearAllPoints()
+			GameTooltip:SetPoint('BOTTOMLEFT', _G.TooltipMover, 'TOPLEFT', 0, 2)
 			local classc = self.friendClass and E:ClassColor(self.friendClass)
 			if self.friendBNetName then
-				DT.tooltip:AddLine(self.friendBNetName, 1, 1, 1)
+				GameTooltip:AddLine(self.friendBNetName, 1, 1, 1)
 				if self.friendName and self.friendName ~= '' then
 					if classc then
-						DT.tooltip:AddLine(self.friendName, classc.r, classc.g, classc.b)
+						GameTooltip:AddLine(self.friendName, classc.r, classc.g, classc.b)
 					else
-						DT.tooltip:AddLine(self.friendName, 0.7, 0.7, 0.7)
+						GameTooltip:AddLine(self.friendName, 0.7, 0.7, 0.7)
 					end
 				end
 			elseif self.friendName then
 				if classc then
-					DT.tooltip:AddLine(self.friendName, classc.r, classc.g, classc.b)
+					GameTooltip:AddLine(self.friendName, classc.r, classc.g, classc.b)
 				else
-					DT.tooltip:AddLine(self.friendName, 1, 1, 1)
+					GameTooltip:AddLine(self.friendName, 1, 1, 1)
 				end
 			end
-			DT.tooltip:AddLine(' ')
-			DT.tooltip:AddLine('Left-click: Whisper', 0.7, 0.7, 0.7)
+			GameTooltip:AddLine(' ')
+			GameTooltip:AddLine('Left-click: Whisper', 0.7, 0.7, 0.7)
 			if self.canInvite then
-				DT.tooltip:AddLine('Right-click: Invite', 0.7, 0.7, 0.7)
+				GameTooltip:AddLine('Right-click: Invite', 0.7, 0.7, 0.7)
 			end
-			DT.tooltip:Show()
+			GameTooltip:Show()
 		end
 	end)
 	row:SetScript('OnLeave', function()
 		ScheduleHide()
-		DT.tooltip:Hide()
+		GameTooltip:Hide()
 	end)
 	row:SetScript('OnClick', function(self, button)
 		if button == 'LeftButton' then
@@ -313,7 +314,6 @@ end
 local function ShowTooltip(panel)
 	CreateTooltip()
 	CancelHide()
-	ownerPanel = panel
 
 	local numberOfFriends = C_FriendList_GetNumFriends()
 	local onlineFriends = C_FriendList_GetNumOnlineFriends() or 0
