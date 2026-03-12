@@ -1230,11 +1230,17 @@ function TUI:BuildConfig()
         )
 
         cdmLayout.hideWhenInactive = ACH:Toggle(
-            E.NewSign .. "Hide When Inactive", "Hide this viewer when no icons are active.",
+            E.NewSign .. "Hide When Inactive", "Hide this viewer when no buff icons are active. Requires a UI reload to apply.",
             8, nil, nil, nil,
             function() return selVDB().hideWhenInactive end,
             function(_, value)
                 selVDB().hideWhenInactive = value
+                if TUI.SetBuffIconEditModeHWI then
+                    local result = TUI:SetBuffIconEditModeHWI(value)
+                    if result == 'applied' then
+                        E:StaticPopup_Show('CONFIG_RL')
+                    end
+                end
                 if TUI.UpdateCDMVisibility then TUI:UpdateCDMVisibility() end
             end
         )

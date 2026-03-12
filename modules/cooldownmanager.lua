@@ -549,6 +549,79 @@ local function HasActiveIcons(viewerKey)
 	return false
 end
 
+-- Edit Mode HWI control via C_EditMode.SaveLayouts
+local function HasEditModeApis()
+	return C_EditMode and C_EditMode.GetLayouts and C_EditMode.SaveLayouts
+		and Enum and Enum.EditModeSystem and Enum.EditModeSystem.CooldownViewer
+		and Enum.EditModeCooldownViewerSystemIndices
+		and Enum.EditModeCooldownViewerSetting
+end
+
+local function GetEditModeLayoutInfo()
+	if not (C_EditMode and C_EditMode.GetLayouts) then return nil end
+	local layoutInfo = C_EditMode.GetLayouts()
+	if type(layoutInfo) ~= 'table' or type(layoutInfo.layouts) ~= 'table' then return nil end
+	if type(layoutInfo.activeLayout) == 'number' and EditModePresetLayoutManager
+		and EditModePresetLayoutManager.GetCopyOfPresetLayouts then
+		local presets = EditModePresetLayoutManager:GetCopyOfPresetLayouts()
+		if type(presets) == 'table' then
+			tAppendAll(presets, layoutInfo.layouts)
+			layoutInfo.layouts = presets
+		end
+	end
+	return layoutInfo
+end
+
+local function GetEditModeActiveLayout(layoutInfo)
+	if type(layoutInfo) ~= 'table' then return nil end
+	local layouts, idx = layoutInfo.layouts, layoutInfo.activeLayout
+	if type(layouts) ~= 'table' or type(idx) ~= 'number' then return nil end
+	local layout = layouts[idx]
+	if type(layout) ~= 'table' or type(layout.systems) ~= 'table' then return nil end
+	return layout
+end
+
+local function UpsertEditModeSetting(settings, settingEnum, value)
+	if type(settings) ~= 'table' then return false end
+	for _, info in ipairs(settings) do
+		if info.setting == settingEnum then
+			if info.value ~= value then
+				info.value = value
+				return true
+			end
+			return false
+		end
+	end
+	settings[#settings + 1] = { setting = settingEnum, value = value }
+	return true
+end
+
+function TUI:SetBuffIconEditModeHWI(enabled)
+	if not HasEditModeApis() then return 'not_ready' end
+	local layoutInfo = GetEditModeLayoutInfo()
+	local activeLayout = GetEditModeActiveLayout(layoutInfo)
+	if not activeLayout then return 'not_ready' end
+
+	local changed = false
+	local cooldownSystem = Enum.EditModeSystem.CooldownViewer
+	local buffIconIndex = Enum.EditModeCooldownViewerSystemIndices.BuffIcon
+	local hwiSetting = Enum.EditModeCooldownViewerSetting.HideWhenInactive
+	local desiredValue = enabled and 1 or 0
+
+	for _, systemInfo in ipairs(activeLayout.systems) do
+		if systemInfo.system == cooldownSystem and systemInfo.systemIndex == buffIconIndex
+			and type(systemInfo.settings) == 'table' then
+			if UpsertEditModeSetting(systemInfo.settings, hwiSetting, desiredValue) then
+				changed = true
+			end
+		end
+	end
+
+	if not changed then return 'noop' end
+	C_EditMode.SaveLayouts(layoutInfo)
+	return 'applied'
+end
+
 local function ShouldShowContainer(viewerKey)
 	local vdb = GetViewerDB(viewerKey)
 	if not vdb then return true end
@@ -602,6 +675,12 @@ function TUI:InitCooldownManager()
 	if not db or not db.enabled then return end
 
 	SetCVar('cooldownViewerEnabled', 1)
+
+	-- Sync Blizzard Edit Mode HWI to match our DB setting
+	local buffDB = GetViewerDB('buffIcon')
+	if buffDB then
+		self:SetBuffIconEditModeHWI(buffDB.hideWhenInactive)
+	end
 
 	C_Timer.After(0, function()
 		for viewerKey in pairs(VIEWER_KEYS) do
