@@ -50,7 +50,7 @@ TUI.conflictDefs = {
 	cooldownManager = {
 		addons     = {
 			{ name = 'Ayije_CDM', label = 'Ayije CDM' },
-			{ name = 'ArcUI_CDM', label = 'ArcUI CDM' },
+			{ name = 'ArcUI', label = 'Arc UI' },
 			{ name = 'BCDM', label = 'BCDM' },
 			{ name = 'CDMCentered', label = 'CDM Centered' },
 		},
