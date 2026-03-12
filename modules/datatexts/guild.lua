@@ -77,21 +77,10 @@ local function AnchorToPanel(tt, panel)
 	end
 end
 
--- Anchor the hover tooltip so it nests against our custom tooltip
-local function AnchorHoverTooltip(hoverTT, customTT, panel)
-	local anchor = GetPanelAnchor(panel)
+-- Anchor the hover tooltip to the side of our custom tooltip
+local function AnchorHoverTooltip(hoverTT, customTT)
 	hoverTT:ClearAllPoints()
-	if anchor == 'ANCHOR_TOP' or anchor == 'ANCHOR_TOPLEFT' or anchor == 'ANCHOR_TOPRIGHT' then
-		hoverTT:SetPoint('BOTTOM', customTT, 'TOP', 0, 2)
-	elseif anchor == 'ANCHOR_BOTTOM' or anchor == 'ANCHOR_BOTTOMLEFT' or anchor == 'ANCHOR_BOTTOMRIGHT' then
-		hoverTT:SetPoint('TOP', customTT, 'BOTTOM', 0, -2)
-	elseif anchor == 'ANCHOR_LEFT' then
-		hoverTT:SetPoint('RIGHT', customTT, 'LEFT', -2, 0)
-	elseif anchor == 'ANCHOR_RIGHT' then
-		hoverTT:SetPoint('LEFT', customTT, 'RIGHT', 2, 0)
-	else
-		hoverTT:SetPoint('BOTTOM', customTT, 'TOP', 0, 2)
-	end
+	hoverTT:SetPoint('TOPLEFT', customTT, 'TOPRIGHT', 2, 0)
 end
 
 local function SortByName(a, b)
@@ -189,7 +178,7 @@ local function GetOrCreateRow(index)
 		CancelHide()
 		if self.memberName and ownerPanel then
 			DT.tooltip:SetOwner(tooltip, 'ANCHOR_NONE')
-			AnchorHoverTooltip(DT.tooltip, tooltip, ownerPanel)
+			AnchorHoverTooltip(DT.tooltip, tooltip)
 			local classc = self.memberClass and E:ClassColor(self.memberClass)
 			if classc then
 				DT.tooltip:AddLine(self.memberName, classc.r, classc.g, classc.b)
