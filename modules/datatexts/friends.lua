@@ -1,4 +1,4 @@
-local E = unpack(ElvUI)
+local E, _, _, _, G = unpack(ElvUI)
 local DT = E:GetModule('DataTexts')
 
 local format, sort, wipe, ipairs, next = format, sort, wipe, ipairs, next
@@ -29,6 +29,7 @@ local friendTable, bnTable = {}, {}
 local clientGroups, clientOrder = {}, {}
 local displayString = ''
 local dataValid = false
+local db
 
 local clientTags = {
 	WoW  = { index = 1,  tag = 'WoW' },
@@ -390,7 +391,8 @@ local function ShowTooltip(panel)
 	-- Section: BNet friends grouped by client
 	for _, client in ipairs(clientOrder) do
 		local group = clientGroups[client]
-		if group and #group > 0 and shown < MAX_ROWS then
+		local skip = db and db.hideMobile and client == 'BSAp'
+		if not skip and group and #group > 0 and shown < MAX_ROWS then
 			-- Section header
 			shown = shown + 1
 			local hdr = GetOrCreateRow(shown)
@@ -492,7 +494,8 @@ local function OnEvent(panel, event, arg1)
 
 	dataValid = false
 
-	panel.text:SetFormattedText(displayString, FRIENDS .. ': ', onlineFriends + numBNetOnline)
+	local label = db and db.Label ~= '' and db.Label or FRIENDS
+	panel.text:SetFormattedText(displayString, label .. ': ', onlineFriends + numBNetOnline)
 end
 
 local function OnClick(_, btn)
@@ -501,8 +504,18 @@ local function OnClick(_, btn)
 	end
 end
 
-local function ApplySettings(_, hex)
-	displayString = '%s' .. hex .. '%d|r'
+local function ApplySettings(panel, hex)
+	if not db then
+		db = E.global.datatexts.settings[panel.name]
+	end
+	displayString = (db.NoLabel and '' or '%s') .. hex .. '%d|r'
 end
 
 DT:RegisterDatatext('TUI Friends', _G.SOCIAL_LABEL, { 'BN_FRIEND_ACCOUNT_ONLINE', 'BN_FRIEND_ACCOUNT_OFFLINE', 'BN_FRIEND_INFO_CHANGED', 'FRIENDLIST_UPDATE', 'CHAT_MSG_SYSTEM' }, OnEvent, nil, OnClick, OnEnter, OnLeave, 'TUI Friends', nil, ApplySettings)
+
+-- Seed global settings defaults and colorize dropdown entry
+local defaults = G.datatexts.settings['TUI Friends']
+defaults.Label = ''
+defaults.NoLabel = false
+defaults.hideMobile = false
+DT.DataTextList['TUI Friends'] = E:TextGradient('TUI Friends', 1.00,0.18,0.24, 0.80,0.10,0.20)

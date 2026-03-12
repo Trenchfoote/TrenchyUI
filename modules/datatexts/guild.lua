@@ -1,4 +1,4 @@
-local E = unpack(ElvUI)
+local E, _, _, _, G = unpack(ElvUI)
 local DT = E:GetModule('DataTexts')
 
 local format, sort, wipe, ipairs = format, sort, wipe, ipairs
@@ -18,6 +18,7 @@ local GUILD = GUILD
 local guildTable = {}
 local displayString = ''
 local dataValid = false
+local db
 
 local ROW_HEIGHT = 16
 local ROW_PAD = 2
@@ -237,7 +238,7 @@ local function ShowTooltip(panel)
 
 	local motd = GetGuildRosterMOTD()
 	local contentTop
-	if motd and motd ~= '' and E:NotSecretValue(motd) then
+	if not (db and db.hideMOTD) and motd and motd ~= '' and E:NotSecretValue(motd) then
 		motdText:SetText(motd)
 		motdText:Show()
 		contentTop = motdText
@@ -342,7 +343,8 @@ local function OnEvent(panel, event, ...)
 			C_GuildInfo_GuildRoster()
 		end
 
-		panel.text:SetFormattedText(displayString, GUILD .. ': ', #guildTable)
+		local label = db and db.Label ~= '' and db.Label or GUILD
+		panel.text:SetFormattedText(displayString, label .. ': ', #guildTable)
 	else
 		panel.text:SetText(displayString)
 	end
@@ -354,8 +356,18 @@ local function OnClick(panel, btn)
 	end
 end
 
-local function ApplySettings(_, hex)
-	displayString = '%s' .. hex .. '%d|r'
+local function ApplySettings(panel, hex)
+	if not db then
+		db = E.global.datatexts.settings[panel.name]
+	end
+	displayString = (db.NoLabel and '' or '%s') .. hex .. '%d|r'
 end
 
 DT:RegisterDatatext('TUI Guild', _G.SOCIAL_LABEL, { 'GUILD_ROSTER_UPDATE', 'PLAYER_GUILD_UPDATE', 'PLAYER_ENTERING_WORLD' }, OnEvent, nil, OnClick, OnEnter, OnLeave, 'TUI Guild', nil, ApplySettings)
+
+-- Seed global settings defaults and colorize dropdown entry
+local defaults = G.datatexts.settings['TUI Guild']
+defaults.Label = ''
+defaults.NoLabel = false
+defaults.hideMOTD = false
+DT.DataTextList['TUI Guild'] = E:TextGradient('TUI Guild', 1.00,0.18,0.24, 0.80,0.10,0.20)

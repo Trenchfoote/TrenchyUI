@@ -1687,6 +1687,26 @@ function TUI:BuildConfig()
         E:StaticPopup_Show('CONFIG_RL')
     end, nil, nil, nil, nil, nil, addonDisabled('ls_Toasts'))
 
+    -- Inject TUI datatext options into ElvUI's Customization tab
+    do
+        local dtSettings = E.Options.args.datatexts.args.settings.args
+        local tuiGradient = function(text) return E:TextGradient(text, 1.00,0.18,0.24, 0.80,0.10,0.20) end
+
+        -- TUI Guild
+        local guildOpts = dtSettings['TUI Guild']
+        if guildOpts then
+            guildOpts.name = tuiGradient('TUI Guild')
+            guildOpts.args.hideMOTD = ACH:Toggle('Hide MOTD', 'Hide the guild Message of the Day in the tooltip.', 10)
+        end
+
+        -- TUI Friends
+        local friendsOpts = dtSettings['TUI Friends']
+        if friendsOpts then
+            friendsOpts.name = tuiGradient('TUI Friends')
+            friendsOpts.args.hideMobile = ACH:Toggle('Hide Mobile', 'Hide friends on the Battle.net Mobile app.', 10)
+        end
+    end
+
     root.info = ACH:Group("Information", nil, 7)
     local info = root.info.args
 
