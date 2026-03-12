@@ -94,7 +94,7 @@ local function BuildGuildTable()
 	wipe(guildTable)
 	local totalMembers = GetNumGuildMembers()
 	for i = 1, totalMembers do
-		local name, rank, rankIndex, level, _, zone, note, officerNote, connected, memberstatus, className, _, _, isMobile, _, _, guid = GetGuildRosterInfo(i)
+		local name, rank, rankIndex, level, _, zone, _, _, connected, memberstatus, className, _, _, isMobile, _, _, guid = GetGuildRosterInfo(i)
 		if not name then break end
 		if connected or isMobile then
 			guildTable[#guildTable + 1] = {
@@ -113,6 +113,11 @@ local function BuildGuildTable()
 	end
 end
 
+local function GetDTFont()
+	local dtDB = E.db.datatexts
+	return dtDB.font, dtDB.fontSize, dtDB.fontOutline
+end
+
 local function CreateTooltip()
 	if tooltip then return end
 
@@ -125,16 +130,18 @@ local function CreateTooltip()
 	tooltip:SetScript('OnEnter', CancelHide)
 	tooltip:SetScript('OnLeave', ScheduleHide)
 
+	local font, fontSize = GetDTFont()
+
 	headerText = tooltip:CreateFontString(nil, 'OVERLAY')
 	headerText:SetPoint('TOPLEFT', tooltip, 'TOPLEFT', TOOLTIP_PAD, -TOOLTIP_PAD)
 	headerText:SetPoint('TOPRIGHT', tooltip, 'TOPRIGHT', -TOOLTIP_PAD, -TOOLTIP_PAD)
-	headerText:FontTemplate(nil, 13, 'OUTLINE')
+	headerText:FontTemplate(font, fontSize + 2, 'OUTLINE')
 	headerText:SetJustifyH('LEFT')
 
 	motdText = tooltip:CreateFontString(nil, 'OVERLAY')
 	motdText:SetPoint('TOPLEFT', headerText, 'BOTTOMLEFT', 0, -4)
 	motdText:SetPoint('RIGHT', tooltip, 'RIGHT', -TOOLTIP_PAD, 0)
-	motdText:FontTemplate(nil, 11, 'NONE')
+	motdText:FontTemplate(font, fontSize, 'NONE')
 	motdText:SetJustifyH('LEFT')
 	motdText:SetWordWrap(true)
 	motdText:SetTextColor(0.75, 0.9, 1)
@@ -145,25 +152,27 @@ local function GetOrCreateRow(index)
 
 	CreateTooltip()
 
+	local font, fontSize, fontOutline = GetDTFont()
+
 	local row = CreateFrame('Button', nil, tooltip)
 	row:SetHeight(ROW_HEIGHT)
 
 	row.level = row:CreateFontString(nil, 'OVERLAY')
 	row.level:SetPoint('LEFT', row, 'LEFT', 0, 0)
 	row.level:SetWidth(28)
-	row.level:FontTemplate(nil, 11, 'OUTLINE')
+	row.level:FontTemplate(font, fontSize, fontOutline)
 	row.level:SetJustifyH('RIGHT')
 
 	row.name = row:CreateFontString(nil, 'OVERLAY')
 	row.name:SetPoint('LEFT', row.level, 'RIGHT', 4, 0)
 	row.name:SetWidth(140)
-	row.name:FontTemplate(nil, 11, 'OUTLINE')
+	row.name:FontTemplate(font, fontSize, fontOutline)
 	row.name:SetJustifyH('LEFT')
 
 	row.zone = row:CreateFontString(nil, 'OVERLAY')
 	row.zone:SetPoint('RIGHT', row, 'RIGHT', 0, 0)
 	row.zone:SetWidth(130)
-	row.zone:FontTemplate(nil, 11, 'OUTLINE')
+	row.zone:FontTemplate(font, fontSize, fontOutline)
 	row.zone:SetJustifyH('RIGHT')
 
 	row.highlight = row:CreateTexture(nil, 'HIGHLIGHT')
@@ -225,9 +234,8 @@ local function ShowTooltip(panel)
 		sort(guildTable, SortByName)
 	end
 
-	local total, _, online = GetNumGuildMembers()
-	if not online then online = 0 end
-	if not total then total = 0 end
+	local total = GetNumGuildMembers() or 0
+	local online = #guildTable
 
 	local guildName = GetGuildInfo('player')
 	if guildName then
@@ -333,6 +341,10 @@ end
 
 local function OnEvent(panel, event, ...)
 	if IsInGuild() then
+		if event == 'PLAYER_ENTERING_WORLD' then
+			C_GuildInfo_GuildRoster()
+		end
+
 		if event == 'GUILD_ROSTER_UPDATE' or event == 'PLAYER_ENTERING_WORLD' then
 			dataValid = false
 			BuildGuildTable()
@@ -343,8 +355,12 @@ local function OnEvent(panel, event, ...)
 			C_GuildInfo_GuildRoster()
 		end
 
-		local label = db and db.Label ~= '' and db.Label or GUILD
-		panel.text:SetFormattedText(displayString, label .. ': ', #guildTable)
+		if db and db.NoLabel then
+			panel.text:SetFormattedText(displayString, #guildTable)
+		else
+			local label = db and db.Label ~= '' and db.Label or GUILD
+			panel.text:SetFormattedText(displayString, label .. ': ', #guildTable)
+		end
 	else
 		panel.text:SetText(displayString)
 	end

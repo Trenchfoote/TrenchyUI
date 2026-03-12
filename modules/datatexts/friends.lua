@@ -207,6 +207,11 @@ local function BuildBNTable(total)
 	end
 end
 
+local function GetDTFont()
+	local dtDB = E.db.datatexts
+	return dtDB.font, dtDB.fontSize, dtDB.fontOutline
+end
+
 local function CreateTooltip()
 	if tooltip then return end
 
@@ -219,10 +224,12 @@ local function CreateTooltip()
 	tooltip:SetScript('OnEnter', CancelHide)
 	tooltip:SetScript('OnLeave', ScheduleHide)
 
+	local font, fontSize = GetDTFont()
+
 	headerText = tooltip:CreateFontString(nil, 'OVERLAY')
 	headerText:SetPoint('TOPLEFT', tooltip, 'TOPLEFT', TOOLTIP_PAD, -TOOLTIP_PAD)
 	headerText:SetPoint('TOPRIGHT', tooltip, 'TOPRIGHT', -TOOLTIP_PAD, -TOOLTIP_PAD)
-	headerText:FontTemplate(nil, 13, 'OUTLINE')
+	headerText:FontTemplate(font, fontSize + 2, 'OUTLINE')
 	headerText:SetJustifyH('LEFT')
 end
 
@@ -231,25 +238,27 @@ local function GetOrCreateRow(index)
 
 	CreateTooltip()
 
+	local font, fontSize, fontOutline = GetDTFont()
+
 	local row = CreateFrame('Button', nil, tooltip)
 	row:SetHeight(ROW_HEIGHT)
 
 	row.level = row:CreateFontString(nil, 'OVERLAY')
 	row.level:SetPoint('LEFT', row, 'LEFT', 0, 0)
 	row.level:SetWidth(28)
-	row.level:FontTemplate(nil, 11, 'OUTLINE')
+	row.level:FontTemplate(font, fontSize, fontOutline)
 	row.level:SetJustifyH('RIGHT')
 
 	row.name = row:CreateFontString(nil, 'OVERLAY')
 	row.name:SetPoint('LEFT', row.level, 'RIGHT', 4, 0)
 	row.name:SetWidth(160)
-	row.name:FontTemplate(nil, 11, 'OUTLINE')
+	row.name:FontTemplate(font, fontSize, fontOutline)
 	row.name:SetJustifyH('LEFT')
 
 	row.zone = row:CreateFontString(nil, 'OVERLAY')
 	row.zone:SetPoint('RIGHT', row, 'RIGHT', 0, 0)
 	row.zone:SetWidth(130)
-	row.zone:FontTemplate(nil, 11, 'OUTLINE')
+	row.zone:FontTemplate(font, fontSize, fontOutline)
 	row.zone:SetJustifyH('RIGHT')
 
 	row.highlight = row:CreateTexture(nil, 'HIGHLIGHT')
@@ -494,8 +503,12 @@ local function OnEvent(panel, event, arg1)
 
 	dataValid = false
 
-	local label = db and db.Label ~= '' and db.Label or FRIENDS
-	panel.text:SetFormattedText(displayString, label .. ': ', onlineFriends + numBNetOnline)
+	if db and db.NoLabel then
+		panel.text:SetFormattedText(displayString, onlineFriends + numBNetOnline)
+	else
+		local label = db and db.Label ~= '' and db.Label or FRIENDS
+		panel.text:SetFormattedText(displayString, label .. ': ', onlineFriends + numBNetOnline)
+	end
 end
 
 local function OnClick(_, btn)
