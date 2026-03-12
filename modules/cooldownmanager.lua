@@ -550,41 +550,17 @@ local function ShouldShowContainer(viewerKey)
 	return true
 end
 
-local VIS_TO_ENUM
-
-local function GetVisEnum(key)
-	if not VIS_TO_ENUM then
-		local e = Enum.CooldownViewerVisibleSetting
-		if not e then return nil end
-		VIS_TO_ENUM = { ALWAYS = e.Always, INCOMBAT = e.InCombat, HIDDEN = e.Hidden }
-	end
-	return VIS_TO_ENUM[key]
-end
-
 function TUI:UpdateCDMVisibility()
 	local db = GetDB()
 	if not db or not db.enabled then return end
 
 	for viewerKey in pairs(VIEWER_KEYS) do
-		local vdb = GetViewerDB(viewerKey)
-		local viewer = GetViewer(viewerKey)
-
-		-- Sync our settings to the Blizzard viewer
-		if viewer and vdb then
-			if viewer.SetHideWhenInactive then
-				viewer:SetHideWhenInactive(vdb.hideWhenInactive or false)
-			end
-			local enumVal = GetVisEnum(vdb.visibleSetting or 'ALWAYS')
-			if enumVal then
-				viewer.visibleSetting = enumVal
-			end
-		end
-
 		local show = ShouldShowContainer(viewerKey)
 		local container = containers[viewerKey]
 		if container then
 			container:SetShown(show)
 		end
+		local viewer = GetViewer(viewerKey)
 		if viewer then
 			viewer:SetShown(show)
 		end
