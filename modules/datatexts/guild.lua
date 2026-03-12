@@ -17,7 +17,6 @@ local GUILD = GUILD
 
 local guildTable = {}
 local displayString = ''
-local dataValid = false
 local db
 
 local ROW_HEIGHT = 16
@@ -114,8 +113,10 @@ local function BuildGuildTable()
 end
 
 local function GetDTFont()
-	local dtDB = E.db.datatexts
-	return E.LSM:Fetch('font', dtDB.font), dtDB.fontSize, dtDB.fontOutline
+	if db then
+		return E.LSM:Fetch('font', db.tooltipFont), db.tooltipFontSize, db.tooltipFontOutline
+	end
+	return E.media.normFont, 11, 'OUTLINE'
 end
 
 local function CreateTooltip()
@@ -222,10 +223,7 @@ local function ShowTooltip(panel)
 	ownerPanel = panel
 
 	if not IsInGuild() then return end
-	if not dataValid then
-		BuildGuildTable()
-		dataValid = true
-	end
+	BuildGuildTable()
 
 	local shiftDown = IsShiftKeyDown()
 	if shiftDown then
@@ -346,7 +344,6 @@ local function OnEvent(panel, event, ...)
 		end
 
 		if event == 'GUILD_ROSTER_UPDATE' or event == 'PLAYER_ENTERING_WORLD' then
-			dataValid = false
 			BuildGuildTable()
 			if tooltip and tooltip:IsShown() and ownerPanel then
 				ShowTooltip(ownerPanel)
@@ -386,4 +383,7 @@ local defaults = G.datatexts.settings['TUI Guild']
 defaults.Label = ''
 defaults.NoLabel = false
 defaults.hideMOTD = false
+defaults.tooltipFont = 'Expressway'
+defaults.tooltipFontSize = 11
+defaults.tooltipFontOutline = 'OUTLINE'
 DT.DataTextList['TUI Guild'] = E:TextGradient('TUI Guild', 1.00,0.18,0.24, 0.80,0.10,0.20)

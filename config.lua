@@ -1692,11 +1692,30 @@ function TUI:BuildConfig()
         local dtSettings = E.Options.args.datatexts.args.settings.args
         local tuiGradient = function(text) return E:TextGradient(text, 1.00,0.18,0.24, 0.80,0.10,0.20) end
 
+        local function dtGet(name, key)
+            return E.global.datatexts.settings[name][key]
+        end
+        local function dtSet(name, key, value)
+            E.global.datatexts.settings[name][key] = value
+        end
+
         -- TUI Guild
         local guildOpts = dtSettings['TUI Guild']
         if guildOpts then
             guildOpts.name = tuiGradient('TUI Guild')
             guildOpts.args.hideMOTD = ACH:Toggle('Hide MOTD', 'Hide the guild Message of the Day in the tooltip.', 10)
+            guildOpts.args.tooltipFontGroup = ACH:Group('Tooltip Font', nil, 20)
+            guildOpts.args.tooltipFontGroup.inline = true
+            local gf = guildOpts.args.tooltipFontGroup.args
+            gf.tooltipFont = ACH:SharedMediaFont('Font', nil, 1, nil,
+                function() return dtGet('TUI Guild', 'tooltipFont') end,
+                function(_, value) dtSet('TUI Guild', 'tooltipFont', value) end)
+            gf.tooltipFontSize = ACH:Range('Size', nil, 2, { min = 6, max = 22, step = 1 }, nil,
+                function() return dtGet('TUI Guild', 'tooltipFontSize') end,
+                function(_, value) dtSet('TUI Guild', 'tooltipFontSize', value) end)
+            gf.tooltipFontOutline = ACH:FontFlags('Outline', nil, 3, nil,
+                function() return dtGet('TUI Guild', 'tooltipFontOutline') end,
+                function(_, value) dtSet('TUI Guild', 'tooltipFontOutline', value) end)
         end
 
         -- TUI Friends
@@ -1704,6 +1723,18 @@ function TUI:BuildConfig()
         if friendsOpts then
             friendsOpts.name = tuiGradient('TUI Friends')
             friendsOpts.args.hideMobile = ACH:Toggle('Hide Mobile', 'Hide friends on the Battle.net Mobile app.', 10)
+            friendsOpts.args.tooltipFontGroup = ACH:Group('Tooltip Font', nil, 20)
+            friendsOpts.args.tooltipFontGroup.inline = true
+            local ff = friendsOpts.args.tooltipFontGroup.args
+            ff.tooltipFont = ACH:SharedMediaFont('Font', nil, 1, nil,
+                function() return dtGet('TUI Friends', 'tooltipFont') end,
+                function(_, value) dtSet('TUI Friends', 'tooltipFont', value) end)
+            ff.tooltipFontSize = ACH:Range('Size', nil, 2, { min = 6, max = 22, step = 1 }, nil,
+                function() return dtGet('TUI Friends', 'tooltipFontSize') end,
+                function(_, value) dtSet('TUI Friends', 'tooltipFontSize', value) end)
+            ff.tooltipFontOutline = ACH:FontFlags('Outline', nil, 3, nil,
+                function() return dtGet('TUI Friends', 'tooltipFontOutline') end,
+                function(_, value) dtSet('TUI Friends', 'tooltipFontOutline', value) end)
         end
     end
 

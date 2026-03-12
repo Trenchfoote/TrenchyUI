@@ -28,7 +28,6 @@ local battleNetString = _G.BATTLENET_OPTIONS_LABEL
 local friendTable, bnTable = {}, {}
 local clientGroups, clientOrder = {}, {}
 local displayString = ''
-local dataValid = false
 local db
 
 local clientTags = {
@@ -73,6 +72,7 @@ local inactivezone = { r = 0.65, g = 0.65, b = 0.65 }
 local tooltip, headerText
 local rows = {}
 local hideTimer
+local ownerPanel
 
 local function CancelHide()
 	if hideTimer then hideTimer:Cancel(); hideTimer = nil end
@@ -208,8 +208,10 @@ local function BuildBNTable(total)
 end
 
 local function GetDTFont()
-	local dtDB = E.db.datatexts
-	return E.LSM:Fetch('font', dtDB.font), dtDB.fontSize, dtDB.fontOutline
+	if db then
+		return E.LSM:Fetch('font', db.tooltipFont), db.tooltipFontSize, db.tooltipFontOutline
+	end
+	return E.media.normFont, 11, 'OUTLINE'
 end
 
 local function CreateTooltip()
@@ -324,6 +326,7 @@ end
 local function ShowTooltip(panel)
 	CreateTooltip()
 	CancelHide()
+	ownerPanel = panel
 
 	local numberOfFriends = C_FriendList_GetNumFriends()
 	local onlineFriends = C_FriendList_GetNumOnlineFriends() or 0
@@ -333,11 +336,8 @@ local function ShowTooltip(panel)
 
 	if totalOnline == 0 then return end
 
-	if not dataValid then
-		if numberOfFriends > 0 then BuildFriendTable(numberOfFriends) end
-		if totalBNet > 0 and BNConnected() then BuildBNTable(totalBNet) end
-		dataValid = true
-	end
+	if numberOfFriends > 0 then BuildFriendTable(numberOfFriends) end
+	if totalBNet and totalBNet > 0 and BNConnected() then BuildBNTable(totalBNet) end
 
 	headerText:SetText(format('%s  |cff999999Online: %d|r', FRIENDS, totalOnline))
 
@@ -493,15 +493,21 @@ local function OnLeave()
 end
 
 local function OnEvent(panel, event, arg1)
-	local onlineFriends = C_FriendList_GetNumOnlineFriends() or 0
-	local _, numBNetOnline = BNGetNumFriends()
-	numBNetOnline = numBNetOnline or 0
+	if event == 'PLAYER_ENTERING_WORLD' then
+		C_FriendList.ShowFriends()
+	end
 
 	if event == 'CHAT_MSG_SYSTEM' then
 		if E:IsSecretValue(arg1) then return end
 	end
 
-	dataValid = false
+	local onlineFriends = C_FriendList_GetNumOnlineFriends() or 0
+	local _, numBNetOnline = BNGetNumFriends()
+	numBNetOnline = numBNetOnline or 0
+
+	if tooltip and tooltip:IsShown() and ownerPanel then
+		ShowTooltip(ownerPanel)
+	end
 
 	if db and db.NoLabel then
 		panel.text:SetFormattedText(displayString, onlineFriends + numBNetOnline)
@@ -524,11 +530,14 @@ local function ApplySettings(panel, hex)
 	displayString = (db.NoLabel and '' or '%s') .. hex .. '%d|r'
 end
 
-DT:RegisterDatatext('TUI Friends', _G.SOCIAL_LABEL, { 'BN_FRIEND_ACCOUNT_ONLINE', 'BN_FRIEND_ACCOUNT_OFFLINE', 'BN_FRIEND_INFO_CHANGED', 'FRIENDLIST_UPDATE', 'CHAT_MSG_SYSTEM' }, OnEvent, nil, OnClick, OnEnter, OnLeave, 'TUI Friends', nil, ApplySettings)
+DT:RegisterDatatext('TUI Friends', _G.SOCIAL_LABEL, { 'BN_FRIEND_ACCOUNT_ONLINE', 'BN_FRIEND_ACCOUNT_OFFLINE', 'BN_FRIEND_INFO_CHANGED', 'FRIENDLIST_UPDATE', 'CHAT_MSG_SYSTEM', 'PLAYER_ENTERING_WORLD' }, OnEvent, nil, OnClick, OnEnter, OnLeave, 'TUI Friends', nil, ApplySettings)
 
 -- Seed global settings defaults and colorize dropdown entry
 local defaults = G.datatexts.settings['TUI Friends']
 defaults.Label = ''
 defaults.NoLabel = false
 defaults.hideMobile = false
+defaults.tooltipFont = 'Expressway'
+defaults.tooltipFontSize = 11
+defaults.tooltipFontOutline = 'OUTLINE'
 DT.DataTextList['TUI Friends'] = E:TextGradient('TUI Friends', 1.00,0.18,0.24, 0.80,0.10,0.20)
