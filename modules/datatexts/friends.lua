@@ -1,7 +1,7 @@
 local E, _, _, _, G = unpack(ElvUI)
 local DT = E:GetModule('DataTexts')
 
-local format, sort, wipe, ipairs, next = format, sort, wipe, ipairs, next
+local format, sort, wipe, ipairs, next, gsub, strfind = format, sort, wipe, ipairs, next, gsub, strfind
 local BNConnected = BNConnected
 local BNGetNumFriends = BNGetNumFriends
 local GetQuestDifficultyColor = GetQuestDifficultyColor
@@ -16,10 +16,12 @@ local BNet_GetValidatedCharacterName = BNet_GetValidatedCharacterName
 local C_FriendList_GetNumFriends = C_FriendList.GetNumFriends
 local C_FriendList_GetNumOnlineFriends = C_FriendList.GetNumOnlineFriends
 local C_FriendList_GetFriendInfoByIndex = C_FriendList.GetFriendInfoByIndex
+local C_FriendList_ShowFriends = C_FriendList.ShowFriends
 local C_PartyInfo_InviteUnit = C_PartyInfo.InviteUnit
 local ChatFrame_SendBNetTell = (ChatFrameUtil and ChatFrameUtil.SendBNetTell) or ChatFrame_SendBNetTell
 local BNInviteFriend = BNInviteFriend
 
+local friendOnline, friendOffline = gsub(_G.ERR_FRIEND_ONLINE_SS, '|Hplayer:%%s|h%[%%s%]|h', ''), gsub(_G.ERR_FRIEND_OFFLINE_S, '%%s', '')
 local FRIENDS = _G.FRIENDS
 local WOW_PROJECT_ID = WOW_PROJECT_ID
 local wowString = _G.BNET_CLIENT_WOW
@@ -28,8 +30,6 @@ local battleNetString = _G.BATTLENET_OPTIONS_LABEL
 local friendTable, bnTable = {}, {}
 local clientGroups, clientOrder = {}, {}
 local displayString = ''
-local dataValid = false
-local isBNOnline = false
 local db
 
 local clientTags = {
@@ -103,20 +103,22 @@ local function AnchorToPanel(tt, panel)
 	local anchor, xOff, yOff = GetPanelAnchor(panel)
 	tt:ClearAllPoints()
 	if anchor == 'ANCHOR_TOP' or anchor == 'ANCHOR_TOPLEFT' or anchor == 'ANCHOR_TOPRIGHT' then
-		tt:SetPoint('BOTTOM', panel, 'TOP', xOff, 4 + yOff)
+		tt:SetPoint('BOTTOM', panel, 'TOP', xOff, 2 + yOff)
 	elseif anchor == 'ANCHOR_BOTTOM' or anchor == 'ANCHOR_BOTTOMLEFT' or anchor == 'ANCHOR_BOTTOMRIGHT' then
-		tt:SetPoint('TOP', panel, 'BOTTOM', xOff, -4 + yOff)
+		tt:SetPoint('TOP', panel, 'BOTTOM', xOff, -2 + yOff)
 	elseif anchor == 'ANCHOR_LEFT' then
-		tt:SetPoint('RIGHT', panel, 'LEFT', -4 + xOff, yOff)
+		tt:SetPoint('RIGHT', panel, 'LEFT', -2 + xOff, yOff)
 	elseif anchor == 'ANCHOR_RIGHT' then
-		tt:SetPoint('LEFT', panel, 'RIGHT', 4 + xOff, yOff)
+		tt:SetPoint('LEFT', panel, 'RIGHT', 2 + xOff, yOff)
 	else
-		tt:SetPoint('BOTTOM', panel, 'TOP', xOff, 4 + yOff)
+		tt:SetPoint('BOTTOM', panel, 'TOP', xOff, 2 + yOff)
 	end
 end
 
 
 local function BuildFriendTable(total)
+	if total <= 0 then wipe(friendTable); return end
+	if not C_FriendList_GetFriendInfoByIndex(1) then return end
 	wipe(friendTable)
 	for i = 1, total do
 		local info = C_FriendList_GetFriendInfoByIndex(i)
@@ -149,8 +151,10 @@ local function BNSortFunc(a, b)
 end
 
 local function BuildBNTable(total)
+	if total <= 0 then wipe(bnTable); wipe(clientGroups); wipe(clientOrder); return end
+	if not GetFriendAccountInfo(1) then return end
 	wipe(bnTable)
-	for _, v in next, clientGroups do wipe(v) end
+	wipe(clientGroups)
 	wipe(clientOrder)
 
 	for i = 1, total do
@@ -271,9 +275,7 @@ local function GetOrCreateRow(index)
 	row:SetScript('OnEnter', function(self)
 		CancelHide()
 		if self.friendName or self.friendBNetName then
-			GameTooltip:SetOwner(_G.TooltipMover, 'ANCHOR_NONE')
-			GameTooltip:ClearAllPoints()
-			GameTooltip:SetPoint('BOTTOMLEFT', _G.TooltipMover, 'TOPLEFT', 0, 2)
+			GameTooltip_SetDefaultAnchor(GameTooltip, self)
 			local classc = self.friendClass and E:ClassColor(self.friendClass)
 			if self.friendBNetName then
 				GameTooltip:AddLine(self.friendBNetName, 1, 1, 1)
@@ -338,20 +340,16 @@ end
 local function ShowTooltip(panel)
 	CreateTooltip()
 	CancelHide()
+	C_FriendList_ShowFriends()
 
-	local numberOfFriends = C_FriendList_GetNumFriends()
-	local onlineFriends = C_FriendList_GetNumOnlineFriends() or 0
-	local totalBNet, numBNetOnline = BNGetNumFriends()
-	numBNetOnline = numBNetOnline or 0
-	local totalOnline = onlineFriends + numBNetOnline
+	local numberOfFriends = C_FriendList_GetNumFriends() or 0
+	local totalBNet = BNGetNumFriends() or 0
 
+	BuildFriendTable(numberOfFriends)
+	if BNConnected() then BuildBNTable(totalBNet) end
+
+	local totalOnline = #friendTable + #bnTable
 	if totalOnline == 0 then return end
-
-	if not dataValid then
-		if numberOfFriends > 0 then BuildFriendTable(numberOfFriends) end
-		if totalBNet and totalBNet > 0 and isBNOnline then BuildBNTable(totalBNet) end
-		dataValid = true
-	end
 
 	ApplyFonts()
 
@@ -509,16 +507,17 @@ local function OnLeave()
 end
 
 local function OnEvent(panel, event, arg1)
+	if event == 'PLAYER_ENTERING_WORLD' then
+		C_FriendList_ShowFriends()
+	end
+
 	local onlineFriends = C_FriendList_GetNumOnlineFriends() or 0
 	local _, numBNetOnline = BNGetNumFriends()
 	numBNetOnline = numBNetOnline or 0
-	isBNOnline = BNConnected()
 
 	if event == 'CHAT_MSG_SYSTEM' then
-		if E:IsSecretValue(arg1) then return end
+		if E:IsSecretValue(arg1) or (not strfind(arg1, friendOnline) and not strfind(arg1, friendOffline)) then return end
 	end
-
-	dataValid = false
 
 	if db and db.NoLabel then
 		panel.text:SetFormattedText(displayString, onlineFriends + numBNetOnline)
@@ -541,7 +540,7 @@ local function ApplySettings(panel, hex)
 	displayString = (db.NoLabel and '' or '%s') .. hex .. '%d|r'
 end
 
-DT:RegisterDatatext('TUI Friends', _G.SOCIAL_LABEL, { 'BN_FRIEND_ACCOUNT_ONLINE', 'BN_FRIEND_ACCOUNT_OFFLINE', 'BN_FRIEND_INFO_CHANGED', 'FRIENDLIST_UPDATE', 'CHAT_MSG_SYSTEM' }, OnEvent, nil, OnClick, OnEnter, OnLeave, 'TUI Friends', nil, ApplySettings)
+DT:RegisterDatatext('TUI Friends', _G.SOCIAL_LABEL, { 'BN_FRIEND_ACCOUNT_ONLINE', 'BN_FRIEND_ACCOUNT_OFFLINE', 'BN_FRIEND_INFO_CHANGED', 'FRIENDLIST_UPDATE', 'CHAT_MSG_SYSTEM', 'PLAYER_ENTERING_WORLD' }, OnEvent, nil, OnClick, OnEnter, OnLeave, 'TUI Friends', nil, ApplySettings)
 
 -- Seed global settings defaults and colorize dropdown entry
 local defaults = G.datatexts.settings['TUI Friends']
