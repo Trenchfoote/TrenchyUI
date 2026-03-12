@@ -179,7 +179,7 @@ do -- Interrupt Spell Detection (adapted from mMediaTag with permission from Bli
 		activeCastbars[castbar] = nil
 	end
 
-	local function ApplyInterruptColor(castbar, notInt, isReady)
+	local function ApplyInterruptColor(castbar, isNotInt, isReady)
 		local db = TUI.db.profile.nameplates
 		local readyC = db.castbarInterruptReady
 		local onCDC = db.castbarInterruptOnCD
@@ -190,14 +190,14 @@ do -- Interrupt Spell Detection (adapted from mMediaTag with permission from Bli
 
 		local noIntC = NP.db.colors.castNoInterruptColor
 		castbar:SetStatusBarColor(
-			EvalColorBool(notInt, noIntC.r, iR),
-			EvalColorBool(notInt, noIntC.g, iG),
-			EvalColorBool(notInt, noIntC.b, iB)
+			EvalColorBool(isNotInt, noIntC.r, iR),
+			EvalColorBool(isNotInt, noIntC.g, iG),
+			EvalColorBool(isNotInt, noIntC.b, iB)
 		)
 
 		if castbar.TUI_CDClipper then
 			local showAlpha = EvalColorBool(isReady, 0, 1)
-			castbar.TUI_CDClipper:SetAlpha(EvalColorBool(notInt, 0, showAlpha))
+			castbar.TUI_CDClipper:SetAlpha(EvalColorBool(isNotInt, 0, showAlpha))
 		end
 	end
 
@@ -213,7 +213,7 @@ do -- Interrupt Spell Detection (adapted from mMediaTag with permission from Bli
 				-- Immediately apply on-CD color so ElvUI can't override before next tick
 				if cdDuration then
 					local isReady = cdDuration:IsZero()
-					ApplyInterruptColor(cb, cb.notInterruptible, isReady)
+					ApplyInterruptColor(cb, cb.notInterruptible == true, isReady)
 				end
 			end
 		end
@@ -250,10 +250,10 @@ do -- Interrupt Spell Detection (adapted from mMediaTag with permission from Bli
 		local function PlaceMarker(castbar, unit)
 			local cdDuration = C_Spell_GetSpellCooldownDuration(currentInterrupt)
 			local isReady = cdDuration:IsZero()
-			local notInt = castbar.notInterruptible
+			local isNotInt = castbar.notInterruptible == true
 
 			local markerAlpha = EvalColorBool(isReady, 0, 1)
-			markerAlpha = EvalColorBool(notInt, 0, markerAlpha)
+			markerAlpha = EvalColorBool(isNotInt, 0, markerAlpha)
 
 			local castDuration = UnitCastingDuration(unit) or UnitChannelDuration(unit)
 			if not castDuration then
@@ -291,9 +291,9 @@ do -- Interrupt Spell Detection (adapted from mMediaTag with permission from Bli
 			if not castbar.TUI_CDClipper then return end
 			local cdDuration = C_Spell_GetSpellCooldownDuration(currentInterrupt)
 			local isReady = cdDuration:IsZero()
-			local notInt = castbar.notInterruptible
+			local isNotInt = castbar.notInterruptible == true
 			local showAlpha = EvalColorBool(isReady, 0, 1)
-			castbar.TUI_CDClipper:SetAlpha(EvalColorBool(notInt, 0, showAlpha))
+			castbar.TUI_CDClipper:SetAlpha(EvalColorBool(isNotInt, 0, showAlpha))
 			if castbar.TUI_InterruptMarker then
 				castbar.TUI_InterruptMarker:SetAlpha(showAlpha)
 			end
@@ -304,11 +304,10 @@ do -- Interrupt Spell Detection (adapted from mMediaTag with permission from Bli
 			unit = InterruptPreamble(castbar, unit)
 			if not unit then return end
 
-			local notInt = castbar.notInterruptible
 			local cdDuration = C_Spell_GetSpellCooldownDuration(currentInterrupt)
 			local isReady = cdDuration:IsZero()
 
-			ApplyInterruptColor(castbar, notInt, isReady)
+			ApplyInterruptColor(castbar, castbar.notInterruptible == true, isReady)
 			castbar.TUI_InterruptUnit = unit
 			activeCastbars[castbar] = true
 			PlaceMarker(castbar, unit)
@@ -322,10 +321,9 @@ do -- Interrupt Spell Detection (adapted from mMediaTag with permission from Bli
 					ResetInterruptOverlay(castbar)
 					return
 				end
-				local notInt2 = castbar.notInterruptible
 				local cdDuration2 = C_Spell_GetSpellCooldownDuration(currentInterrupt)
 				local isReady2 = cdDuration2:IsZero()
-				ApplyInterruptColor(castbar, notInt2, isReady2)
+				ApplyInterruptColor(castbar, castbar.notInterruptible == true, isReady2)
 				UpdateMarker(castbar)
 			end)
 		end)
