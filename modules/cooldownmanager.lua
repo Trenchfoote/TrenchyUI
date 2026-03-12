@@ -3,6 +3,7 @@ local TUI = E:GetModule('TrenchyUI')
 local LCG = LibStub('LibCustomGlow-1.0', true)
 local LSM = E.Libs.LSM
 
+local issecretvalue = issecretvalue
 local hooksecurefunc = hooksecurefunc
 local pairs = pairs
 local ipairs = ipairs
@@ -532,8 +533,11 @@ local function HasActiveIcons(viewerKey)
 	local viewer = GetViewer(viewerKey)
 	if not viewer or not viewer.itemFramePool then return false end
 	for frame in viewer.itemFramePool:EnumerateActive() do
-		if frame and frame.layoutIndex and frame.isActive then
-			return true
+		if frame and frame.layoutIndex then
+			local id = frame.cooldownID
+			if id and not issecretvalue(id) then
+				if C_UnitAuras.GetPlayerAuraBySpellID(id) then return true end
+			end
 		end
 	end
 	return false
