@@ -532,8 +532,9 @@ local function HasActiveIcons(viewerKey)
 	local viewer = GetViewer(viewerKey)
 	if not viewer or not viewer.itemFramePool then return false end
 	for frame in viewer.itemFramePool:EnumerateActive() do
-		if frame and frame.layoutIndex and frame.IsActive and frame:IsActive() then
-			return true
+		if frame and frame.layoutIndex then
+			if frame.isActive then return true end
+			if frame.ShouldBeActive and frame:ShouldBeActive() then return true end
 		end
 	end
 	return false
