@@ -532,7 +532,7 @@ local function HasActiveIcons(viewerKey)
 	local viewer = GetViewer(viewerKey)
 	if not viewer or not viewer.itemFramePool then return false end
 	for frame in viewer.itemFramePool:EnumerateActive() do
-		if frame and frame:IsShown() and frame.layoutIndex then
+		if frame and frame.layoutIndex and frame.IsActive and frame:IsActive() then
 			return true
 		end
 	end
@@ -598,26 +598,6 @@ function TUI:InitCooldownManager()
 			CreateContainer(viewerKey)
 			HookViewer(viewerKey)
 			LayoutContainer(viewerKey, true)
-		end
-
-		-- Neutralize Blizzard HWI on buffIcon items at the mixin level
-		if CooldownViewerItemMixin then
-			hooksecurefunc(CooldownViewerItemMixin, 'UpdateShownState', function(self)
-				if not self:GetCooldownID() then return end
-				local cdb = GetDB()
-				if not cdb or not cdb.enabled then return end
-				if self:GetParent() == GetViewer('buffIcon') then
-					self:Show()
-				end
-			end)
-		end
-
-		-- Show any buffIcon items already hidden by Blizzard's HWI
-		local buffViewer = GetViewer('buffIcon')
-		if buffViewer and buffViewer.itemFramePool then
-			for frame in buffViewer.itemFramePool:EnumerateActive() do
-				if frame:GetCooldownID() then frame:Show() end
-			end
 		end
 
 		local eventFrame = CreateFrame('Frame')
