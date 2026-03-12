@@ -80,7 +80,7 @@ TUI.defaults = {
                     glow = { enabled = false, type = 'pixel', color = { r = 0.95, g = 0.95, b = 0.32, a = 1 }, lines = 8, speed = 0.25, thickness = 2, length = nil, particles = 4, scale = 1, startAnim = true },
                 },
                 buffIcon = {
-                    visibleSetting = 'ALWAYS',
+                    visibleSetting = 'ALWAYS', hideWhenInactive = false,
                     keepSizeRatio = true, iconWidth = 30, iconHeight = 30, iconZoom = 0, spacing = 2, iconsPerRow = 12, growthDirection = 'DOWN',
                     cooldownText = { font = 'Expressway', fontSize = 16, fontOutline = 'OUTLINE', classColor = false, color = { r = 1, g = 1, b = 1 }, position = 'CENTER', xOffset = 0, yOffset = 0 },
                     countText    = { font = 'Expressway', fontSize = 11, fontOutline = 'OUTLINE', classColor = false, color = { r = 1, g = 1, b = 1 }, position = 'BOTTOMRIGHT', xOffset = 0, yOffset = 0 },
@@ -1158,6 +1158,17 @@ function TUI:BuildConfig()
                 if TUI.UpdateCDMVisibility then TUI:UpdateCDMVisibility() end
             end
         )
+
+        cdmLayout.hideWhenInactive = ACH:Toggle(
+            "Hide When Inactive", "Hide this viewer when no icons are active.",
+            8, nil, nil, nil,
+            function() return selVDB().hideWhenInactive end,
+            function(_, value)
+                selVDB().hideWhenInactive = value
+                if TUI.UpdateCDMVisibility then TUI:UpdateCDMVisibility() end
+            end
+        )
+        cdmLayout.hideWhenInactive.hidden = function() return cdmDB().selectedViewer ~= 'buffIcon' end
 
         -- Cooldown Text group
         cdmViewer.cooldownText = ACH:Group("Cooldown Text", nil, 4)

@@ -297,7 +297,8 @@ local function OpenCDMConfig()
 end
 
 -- Container creation
-local CDM_CONFIG_STRING = '/TrenchyUI,cooldownManager'
+local CDM_CONFIG_STRING = 'TrenchyUI,cooldownManager'
+local moverToViewer = {} -- configString → viewerKey mapping
 
 local function CreateContainer(viewerKey)
 	local info = VIEWER_KEYS[viewerKey]
@@ -305,13 +306,16 @@ local function CreateContainer(viewerKey)
 	local iconW = vdb and vdb.iconWidth or 30
 	local iconH = (vdb and vdb.keepSizeRatio and iconW) or (vdb and vdb.iconHeight or 30)
 
+	local configStr = CDM_CONFIG_STRING .. ',' .. viewerKey
+
 	local frame = CreateFrame('Frame', info.mover .. 'Holder', E.UIParent)
 	frame:SetSize(iconW * 8, iconH * 2)
 	frame:SetPoint('CENTER', E.UIParent, 'CENTER', 0, 0)
 	frame:SetFrameStrata('MEDIUM')
 	frame:SetFrameLevel(5)
 
-	E:CreateMover(frame, info.mover .. 'Mover', 'TUI ' .. info.label, nil, nil, nil, 'ALL,TRENCHYUI', nil, CDM_CONFIG_STRING)
+	E:CreateMover(frame, info.mover .. 'Mover', 'TUI ' .. info.label, nil, nil, nil, 'ALL,TRENCHYUI', nil, configStr)
+	moverToViewer[configStr] = viewerKey
 
 	containers[viewerKey] = frame
 	return frame
@@ -436,6 +440,7 @@ function ScheduleRelayout()
 		for viewerKey in pairs(VIEWER_KEYS) do
 			LayoutContainer(viewerKey, false)
 		end
+		TUI:UpdateCDMVisibility()
 	end)
 end
 
@@ -523,14 +528,37 @@ local function HookViewer(viewerKey)
 end
 
 -- Visibility
+local function HasActiveIcons(viewerKey)
+	local viewer = GetViewer(viewerKey)
+	if not viewer or not viewer.itemFramePool then return false end
+	for frame in viewer.itemFramePool:EnumerateActive() do
+		if frame and frame:IsShown() and frame.layoutIndex then
+			return true
+		end
+	end
+	return false
+end
+
 local function ShouldShowContainer(viewerKey)
 	local vdb = GetViewerDB(viewerKey)
 	if not vdb then return true end
 
 	local vis = vdb.visibleSetting or 'ALWAYS'
 	if vis == 'HIDDEN' then return false end
-	if vis == 'INCOMBAT' then return inCombat end
+	if vis == 'INCOMBAT' and not inCombat then return false end
+	if vdb.hideWhenInactive and not HasActiveIcons(viewerKey) then return false end
 	return true
+end
+
+local VIS_TO_ENUM
+
+local function GetVisEnum(key)
+	if not VIS_TO_ENUM then
+		local e = Enum.CooldownViewerVisibleSetting
+		if not e then return nil end
+		VIS_TO_ENUM = { ALWAYS = e.Always, INCOMBAT = e.InCombat, HIDDEN = e.Hidden }
+	end
+	return VIS_TO_ENUM[key]
 end
 
 function TUI:UpdateCDMVisibility()
@@ -538,12 +566,25 @@ function TUI:UpdateCDMVisibility()
 	if not db or not db.enabled then return end
 
 	for viewerKey in pairs(VIEWER_KEYS) do
+		local vdb = GetViewerDB(viewerKey)
+		local viewer = GetViewer(viewerKey)
+
+		-- Sync our settings to the Blizzard viewer
+		if viewer and vdb then
+			if viewer.SetHideWhenInactive then
+				viewer:SetHideWhenInactive(vdb.hideWhenInactive or false)
+			end
+			local enumVal = GetVisEnum(vdb.visibleSetting or 'ALWAYS')
+			if enumVal then
+				viewer.visibleSetting = enumVal
+			end
+		end
+
 		local show = ShouldShowContainer(viewerKey)
 		local container = containers[viewerKey]
 		if container then
 			container:SetShown(show)
 		end
-		local viewer = GetViewer(viewerKey)
 		if viewer then
 			viewer:SetShown(show)
 		end
@@ -689,7 +730,11 @@ C_Timer.After(0, function()
 
 	-- Mover right-click hook
 	hooksecurefunc(E, 'ToggleOptions', function(_, msg)
-		if msg == CDM_CONFIG_STRING then
+		local viewerKey = msg and moverToViewer[msg]
+		if viewerKey then
+			local db = GetDB()
+			if db then db.selectedViewer = viewerKey end
+			E.Libs.AceConfigRegistry:NotifyChange('ElvUI')
 			ShowBlizzardCDMSettings()
 			ShowPreview()
 		end
