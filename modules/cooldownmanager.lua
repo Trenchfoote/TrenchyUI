@@ -528,15 +528,21 @@ local function HookViewer(viewerKey)
 	end
 end
 
--- Visibility
+-- Active state detection for HWI
+local function IsPublicTrue(value)
+	if type(value) ~= 'boolean' then return false end
+	if issecretvalue(value) then return false end
+	return value
+end
+
 local function HasActiveIcons(viewerKey)
 	local viewer = GetViewer(viewerKey)
 	if not viewer or not viewer.itemFramePool then return false end
 	for frame in viewer.itemFramePool:EnumerateActive() do
 		if frame and frame.layoutIndex then
-			local id = frame.cooldownID
-			if id and not issecretvalue(id) then
-				if C_UnitAuras.GetPlayerAuraBySpellID(id) then return true end
+			if frame:IsShown() then
+				local isActive = frame.IsActive and frame:IsActive()
+				if IsPublicTrue(isActive) then return true end
 			end
 		end
 	end
@@ -602,6 +608,13 @@ function TUI:InitCooldownManager()
 			CreateContainer(viewerKey)
 			HookViewer(viewerKey)
 			LayoutContainer(viewerKey, true)
+		end
+
+		-- Hook buff icon active state changes for HWI
+		if CooldownViewerBuffIconItemMixin and CooldownViewerBuffIconItemMixin.OnActiveStateChanged then
+			hooksecurefunc(CooldownViewerBuffIconItemMixin, 'OnActiveStateChanged', function()
+				TUI:UpdateCDMVisibility()
+			end)
 		end
 
 		local eventFrame = CreateFrame('Frame')
