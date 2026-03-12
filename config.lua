@@ -1702,7 +1702,7 @@ function TUI:BuildConfig()
         -- TUI Guild
         local guildOpts = dtSettings['TUI Guild']
         if guildOpts then
-            guildOpts.name = tuiGradient('TUI Guild')
+            guildOpts.name = E.NewSign .. tuiGradient('TUI Guild')
             guildOpts.args.hideMOTD = ACH:Toggle('Hide MOTD', 'Hide the guild Message of the Day in the tooltip.', 10)
             guildOpts.args.tooltipFontGroup = ACH:Group('Tooltip Font', nil, 20)
             guildOpts.args.tooltipFontGroup.inline = true
@@ -1721,7 +1721,7 @@ function TUI:BuildConfig()
         -- TUI Friends
         local friendsOpts = dtSettings['TUI Friends']
         if friendsOpts then
-            friendsOpts.name = tuiGradient('TUI Friends')
+            friendsOpts.name = E.NewSign .. tuiGradient('TUI Friends')
             friendsOpts.args.hideMobile = ACH:Toggle('Hide Mobile', 'Hide friends on the Battle.net Mobile app.', 10)
             friendsOpts.args.tooltipFontGroup = ACH:Group('Tooltip Font', nil, 20)
             friendsOpts.args.tooltipFontGroup.inline = true
