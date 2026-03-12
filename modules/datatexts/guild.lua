@@ -131,18 +131,14 @@ local function CreateTooltip()
 	tooltip:SetScript('OnEnter', CancelHide)
 	tooltip:SetScript('OnLeave', ScheduleHide)
 
-	local font, fontSize = GetDTFont()
-
 	headerText = tooltip:CreateFontString(nil, 'OVERLAY')
 	headerText:SetPoint('TOPLEFT', tooltip, 'TOPLEFT', TOOLTIP_PAD, -TOOLTIP_PAD)
 	headerText:SetPoint('TOPRIGHT', tooltip, 'TOPRIGHT', -TOOLTIP_PAD, -TOOLTIP_PAD)
-	headerText:FontTemplate(font, fontSize + 2, 'OUTLINE')
 	headerText:SetJustifyH('LEFT')
 
 	motdText = tooltip:CreateFontString(nil, 'OVERLAY')
 	motdText:SetPoint('TOPLEFT', headerText, 'BOTTOMLEFT', 0, -4)
 	motdText:SetPoint('RIGHT', tooltip, 'RIGHT', -TOOLTIP_PAD, 0)
-	motdText:FontTemplate(font, fontSize, 'NONE')
 	motdText:SetJustifyH('LEFT')
 	motdText:SetWordWrap(true)
 	motdText:SetTextColor(0.75, 0.9, 1)
@@ -153,27 +149,22 @@ local function GetOrCreateRow(index)
 
 	CreateTooltip()
 
-	local font, fontSize, fontOutline = GetDTFont()
-
 	local row = CreateFrame('Button', nil, tooltip)
 	row:SetHeight(ROW_HEIGHT)
 
 	row.level = row:CreateFontString(nil, 'OVERLAY')
 	row.level:SetPoint('LEFT', row, 'LEFT', 0, 0)
 	row.level:SetWidth(28)
-	row.level:FontTemplate(font, fontSize, fontOutline)
 	row.level:SetJustifyH('RIGHT')
 
 	row.name = row:CreateFontString(nil, 'OVERLAY')
 	row.name:SetPoint('LEFT', row.level, 'RIGHT', 4, 0)
 	row.name:SetWidth(140)
-	row.name:FontTemplate(font, fontSize, fontOutline)
 	row.name:SetJustifyH('LEFT')
 
 	row.zone = row:CreateFontString(nil, 'OVERLAY')
 	row.zone:SetPoint('RIGHT', row, 'RIGHT', 0, 0)
 	row.zone:SetWidth(130)
-	row.zone:FontTemplate(font, fontSize, fontOutline)
 	row.zone:SetJustifyH('RIGHT')
 
 	row.highlight = row:CreateTexture(nil, 'HIGHLIGHT')
@@ -217,6 +208,17 @@ local function GetOrCreateRow(index)
 	return row
 end
 
+local function ApplyFonts()
+	local font, fontSize, fontOutline = GetDTFont()
+	if headerText then headerText:FontTemplate(font, fontSize + 2, 'OUTLINE') end
+	if motdText then motdText:FontTemplate(font, fontSize, 'NONE') end
+	for _, row in ipairs(rows) do
+		row.level:FontTemplate(font, fontSize, fontOutline)
+		row.name:FontTemplate(font, fontSize, fontOutline)
+		row.zone:FontTemplate(font, fontSize, fontOutline)
+	end
+end
+
 local function ShowTooltip(panel)
 	CreateTooltip()
 	CancelHide()
@@ -224,6 +226,7 @@ local function ShowTooltip(panel)
 
 	if not IsInGuild() then return end
 	BuildGuildTable()
+	ApplyFonts()
 
 	local shiftDown = IsShiftKeyDown()
 	if shiftDown then
