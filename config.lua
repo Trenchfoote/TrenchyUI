@@ -12,6 +12,11 @@ TUI.defaults = {
             moveableFrames  = false,
             fastLoot        = false,
             hideObjectiveInCombat = false,
+            cursorCircle    = false,
+            cursorCircleSize = 64,
+            cursorCircleThickness = 'medium',
+            cursorCircleClassColor = false,
+            cursorCircleColor = { r = 1.0, g = 1.0, b = 1.0, a = 0.6 },
             difficultyText  = false,
             difficultyFont    = 'Expressway',
             difficultyFontSize = 14,
@@ -228,6 +233,71 @@ function TUI:BuildConfig()
             TUI.db.profile.qol.hideObjectiveInCombat = value
             E:StaticPopup_Show('CONFIG_RL')
         end
+    )
+
+    root.qol.args.cursorCircle = ACH:Group("Cursor Circle", nil, 1.5)
+    root.qol.args.cursorCircle.inline = true
+    local ccArgs = root.qol.args.cursorCircle.args
+
+    ccArgs.enabled = ACH:Toggle(
+        function() return TUI.db.profile.qol.cursorCircle and "|cff00ff00Enable|r" or "Enable" end,
+        "Show a circle around the cursor to make it easier to locate.",
+        1, nil, nil, nil,
+        function() return TUI.db.profile.qol.cursorCircle end,
+        function(_, value)
+            TUI.db.profile.qol.cursorCircle = value
+            if TUI.ToggleCursorCircle then TUI:ToggleCursorCircle(value) end
+        end
+    )
+
+    local ccDisabled = function() return not TUI.db.profile.qol.cursorCircle end
+
+    ccArgs.size = ACH:Range(
+        "Size", "Diameter of the circle in pixels.", 2,
+        { min = 16, max = 256, step = 1 }, nil,
+        function() return TUI.db.profile.qol.cursorCircleSize end,
+        function(_, value)
+            TUI.db.profile.qol.cursorCircleSize = value
+            if TUI.UpdateCursorCircle then TUI:UpdateCursorCircle() end
+        end,
+        ccDisabled
+    )
+
+    ccArgs.thickness = ACH:Select(
+        "Thickness", "Ring thickness of the circle.", 3,
+        { thin = 'Thin', medium = 'Medium', thick = 'Thick' }, nil, nil,
+        function() return TUI.db.profile.qol.cursorCircleThickness end,
+        function(_, value)
+            TUI.db.profile.qol.cursorCircleThickness = value
+            if TUI.UpdateCursorCircle then TUI:UpdateCursorCircle() end
+        end,
+        ccDisabled
+    )
+    ccArgs.thickness.sorting = { 'thin', 'medium', 'thick' }
+
+    ccArgs.classColor = ACH:Toggle(
+        "Class Color", "Use your class color for the circle.",
+        4, nil, nil, nil,
+        function() return TUI.db.profile.qol.cursorCircleClassColor end,
+        function(_, value)
+            TUI.db.profile.qol.cursorCircleClassColor = value
+            if TUI.UpdateCursorCircle then TUI:UpdateCursorCircle() end
+        end,
+        ccDisabled
+    )
+
+    ccArgs.color = ACH:Color(
+        "Color", nil, 5, true, nil,
+        function()
+            local c = TUI.db.profile.qol.cursorCircleColor
+            return c.r, c.g, c.b, c.a
+        end,
+        function(_, r, g, b, a)
+            local c = TUI.db.profile.qol.cursorCircleColor
+            c.r, c.g, c.b, c.a = r, g, b, a
+            if TUI.UpdateCursorCircle then TUI:UpdateCursorCircle() end
+        end,
+        function() return ccDisabled() or TUI.db.profile.qol.cursorCircleClassColor end
     )
 
     root.qol.args.difficulty = ACH:Group("Difficulty Text", nil, 2)
