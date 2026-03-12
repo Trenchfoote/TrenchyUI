@@ -527,19 +527,18 @@ local function HookViewer(viewerKey)
 	end
 end
 
--- Visibility
-local function HasActiveIcons(viewerKey)
+-- Blizzard HWI setting via Edit Mode API
+local CDM_SETTING_HWI = 8 -- Enum.EditModeCooldownViewerSetting.HideWhenInactive
+
+function TUI:SetBlizzardHWI(viewerKey, enabled)
 	local viewer = GetViewer(viewerKey)
-	if not viewer or not viewer.itemFramePool then return false end
-	for frame in viewer.itemFramePool:EnumerateActive() do
-		if frame and frame.layoutIndex then
-			if frame.isActive then return true end
-			if frame.ShouldBeActive and frame:ShouldBeActive() then return true end
-		end
-	end
-	return false
+	if not viewer then return end
+	local mgr = EditModeManagerFrame
+	if not mgr or not mgr.OnSystemSettingChange then return end
+	pcall(mgr.OnSystemSettingChange, mgr, viewer, CDM_SETTING_HWI, enabled and 1 or 0)
 end
 
+-- Visibility
 local function ShouldShowContainer(viewerKey)
 	local vdb = GetViewerDB(viewerKey)
 	if not vdb then return true end
@@ -547,7 +546,6 @@ local function ShouldShowContainer(viewerKey)
 	local vis = vdb.visibleSetting or 'ALWAYS'
 	if vis == 'HIDDEN' then return false end
 	if vis == 'INCOMBAT' and not inCombat then return false end
-	if vdb.hideWhenInactive and not HasActiveIcons(viewerKey) then return false end
 	return true
 end
 
@@ -599,6 +597,12 @@ function TUI:InitCooldownManager()
 			CreateContainer(viewerKey)
 			HookViewer(viewerKey)
 			LayoutContainer(viewerKey, true)
+		end
+
+		-- Sync Blizzard HWI to match our DB setting for buffIcon
+		local bdb = GetViewerDB('buffIcon')
+		if bdb then
+			TUI:SetBlizzardHWI('buffIcon', bdb.hideWhenInactive)
 		end
 
 		local eventFrame = CreateFrame('Frame')

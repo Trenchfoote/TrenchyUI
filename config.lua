@@ -1235,7 +1235,7 @@ function TUI:BuildConfig()
             function() return selVDB().hideWhenInactive end,
             function(_, value)
                 selVDB().hideWhenInactive = value
-                if TUI.UpdateCDMVisibility then TUI:UpdateCDMVisibility() end
+                if TUI.SetBlizzardHWI then TUI:SetBlizzardHWI('buffIcon', value) end
             end
         )
         cdmLayout.hideWhenInactive.hidden = function() return cdmDB().selectedViewer ~= 'buffIcon' end
