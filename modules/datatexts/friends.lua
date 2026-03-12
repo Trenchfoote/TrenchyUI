@@ -96,22 +96,22 @@ end
 
 local function GetPanelAnchor(panel)
 	local parent = panel:GetParent()
-	return parent and parent.anchor or 'ANCHOR_TOP', parent and parent.xOff or 0, parent and parent.yOff or 0
+	return parent and parent.anchor or 'ANCHOR_TOP'
 end
 
 local function AnchorToPanel(tt, panel)
-	local anchor, xOff, yOff = GetPanelAnchor(panel)
+	local anchor = GetPanelAnchor(panel)
 	tt:ClearAllPoints()
 	if anchor == 'ANCHOR_TOP' or anchor == 'ANCHOR_TOPLEFT' or anchor == 'ANCHOR_TOPRIGHT' then
-		tt:SetPoint('BOTTOM', panel, 'TOP', xOff, 2 + yOff)
+		tt:SetPoint('BOTTOM', panel, 'TOP', 0, 4)
 	elseif anchor == 'ANCHOR_BOTTOM' or anchor == 'ANCHOR_BOTTOMLEFT' or anchor == 'ANCHOR_BOTTOMRIGHT' then
-		tt:SetPoint('TOP', panel, 'BOTTOM', xOff, -2 + yOff)
+		tt:SetPoint('TOP', panel, 'BOTTOM', 0, -4)
 	elseif anchor == 'ANCHOR_LEFT' then
-		tt:SetPoint('RIGHT', panel, 'LEFT', -2 + xOff, yOff)
+		tt:SetPoint('RIGHT', panel, 'LEFT', -4, 0)
 	elseif anchor == 'ANCHOR_RIGHT' then
-		tt:SetPoint('LEFT', panel, 'RIGHT', 2 + xOff, yOff)
+		tt:SetPoint('LEFT', panel, 'RIGHT', 4, 0)
 	else
-		tt:SetPoint('BOTTOM', panel, 'TOP', xOff, 2 + yOff)
+		tt:SetPoint('BOTTOM', panel, 'TOP', 0, 4)
 	end
 end
 
@@ -225,6 +225,7 @@ local function CreateTooltip()
 	tooltip = CreateFrame('Frame', 'TUIFriendsTooltip', E.UIParent, 'BackdropTemplate')
 	tooltip:SetFrameStrata('TOOLTIP')
 	tooltip:SetClampedToScreen(true)
+	tooltip:SetClampRectInsets(-2, 2, 2, -2)
 	tooltip:Hide()
 	tooltip:SetTemplate('Transparent')
 
