@@ -171,8 +171,14 @@ local function GetOrCreateRow(index)
 	row:SetScript('OnEnter', function(self)
 		CancelHide()
 		if self.memberName then
-			GameTooltip:SetOwner(self, 'ANCHOR_RIGHT')
-			GameTooltip:AddLine(self.memberName, 1, 1, 1)
+			GameTooltip:SetOwner(tooltip, 'ANCHOR_NONE')
+			GameTooltip:SetPoint('TOPLEFT', tooltip, 'TOPRIGHT', 2, 0)
+			local classc = self.memberClass and E:ClassColor(self.memberClass)
+			if classc then
+				GameTooltip:AddLine(self.memberName, classc.r, classc.g, classc.b)
+			else
+				GameTooltip:AddLine(self.memberName, 1, 1, 1)
+			end
 			if self.memberRank then GameTooltip:AddLine(self.memberRank, 0.5, 0.5, 0.5) end
 			GameTooltip:AddLine(' ')
 			GameTooltip:AddLine('Left-click: Whisper', 0.7, 0.7, 0.7)
@@ -262,6 +268,7 @@ local function ShowTooltip(panel)
 
 		row.memberName = info.name
 		row.memberRank = info.rank
+		row.memberClass = info.class
 
 		if shown == 1 then
 			row:SetPoint('TOPLEFT', contentTop, 'BOTTOMLEFT', 0, -6)
@@ -289,6 +296,7 @@ local function ShowTooltip(panel)
 		row.zone:SetText('')
 		row.memberName = nil
 		row.memberRank = nil
+		row.memberClass = nil
 		row:SetPoint('TOPLEFT', rows[shown - 1], 'BOTTOMLEFT', 0, -ROW_PAD)
 		row:SetPoint('RIGHT', tooltip, 'RIGHT', -TOOLTIP_PAD, 0)
 		row:Show()

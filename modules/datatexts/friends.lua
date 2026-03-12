@@ -255,11 +255,24 @@ local function GetOrCreateRow(index)
 	row:SetScript('OnEnter', function(self)
 		CancelHide()
 		if self.friendName or self.friendBNetName then
-			GameTooltip:SetOwner(self, 'ANCHOR_RIGHT')
-			local displayName = self.friendBNetName or self.friendName
-			GameTooltip:AddLine(displayName, 1, 1, 1)
-			if self.friendBNetName and self.friendName and self.friendName ~= '' then
-				GameTooltip:AddLine(self.friendName, 0.7, 0.7, 0.7)
+			GameTooltip:SetOwner(tooltip, 'ANCHOR_NONE')
+			GameTooltip:SetPoint('TOPLEFT', tooltip, 'TOPRIGHT', 2, 0)
+			local classc = self.friendClass and E:ClassColor(self.friendClass)
+			if self.friendBNetName then
+				GameTooltip:AddLine(self.friendBNetName, 1, 1, 1)
+				if self.friendName and self.friendName ~= '' then
+					if classc then
+						GameTooltip:AddLine(self.friendName, classc.r, classc.g, classc.b)
+					else
+						GameTooltip:AddLine(self.friendName, 0.7, 0.7, 0.7)
+					end
+				end
+			elseif self.friendName then
+				if classc then
+					GameTooltip:AddLine(self.friendName, classc.r, classc.g, classc.b)
+				else
+					GameTooltip:AddLine(self.friendName, 1, 1, 1)
+				end
 			end
 			GameTooltip:AddLine(' ')
 			GameTooltip:AddLine('Left-click: Whisper', 0.7, 0.7, 0.7)
@@ -329,6 +342,7 @@ local function ShowTooltip(panel)
 			row.zone:SetText('')
 			row.friendName = nil
 			row.friendBNetName = nil
+			row.friendClass = nil
 			row.canInvite = false
 			row.friendGameID = nil
 			if shown == 1 then
@@ -359,6 +373,7 @@ local function ShowTooltip(panel)
 
 		row.friendName = info.name
 		row.friendBNetName = nil
+		row.friendClass = info.class
 		row.canInvite = InGroup(info.name) == ''
 		row.friendGameID = nil
 
@@ -382,6 +397,7 @@ local function ShowTooltip(panel)
 			hdr.zone:SetText('')
 			hdr.friendName = nil
 			hdr.friendBNetName = nil
+			hdr.friendClass = nil
 			hdr.canInvite = false
 			hdr.friendGameID = nil
 			if shown == 1 then
@@ -425,6 +441,7 @@ local function ShowTooltip(panel)
 
 				row.friendName = info.name ~= '' and info.name or nil
 				row.friendBNetName = info.accountName
+				row.friendClass = info.class ~= '' and info.class or nil
 				row.canInvite = info.isWoW and info.wowProjectID == WOW_PROJECT_ID and InGroup(info.name or '', info.realmName) == ''
 				row.friendGameID = info.gameID
 
