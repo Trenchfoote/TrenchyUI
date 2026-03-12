@@ -10,7 +10,6 @@ local IsShiftKeyDown = IsShiftKeyDown
 local GetQuestDifficultyColor = GetQuestDifficultyColor
 local UnitInParty = UnitInParty
 local UnitInRaid = UnitInRaid
-local MouseIsOver = MouseIsOver
 local C_GuildInfo_GuildRoster = C_GuildInfo.GuildRoster
 local GetGuildRosterMOTD = C_GuildInfo.GetMOTD or GetGuildRosterMOTD
 local C_PartyInfo_InviteUnit = C_PartyInfo.InviteUnit
@@ -169,25 +168,24 @@ local function GetOrCreateRow(index)
 
 	row:SetScript('OnEnter', function(self)
 		CancelHide()
-		if self.memberName then
-			GameTooltip:SetOwner(tooltip, 'ANCHOR_NONE')
-			GameTooltip:SetPoint('TOPLEFT', tooltip, 'TOPRIGHT', 2, 0)
+		if self.memberName and ownerPanel then
+			DT:SetupTooltip(ownerPanel)
 			local classc = self.memberClass and E:ClassColor(self.memberClass)
 			if classc then
-				GameTooltip:AddLine(self.memberName, classc.r, classc.g, classc.b)
+				DT.tooltip:AddLine(self.memberName, classc.r, classc.g, classc.b)
 			else
-				GameTooltip:AddLine(self.memberName, 1, 1, 1)
+				DT.tooltip:AddLine(self.memberName, 1, 1, 1)
 			end
-			if self.memberRank then GameTooltip:AddLine(self.memberRank, 0.5, 0.5, 0.5) end
-			GameTooltip:AddLine(' ')
-			GameTooltip:AddLine('Left-click: Whisper', 0.7, 0.7, 0.7)
-			GameTooltip:AddLine('Right-click: Invite', 0.7, 0.7, 0.7)
-			GameTooltip:Show()
+			if self.memberRank then DT.tooltip:AddLine(self.memberRank, 0.5, 0.5, 0.5) end
+			DT.tooltip:AddLine(' ')
+			DT.tooltip:AddLine('Left-click: Whisper', 0.7, 0.7, 0.7)
+			DT.tooltip:AddLine('Right-click: Invite', 0.7, 0.7, 0.7)
+			DT.tooltip:Show()
 		end
 	end)
 	row:SetScript('OnLeave', function()
 		ScheduleHide()
-		GameTooltip:Hide()
+		DT.tooltip:Hide()
 	end)
 	row:SetScript('OnClick', function(self, button)
 		if not self.memberName then return end

@@ -72,6 +72,7 @@ local inactivezone = { r = 0.65, g = 0.65, b = 0.65 }
 local tooltip, headerText
 local rows = {}
 local hideTimer
+local ownerPanel
 
 local function CancelHide()
 	if hideTimer then hideTimer:Cancel(); hideTimer = nil end
@@ -254,37 +255,36 @@ local function GetOrCreateRow(index)
 
 	row:SetScript('OnEnter', function(self)
 		CancelHide()
-		if self.friendName or self.friendBNetName then
-			GameTooltip:SetOwner(tooltip, 'ANCHOR_NONE')
-			GameTooltip:SetPoint('TOPLEFT', tooltip, 'TOPRIGHT', 2, 0)
+		if (self.friendName or self.friendBNetName) and ownerPanel then
+			DT:SetupTooltip(ownerPanel)
 			local classc = self.friendClass and E:ClassColor(self.friendClass)
 			if self.friendBNetName then
-				GameTooltip:AddLine(self.friendBNetName, 1, 1, 1)
+				DT.tooltip:AddLine(self.friendBNetName, 1, 1, 1)
 				if self.friendName and self.friendName ~= '' then
 					if classc then
-						GameTooltip:AddLine(self.friendName, classc.r, classc.g, classc.b)
+						DT.tooltip:AddLine(self.friendName, classc.r, classc.g, classc.b)
 					else
-						GameTooltip:AddLine(self.friendName, 0.7, 0.7, 0.7)
+						DT.tooltip:AddLine(self.friendName, 0.7, 0.7, 0.7)
 					end
 				end
 			elseif self.friendName then
 				if classc then
-					GameTooltip:AddLine(self.friendName, classc.r, classc.g, classc.b)
+					DT.tooltip:AddLine(self.friendName, classc.r, classc.g, classc.b)
 				else
-					GameTooltip:AddLine(self.friendName, 1, 1, 1)
+					DT.tooltip:AddLine(self.friendName, 1, 1, 1)
 				end
 			end
-			GameTooltip:AddLine(' ')
-			GameTooltip:AddLine('Left-click: Whisper', 0.7, 0.7, 0.7)
+			DT.tooltip:AddLine(' ')
+			DT.tooltip:AddLine('Left-click: Whisper', 0.7, 0.7, 0.7)
 			if self.canInvite then
-				GameTooltip:AddLine('Right-click: Invite', 0.7, 0.7, 0.7)
+				DT.tooltip:AddLine('Right-click: Invite', 0.7, 0.7, 0.7)
 			end
-			GameTooltip:Show()
+			DT.tooltip:Show()
 		end
 	end)
 	row:SetScript('OnLeave', function()
 		ScheduleHide()
-		GameTooltip:Hide()
+		DT.tooltip:Hide()
 	end)
 	row:SetScript('OnClick', function(self, button)
 		if button == 'LeftButton' then
@@ -310,10 +310,12 @@ end
 local function ShowTooltip(panel)
 	CreateTooltip()
 	CancelHide()
+	ownerPanel = panel
 
 	local numberOfFriends = C_FriendList_GetNumFriends()
-	local onlineFriends = C_FriendList_GetNumOnlineFriends()
+	local onlineFriends = C_FriendList_GetNumOnlineFriends() or 0
 	local totalBNet, numBNetOnline = BNGetNumFriends()
+	numBNetOnline = numBNetOnline or 0
 	local totalOnline = onlineFriends + numBNetOnline
 
 	if totalOnline == 0 then return end
@@ -476,8 +478,9 @@ local function OnLeave()
 end
 
 local function OnEvent(panel, event, arg1)
-	local onlineFriends = C_FriendList_GetNumOnlineFriends()
+	local onlineFriends = C_FriendList_GetNumOnlineFriends() or 0
 	local _, numBNetOnline = BNGetNumFriends()
+	numBNetOnline = numBNetOnline or 0
 
 	if event == 'CHAT_MSG_SYSTEM' then
 		if E:IsSecretValue(arg1) then return end
