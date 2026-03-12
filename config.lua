@@ -235,7 +235,7 @@ function TUI:BuildConfig()
         end
     )
 
-    root.qol.args.cursorCircle = ACH:Group("Cursor Circle", nil, 1.5)
+    root.qol.args.cursorCircle = ACH:Group(E.NewSign .. "Cursor Circle", nil, 1.5)
     root.qol.args.cursorCircle.inline = true
     local ccArgs = root.qol.args.cursorCircle.args
 
@@ -1230,7 +1230,7 @@ function TUI:BuildConfig()
         )
 
         cdmLayout.hideWhenInactive = ACH:Toggle(
-            "Hide When Inactive", "Hide this viewer when no icons are active.",
+            E.NewSign .. "Hide When Inactive", "Hide this viewer when no icons are active.",
             8, nil, nil, nil,
             function() return selVDB().hideWhenInactive end,
             function(_, value)
