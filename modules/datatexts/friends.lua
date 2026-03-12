@@ -473,6 +473,7 @@ end
 
 -- DT callbacks
 local function OnEnter(panel)
+	DT.tooltip:Hide()
 	ShowTooltip(panel)
 end
 

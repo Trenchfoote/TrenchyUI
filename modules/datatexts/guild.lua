@@ -321,6 +321,7 @@ end
 
 -- DT callbacks
 local function OnEnter(panel)
+	DT.tooltip:Hide()
 	if not IsInGuild() then return end
 	ShowTooltip(panel)
 end
