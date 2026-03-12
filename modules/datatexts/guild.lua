@@ -55,12 +55,14 @@ local function InGroup(name)
 	return (UnitInParty(name) or UnitInRaid(name)) and ' |cffaaaaaa*|r' or ''
 end
 
--- Convert GameTooltip anchor to SetPoint args for our custom frame
-local function AnchorTooltip(tt, panel)
+-- Anchor a frame relative to the panel using ElvUI's anchor direction
+local function GetPanelAnchor(panel)
 	local parent = panel:GetParent()
-	local anchor = parent and parent.anchor or 'ANCHOR_TOP'
-	local xOff = parent and parent.xOff or 0
-	local yOff = parent and parent.yOff or 0
+	return parent and parent.anchor or 'ANCHOR_TOP', parent and parent.xOff or 0, parent and parent.yOff or 0
+end
+
+local function AnchorToPanel(tt, panel)
+	local anchor, xOff, yOff = GetPanelAnchor(panel)
 	tt:ClearAllPoints()
 	if anchor == 'ANCHOR_TOP' or anchor == 'ANCHOR_TOPLEFT' or anchor == 'ANCHOR_TOPRIGHT' then
 		tt:SetPoint('BOTTOM', panel, 'TOP', xOff, 4 + yOff)
@@ -72,6 +74,23 @@ local function AnchorTooltip(tt, panel)
 		tt:SetPoint('LEFT', panel, 'RIGHT', 4 + xOff, yOff)
 	else
 		tt:SetPoint('BOTTOM', panel, 'TOP', xOff, 4 + yOff)
+	end
+end
+
+-- Anchor the hover tooltip so it nests against our custom tooltip
+local function AnchorHoverTooltip(hoverTT, customTT, panel)
+	local anchor = GetPanelAnchor(panel)
+	hoverTT:ClearAllPoints()
+	if anchor == 'ANCHOR_TOP' or anchor == 'ANCHOR_TOPLEFT' or anchor == 'ANCHOR_TOPRIGHT' then
+		hoverTT:SetPoint('BOTTOM', customTT, 'TOP', 0, 2)
+	elseif anchor == 'ANCHOR_BOTTOM' or anchor == 'ANCHOR_BOTTOMLEFT' or anchor == 'ANCHOR_BOTTOMRIGHT' then
+		hoverTT:SetPoint('TOP', customTT, 'BOTTOM', 0, -2)
+	elseif anchor == 'ANCHOR_LEFT' then
+		hoverTT:SetPoint('RIGHT', customTT, 'LEFT', -2, 0)
+	elseif anchor == 'ANCHOR_RIGHT' then
+		hoverTT:SetPoint('LEFT', customTT, 'RIGHT', 2, 0)
+	else
+		hoverTT:SetPoint('BOTTOM', customTT, 'TOP', 0, 2)
 	end
 end
 
@@ -169,7 +188,8 @@ local function GetOrCreateRow(index)
 	row:SetScript('OnEnter', function(self)
 		CancelHide()
 		if self.memberName and ownerPanel then
-			DT:SetupTooltip(ownerPanel)
+			DT.tooltip:SetOwner(tooltip, 'ANCHOR_NONE')
+			AnchorHoverTooltip(DT.tooltip, tooltip, ownerPanel)
 			local classc = self.memberClass and E:ClassColor(self.memberClass)
 			if classc then
 				DT.tooltip:AddLine(self.memberName, classc.r, classc.g, classc.b)
@@ -310,7 +330,7 @@ local function ShowTooltip(panel)
 	contentH = contentH + 6 + (shown * (ROW_HEIGHT + ROW_PAD)) + TOOLTIP_PAD
 
 	tooltip:SetSize(tooltipWidth, contentH)
-	AnchorTooltip(tooltip, panel)
+	AnchorToPanel(tooltip, panel)
 	tooltip:Show()
 end
 
