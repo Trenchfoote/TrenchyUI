@@ -574,6 +574,29 @@ local function UpsertEditModeSetting(settings, settingEnum, value)
 	return true
 end
 
+function TUI:GetBuffIconEditModeHWI()
+	if not HasEditModeApis() then return nil end
+	local layoutInfo = GetEditModeLayoutInfo()
+	local activeLayout = GetEditModeActiveLayout(layoutInfo)
+	if not activeLayout then return nil end
+
+	local cooldownSystem = Enum.EditModeSystem.CooldownViewer
+	local buffIconIndex = Enum.EditModeCooldownViewerSystemIndices.BuffIcon
+	local hwiSetting = Enum.EditModeCooldownViewerSetting.HideWhenInactive
+
+	for _, systemInfo in ipairs(activeLayout.systems) do
+		if systemInfo.system == cooldownSystem and systemInfo.systemIndex == buffIconIndex
+			and type(systemInfo.settings) == 'table' then
+			for _, info in ipairs(systemInfo.settings) do
+				if info.setting == hwiSetting then
+					return info.value == 1
+				end
+			end
+		end
+	end
+	return false
+end
+
 function TUI:SetBuffIconEditModeHWI(enabled)
 	if not HasEditModeApis() then return 'not_ready' end
 	local layoutInfo = GetEditModeLayoutInfo()
@@ -653,10 +676,11 @@ function TUI:InitCooldownManager()
 
 	SetCVar('cooldownViewerEnabled', 1)
 
-	-- Sync Blizzard Edit Mode HWI to match our DB setting
+	-- Sync our DB to reflect Blizzard's current Edit Mode HWI state
 	local buffDB = GetViewerDB('buffIcon')
-	if buffDB then
-		self:SetBuffIconEditModeHWI(buffDB.hideWhenInactive)
+	local blizzHWI = self:GetBuffIconEditModeHWI()
+	if buffDB and blizzHWI ~= nil then
+		buffDB.hideWhenInactive = blizzHWI
 	end
 
 	C_Timer.After(0, function()
