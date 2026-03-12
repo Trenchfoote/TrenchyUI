@@ -209,7 +209,7 @@ end
 
 local function GetDTFont()
 	local dtDB = E.db.datatexts
-	return dtDB.font, dtDB.fontSize, dtDB.fontOutline
+	return E.LSM:Fetch('font', dtDB.font), dtDB.fontSize, dtDB.fontOutline
 end
 
 local function CreateTooltip()
