@@ -8,7 +8,7 @@
   - New custom Friends datatext with interactive tooltip — shows character friends and Battle.net friends grouped by game client, with click-to-whisper/invite
   - Custom font options (font, size, outline) for Guild and Friends tooltip text, configurable per-datatext in the Customization tab
 - QoL: New cursor circle overlay — a ring follows your cursor to help you find it. Configurable size, thickness, color, and class color option
-- Cooldown Manager: New "Hide When Inactive" toggle for the Buff Icon viewer — hides icons when nothing is on cooldown
+- Cooldown Manager: New "Hide When Inactive" toggle for the Buff Icon viewer — Mirrors Blizzard CDM behavior, hides the icons unleess the buff is present.
 
 ### Bug Fixes
 - Nameplates: Fixed interrupt marker snapping to the edge of the castbar and persisting on non-targeted nameplates after a successful interrupt

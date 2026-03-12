@@ -482,6 +482,19 @@ local function OnCDMEvent(_, event, unit, ...)
 end
 
 local hookedViewers = {}
+local hookedShouldShow = {}
+
+-- Neutralize Blizzard's HWI on buffIcon item frames via post-hook
+local function NeutralizeBHWI(itemFrame)
+	if hookedShouldShow[itemFrame] or not itemFrame.UpdateShownState then return end
+	hookedShouldShow[itemFrame] = true
+	hooksecurefunc(itemFrame, 'UpdateShownState', function(self)
+		local db = GetDB()
+		if db and db.enabled then
+			self:Show()
+		end
+	end)
+end
 
 local function HookViewer(viewerKey)
 	local viewer = GetViewer(viewerKey)
@@ -506,9 +519,19 @@ local function HookViewer(viewerKey)
 	end
 
 	if viewer.OnAcquireItemFrame then
-		hooksecurefunc(viewer, 'OnAcquireItemFrame', function()
+		hooksecurefunc(viewer, 'OnAcquireItemFrame', function(_, frame)
+			if viewerKey == 'buffIcon' and frame then
+				NeutralizeBHWI(frame)
+			end
 			ScheduleRelayout()
 		end)
+	end
+
+	-- Neutralize Blizzard HWI on existing buffIcon frames
+	if viewerKey == 'buffIcon' then
+		for frame in viewer.itemFramePool:EnumerateActive() do
+			NeutralizeBHWI(frame)
+		end
 	end
 
 	hooksecurefunc(viewer, 'RefreshLayout', function()
