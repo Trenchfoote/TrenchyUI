@@ -1,8 +1,7 @@
 local E = unpack(ElvUI)
 local DT = E:GetModule('DataTexts')
-local TUI = E:GetModule('TrenchyUI')
 
-local format, sort, wipe, ipairs, next = format, sort, wipe, ipairs, next
+local format, sort, wipe, ipairs = format, sort, wipe, ipairs
 local GetGuildInfo = GetGuildInfo
 local GetGuildRosterInfo = GetGuildRosterInfo
 local GetNumGuildMembers = GetNumGuildMembers
@@ -226,7 +225,7 @@ local function ShowTooltip(panel)
 	if not online then online = 0 end
 	if not total then total = 0 end
 
-	local guildName, guildRank = GetGuildInfo('player')
+	local guildName = GetGuildInfo('player')
 	if guildName then
 		headerText:SetText(format('%s  |cff999999%s: %d/%d|r', guildName, GUILD, online, total))
 	else
