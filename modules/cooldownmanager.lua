@@ -3,7 +3,6 @@ local TUI = E:GetModule('TrenchyUI')
 local LCG = LibStub('LibCustomGlow-1.0', true)
 local LSM = E.Libs.LSM
 
-local issecretvalue = issecretvalue
 local hooksecurefunc = hooksecurefunc
 local pairs = pairs
 local ipairs = ipairs
@@ -528,27 +527,6 @@ local function HookViewer(viewerKey)
 	end
 end
 
--- Active state detection for HWI
-local function IsPublicTrue(value)
-	if type(value) ~= 'boolean' then return false end
-	if issecretvalue(value) then return false end
-	return value
-end
-
-local function HasActiveIcons(viewerKey)
-	local viewer = GetViewer(viewerKey)
-	if not viewer or not viewer.itemFramePool then return false end
-	for frame in viewer.itemFramePool:EnumerateActive() do
-		if frame and frame.layoutIndex then
-			if frame:IsShown() then
-				local isActive = frame.IsActive and frame:IsActive()
-				if IsPublicTrue(isActive) then return true end
-			end
-		end
-	end
-	return false
-end
-
 -- Edit Mode HWI control via C_EditMode.SaveLayouts
 local function HasEditModeApis()
 	return C_EditMode and C_EditMode.GetLayouts and C_EditMode.SaveLayouts
@@ -629,7 +607,6 @@ local function ShouldShowContainer(viewerKey)
 	local vis = vdb.visibleSetting or 'ALWAYS'
 	if vis == 'HIDDEN' then return false end
 	if vis == 'INCOMBAT' and not inCombat then return false end
-	if vdb.hideWhenInactive and not HasActiveIcons(viewerKey) then return false end
 	return true
 end
 
@@ -687,13 +664,6 @@ function TUI:InitCooldownManager()
 			CreateContainer(viewerKey)
 			HookViewer(viewerKey)
 			LayoutContainer(viewerKey, true)
-		end
-
-		-- Hook buff icon active state changes for HWI
-		if CooldownViewerBuffIconItemMixin and CooldownViewerBuffIconItemMixin.OnActiveStateChanged then
-			hooksecurefunc(CooldownViewerBuffIconItemMixin, 'OnActiveStateChanged', function()
-				TUI:UpdateCDMVisibility()
-			end)
 		end
 
 		local eventFrame = CreateFrame('Frame')
