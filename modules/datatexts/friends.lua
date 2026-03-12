@@ -114,10 +114,6 @@ local function AnchorToPanel(tt, panel)
 	end
 end
 
-local function AnchorHoverTooltip(hoverTT, customTT)
-	hoverTT:ClearAllPoints()
-	hoverTT:SetPoint('TOPLEFT', customTT, 'TOPRIGHT', 2, 0)
-end
 
 local function BuildFriendTable(total)
 	wipe(friendTable)
@@ -263,8 +259,9 @@ local function GetOrCreateRow(index)
 	row:SetScript('OnEnter', function(self)
 		CancelHide()
 		if (self.friendName or self.friendBNetName) and ownerPanel then
-			DT.tooltip:SetOwner(tooltip, 'ANCHOR_NONE')
-			AnchorHoverTooltip(DT.tooltip, tooltip)
+			DT.tooltip:SetOwner(self, 'ANCHOR_NONE')
+			DT.tooltip:ClearAllPoints()
+			DT.tooltip:SetPoint('LEFT', tooltip, 'RIGHT', 2, 0)
 			local classc = self.friendClass and E:ClassColor(self.friendClass)
 			if self.friendBNetName then
 				DT.tooltip:AddLine(self.friendBNetName, 1, 1, 1)

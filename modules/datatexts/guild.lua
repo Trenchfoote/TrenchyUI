@@ -77,11 +77,6 @@ local function AnchorToPanel(tt, panel)
 	end
 end
 
--- Anchor the hover tooltip to the side of our custom tooltip
-local function AnchorHoverTooltip(hoverTT, customTT)
-	hoverTT:ClearAllPoints()
-	hoverTT:SetPoint('TOPLEFT', customTT, 'TOPRIGHT', 2, 0)
-end
 
 local function SortByName(a, b)
 	if a and b then return a.name < b.name end
@@ -177,8 +172,9 @@ local function GetOrCreateRow(index)
 	row:SetScript('OnEnter', function(self)
 		CancelHide()
 		if self.memberName and ownerPanel then
-			DT.tooltip:SetOwner(tooltip, 'ANCHOR_NONE')
-			AnchorHoverTooltip(DT.tooltip, tooltip)
+			DT.tooltip:SetOwner(self, 'ANCHOR_NONE')
+			DT.tooltip:ClearAllPoints()
+			DT.tooltip:SetPoint('LEFT', tooltip, 'RIGHT', 2, 0)
 			local classc = self.memberClass and E:ClassColor(self.memberClass)
 			if classc then
 				DT.tooltip:AddLine(self.memberName, classc.r, classc.g, classc.b)
