@@ -172,9 +172,7 @@ local function GetOrCreateRow(index)
 	row:SetScript('OnEnter', function(self)
 		CancelHide()
 		if self.memberName and ownerPanel then
-			DT.tooltip:SetOwner(self, 'ANCHOR_NONE')
-			DT.tooltip:ClearAllPoints()
-			DT.tooltip:SetPoint('LEFT', tooltip, 'RIGHT', 2, 0)
+			DT:SetupTooltip(ownerPanel)
 			local classc = self.memberClass and E:ClassColor(self.memberClass)
 			if classc then
 				DT.tooltip:AddLine(self.memberName, classc.r, classc.g, classc.b)
