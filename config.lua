@@ -620,12 +620,32 @@ function TUI:BuildConfig()
             1, "medium"
         )
 
+        E.PopupDialogs.TUI_TDM_DISABLE_DETAILS = {
+            text = 'Details! is currently enabled. Enabling TDM will disable Details! and require a reload.',
+            wideText = true,
+            showAlert = true,
+            button1 = 'Enable TDM',
+            button2 = CANCEL,
+            OnAccept = function()
+                TUI.db.profile.damageMeter.enabled = true
+                TUI.db.profile.compat.damageMeter = 'tui'
+                C_AddOns.DisableAddOn('Details')
+                ReloadUI()
+            end,
+            whileDead = 1,
+            hideOnEscape = 1,
+        }
+
         dmGen.enabled = ACH:Toggle(
             function() return TUI.db.profile.damageMeter.enabled and "|cff00ff00Enable|r" or "Enable" end,
             "Show TDM.",
             2, nil, nil, nil,
             function() return TUI.db.profile.damageMeter.enabled end,
             function(_, value)
+                if value and TUI:HasExternalAddonLoaded('damageMeter') then
+                    E:StaticPopup_Show('TUI_TDM_DISABLE_DETAILS')
+                    return
+                end
                 TUI.db.profile.damageMeter.enabled = value
                 E:StaticPopup_Show('CONFIG_RL')
             end

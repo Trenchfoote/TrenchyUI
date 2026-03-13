@@ -121,26 +121,32 @@ do -- Compat popup system
 		end
 	end
 
-	-- Returns true if our module + a competing addon are both active
-	local function IsConflictActive(def)
-		if not def.tuiCheck(TUI.db.profile) then return false, nil end
-		local found = FindLoadedAddon(def)
-		if not found then return false, nil end
-		if def.externalCheck and not def.externalCheck() then return false, nil end
-		return true, found
+	-- Check if an external addon from a conflict def is currently loaded
+	function TUI:HasExternalAddonLoaded(key)
+		local def = self.conflictDefs[key]
+		if not def then return false end
+		return FindLoadedAddon(def) ~= nil
 	end
 
 	function TUI:ResolveCompat()
 		self.activeConflicts = {}
 		local db = self.db.profile.compat
-		local needsReload = false
 
 		for key, def in pairs(self.conflictDefs) do
-			local active, detectedAddon = IsConflictActive(def)
-			if active and detectedAddon then
-				self.activeConflicts[key] = def
-				if db[key] == nil then
-					local label = detectedAddon.label
+			local found = FindLoadedAddon(def)
+			if not found then
+				-- External addon is gone — clear stale compat choice
+				if db[key] then db[key] = nil end
+			else
+				-- External addon is loaded — check for conflict
+				local tuiActive = def.tuiCheck(TUI.db.profile)
+				local externalActive = not def.externalCheck or def.externalCheck()
+
+				if tuiActive and externalActive then
+					self.activeConflicts[key] = def
+					-- Re-prompt regardless of previous choice — state has changed
+					db[key] = nil
+					local label = found.label
 					local text = 'Looks like you have |cffff2f3d' .. label
 						.. '|r and |cffff2f3dTrenchyUI|r installed.\nPlease select which '
 						.. def.category .. ' you\'d prefer to use.'
@@ -148,22 +154,10 @@ do -- Compat popup system
 						key = key, def = def,
 						detectedLabel = label, popupText = text,
 					}
-				elseif db[key] == 'tui' then
-					if def.tuiAccept then
-						def.tuiAccept()
-					else
-						for _, entry in pairs(def.addons) do
-							if C_AddOns_IsAddOnLoaded(entry.name) then
-								C_AddOns_DisableAddOn(entry.name)
-							end
-						end
-					end
-					needsReload = true
 				end
 			end
 		end
 
-		if needsReload then C_Timer.After(1, ReloadUI); return end
 		if #compatPopupQueue > 0 then C_Timer.After(1, ShowNextCompatPopup) end
 	end
 end
