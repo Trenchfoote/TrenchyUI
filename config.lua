@@ -1811,7 +1811,7 @@ function TUI:BuildConfig()
     do
         local abArgs = E.Options.args.actionbar and E.Options.args.actionbar.args
         if abArgs then
-            abArgs.clickCasting = ACH:Execute(E:TextGradient('Click Casting', 1.00,0.18,0.24, 0.80,0.10,0.20), nil, 4, function()
+            abArgs.clickCasting = ACH:Execute(E:TextGradient('Click Casting', 1.00,0.18,0.24, 0.80,0.10,0.20), nil, 2.5, function()
                 if not _G.ClickBindingFrame then
                     C_AddOns.LoadAddOn('Blizzard_ClickBindingUI')
                 end
