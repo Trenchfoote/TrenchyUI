@@ -1,6 +1,12 @@
 # TrenchyUI Changelog
 
-## v0.9.6
+## v1.0
 
 ### Bug Fixes
-- Cooldown Manager: The /cdm slash command no longer blocks other CDM addons when TrenchyUI's CDM module is disabled
+- Minimap Buttons: Fixed growth direction not working — buttons now correctly expand in the configured direction (e.g. "Up, then Left")
+
+### New Features
+- Skins: Blizzard Cooldown Manager alert editor panel now inherits ElvUI skin
+
+### Improvements
+- General: Multiple fixes for code alignment
