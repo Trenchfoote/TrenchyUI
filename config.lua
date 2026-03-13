@@ -1808,7 +1808,7 @@ function TUI:BuildConfig()
     do
         local abArgs = E.Options.args.actionbar and E.Options.args.actionbar.args
         if abArgs then
-            abArgs.clickCasting = ACH:Execute(E.NewSign .. 'Click Casting', nil, 4, function()
+            abArgs.clickCasting = ACH:Execute('Click Casting', nil, 4, function()
                 if not _G.ClickBindingFrame then
                     C_AddOns.LoadAddOn('Blizzard_ClickBindingUI')
                 end
