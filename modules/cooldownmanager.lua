@@ -690,6 +690,44 @@ function TUI:InitCooldownManager()
 			LayoutContainer(viewerKey, true)
 		end
 
+		-- Post-hook ElvUI Skins to re-apply our text styling after ElvUI overrides it
+		local S = E:GetModule('Skins', true)
+		if S then
+			if S.CooldownManager_UpdateTextContainer then
+				hooksecurefunc(S, 'CooldownManager_UpdateTextContainer', function(_, itemFrame)
+					local viewerKey = styledFrames[itemFrame]
+					if not viewerKey then return end
+					local vdb = GetViewerDB(viewerKey)
+					if vdb then
+						ApplyCountText(itemFrame, vdb.countText)
+					end
+				end)
+			end
+			if S.CooldownManager_SkinIcon then
+				hooksecurefunc(S, 'CooldownManager_SkinIcon', function(_, itemFrame)
+					local viewerKey = styledFrames[itemFrame]
+					if not viewerKey then return end
+					local cdb = GetDB()
+					local vdb = GetViewerDB(viewerKey)
+					if vdb and cdb then
+						ApplyTextOverrides(itemFrame, vdb, cdb)
+					end
+				end)
+			end
+		end
+
+		-- Post-hook ElvUI cooldown text to re-apply our cooldown timer styling
+		hooksecurefunc(E, 'CooldownUpdate', function(_, cooldown)
+			if not cooldown then return end
+			local itemFrame = cooldown:GetParent()
+			local viewerKey = itemFrame and styledFrames[itemFrame]
+			if not viewerKey then return end
+			local vdb = GetViewerDB(viewerKey)
+			if vdb then
+				ApplyCooldownText(cooldown, vdb.cooldownText)
+			end
+		end)
+
 		local eventFrame = CreateFrame('Frame')
 		eventFrame:RegisterEvent('UNIT_AURA')
 		eventFrame:RegisterEvent('SPELL_UPDATE_COOLDOWN')
