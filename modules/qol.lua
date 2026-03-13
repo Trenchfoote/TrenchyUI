@@ -3,7 +3,7 @@ local TUI = E:GetModule('TrenchyUI')
 
 local CreateFrame = CreateFrame
 local hooksecurefunc = hooksecurefunc
-local pairs, ipairs = pairs, ipairs
+local pairs, ipairs, sort, tremove = pairs, ipairs, sort, tremove
 
 do -- Hide Talking Head
 	local function KillTalkingHead()
@@ -20,7 +20,7 @@ do -- Hide Talking Head
 			for i = #AlertFrame.alertFrameSubSystems, 1, -1 do
 				local sub = AlertFrame.alertFrameSubSystems[i]
 				if sub.anchorFrame and sub.anchorFrame == thf then
-					table.remove(AlertFrame.alertFrameSubSystems, i)
+					tremove(AlertFrame.alertFrameSubSystems, i)
 				end
 			end
 		end
@@ -519,8 +519,6 @@ do -- Minimap Button Bar
 			barW = MBB_PADDING * 2 + secondary * size + (secondary - 1) * effectiveSpacing
 			barH = MBB_PADDING * 2 + primary * size + (primary - 1) * effectiveSpacing
 		end
-		mbbBar:SetSize(barW, barH)
-
 		-- Determine anchor and direction multipliers from growth direction
 		local anchorPoint, xDir, yDir
 		if growth == 'RIGHTDOWN' then     anchorPoint = 'TOPLEFT';     xDir =  1; yDir = -1
@@ -532,6 +530,28 @@ do -- Minimap Button Bar
 		elseif growth == 'UPRIGHT' then   anchorPoint = 'BOTTOMLEFT';  xDir =  1; yDir =  1
 		elseif growth == 'UPLEFT' then    anchorPoint = 'BOTTOMRIGHT'; xDir = -1; yDir =  1
 		else                              anchorPoint = 'TOPLEFT';     xDir =  1; yDir = -1
+		end
+
+		-- Size bar then re-anchor mover at the growth anchor so the bar expands correctly
+		mbbBar:SetSize(barW, barH)
+		local mover = mbbBar.mover
+		if mover then
+			local curPoint = mover:GetPoint()
+			if curPoint ~= anchorPoint then
+				local ax, ay
+				if anchorPoint == 'TOPLEFT' then        ax, ay = mover:GetLeft(),  mover:GetTop()
+				elseif anchorPoint == 'TOPRIGHT' then   ax, ay = mover:GetRight(), mover:GetTop()
+				elseif anchorPoint == 'BOTTOMLEFT' then ax, ay = mover:GetLeft(),  mover:GetBottom()
+				else                                    ax, ay = mover:GetRight(), mover:GetBottom()
+				end
+				if ax and ay then
+					mover:ClearAllPoints()
+					mover:SetPoint(anchorPoint, UIParent, 'BOTTOMLEFT', ax, ay)
+					E:SaveMoverPosition('TrenchyUIMinimapButtonBarMover')
+				end
+			end
+			mbbBar:ClearAllPoints()
+			mbbBar:SetPoint(anchorPoint, mover, anchorPoint, 0, 0)
 		end
 
 		for i, btn in ipairs(mbbButtons) do
@@ -616,7 +636,7 @@ do -- Minimap Button Bar
 			end
 		end
 
-		table.sort(mbbButtons, function(a, b)
+		sort(mbbButtons, function(a, b)
 			return (a:GetName() or '') < (b:GetName() or '')
 		end)
 	end
@@ -655,7 +675,7 @@ do -- Minimap Button Bar
 				UpdateVisibility()
 			end)
 
-			E:CreateMover(mbbBar, 'TrenchyUIMinimapButtonBarMover', 'TUI Minimap Buttons', nil, nil, nil, 'ALL,TRENCHYUI', nil, 'TrenchyUI,qol')
+			E:CreateMover(mbbBar, 'TrenchyUIMinimapButtonBarMover', 'TUI Minimap Buttons', nil, nil, LayoutBar, 'ALL,TRENCHYUI', nil, 'TrenchyUI,qol')
 			TUI:UpdateMinimapButtonBar()
 			C_Timer.After(5, function() TUI:UpdateMinimapButtonBar() end)
 		end)

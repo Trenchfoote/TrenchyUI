@@ -352,11 +352,6 @@ function TUI:BuildConfig()
     qolDiff.colors.inline = true
     local diffColors = qolDiff.colors.args
 
-    local function getDiffColor(key)
-        local colors = TUI.db.profile.qol.difficultyColors
-        if not colors then return nil end
-        return colors[key]
-    end
     local function ensureDiffColor(key)
         local qol = TUI.db.profile.qol
         if not qol.difficultyColors then qol.difficultyColors = {} end
@@ -364,61 +359,25 @@ function TUI:BuildConfig()
         return qol.difficultyColors[key]
     end
 
-    diffColors.diffNormal = ACH:Color(
-        "Normal", "Color for Normal difficulty.", 1, nil, nil,
-        function() local c = getDiffColor("normal") or ensureDiffColor("normal"); return c.r, c.g, c.b end,
-        function(_, r, g, b) local c = ensureDiffColor("normal"); c.r, c.g, c.b = r, g, b end,
-        diffDisabled
-    )
+    local diffColorDefs = {
+        { key = "normal",      label = "Normal",       desc = "Color for Normal difficulty." },
+        { key = "heroic",      label = "Heroic",       desc = "Color for Heroic difficulty." },
+        { key = "mythic",      label = "Mythic",       desc = "Color for Mythic (non-keystone) difficulty." },
+        { key = "keystoneMod", label = "Mythic+",      desc = "Color for Mythic Keystone (M+) text and level number." },
+        { key = "timewalking", label = "Timewalking",  desc = "Color for Timewalking difficulty." },
+        { key = "lfr",         label = "LFR",          desc = "Color for Looking For Raid difficulty." },
+        { key = "follower",    label = "Follower",     desc = "Color for Follower Dungeon difficulty." },
+        { key = "delve",       label = "Delve",        desc = "Color for Delve difficulty." },
+    }
 
-    diffColors.diffHeroic = ACH:Color(
-        "Heroic", "Color for Heroic difficulty.", 2, nil, nil,
-        function() local c = getDiffColor("heroic") or ensureDiffColor("heroic"); return c.r, c.g, c.b end,
-        function(_, r, g, b) local c = ensureDiffColor("heroic"); c.r, c.g, c.b = r, g, b end,
-        diffDisabled
-    )
-
-    diffColors.diffMythic = ACH:Color(
-        "Mythic", "Color for Mythic (non-keystone) difficulty.", 3, nil, nil,
-        function() local c = getDiffColor("mythic") or ensureDiffColor("mythic"); return c.r, c.g, c.b end,
-        function(_, r, g, b) local c = ensureDiffColor("mythic"); c.r, c.g, c.b = r, g, b end,
-        diffDisabled
-    )
-
-    diffColors.diffKeystone = ACH:Color(
-        "Mythic+", "Color for Mythic Keystone (M+) text and level number.", 4, nil, nil,
-        function() local c = getDiffColor("keystoneMod") or ensureDiffColor("keystoneMod"); return c.r, c.g, c.b end,
-        function(_, r, g, b) local c = ensureDiffColor("keystoneMod"); c.r, c.g, c.b = r, g, b end,
-        diffDisabled
-    )
-
-    diffColors.diffTimewalking = ACH:Color(
-        "Timewalking", "Color for Timewalking difficulty.", 5, nil, nil,
-        function() local c = getDiffColor("timewalking") or ensureDiffColor("timewalking"); return c.r, c.g, c.b end,
-        function(_, r, g, b) local c = ensureDiffColor("timewalking"); c.r, c.g, c.b = r, g, b end,
-        diffDisabled
-    )
-
-    diffColors.diffLFR = ACH:Color(
-        "LFR", "Color for Looking For Raid difficulty.", 6, nil, nil,
-        function() local c = getDiffColor("lfr") or ensureDiffColor("lfr"); return c.r, c.g, c.b end,
-        function(_, r, g, b) local c = ensureDiffColor("lfr"); c.r, c.g, c.b = r, g, b end,
-        diffDisabled
-    )
-
-    diffColors.diffFollower = ACH:Color(
-        "Follower", "Color for Follower Dungeon difficulty.", 7, nil, nil,
-        function() local c = getDiffColor("follower") or ensureDiffColor("follower"); return c.r, c.g, c.b end,
-        function(_, r, g, b) local c = ensureDiffColor("follower"); c.r, c.g, c.b = r, g, b end,
-        diffDisabled
-    )
-
-    diffColors.diffDelve = ACH:Color(
-        "Delve", "Color for Delve difficulty.", 8, nil, nil,
-        function() local c = getDiffColor("delve") or ensureDiffColor("delve"); return c.r, c.g, c.b end,
-        function(_, r, g, b) local c = ensureDiffColor("delve"); c.r, c.g, c.b = r, g, b end,
-        diffDisabled
-    )
+    for i, def in ipairs(diffColorDefs) do
+        diffColors[def.key] = ACH:Color(
+            def.label, def.desc, i, nil, nil,
+            function() local c = ensureDiffColor(def.key); return c.r, c.g, c.b end,
+            function(_, r, g, b) local c = ensureDiffColor(def.key); c.r, c.g, c.b = r, g, b end,
+            diffDisabled
+        )
+    end
 
     root.qol.args.minimapButtonBar = ACH:Group("Minimap Buttons", nil, 3)
     root.qol.args.minimapButtonBar.inline = true

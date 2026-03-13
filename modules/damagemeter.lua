@@ -72,7 +72,7 @@ local MODE_SHORT = {
 if Enum.DamageMeterType.Deaths           then MODE_SHORT[Enum.DamageMeterType.Deaths]           = "Deaths"    end
 if Enum.DamageMeterType.EnemyDamageTaken then MODE_SHORT[Enum.DamageMeterType.EnemyDamageTaken] = "Enemy Dmg" end
 
-StaticPopupDialogs["TRENCHYUI_METER_RESET"] = {
+E.PopupDialogs.TUI_METER_RESET = {
     text         = "Reset all Trenchy Damage Meter data?",
     button1      = ACCEPT,
     button2      = CANCEL,
@@ -83,7 +83,6 @@ StaticPopupDialogs["TRENCHYUI_METER_RESET"] = {
     timeout      = 0,
     whileDead    = true,
     hideOnEscape = true,
-    preferredIndex = 3,
 }
 
 local windows  = {}
@@ -370,49 +369,19 @@ local function GetWinDB(winIndex)
     return proxy
 end
 
-local function GetBarFGColor(db, classFilename)
-    if db.barClassColor then
+local function ClassOrColor(db, flagKey, colorKey, classFilename)
+    if db[flagKey] then
         local r, g, b = TUI:GetClassColor(classFilename)
-        if r then return r, g, b end
+        if r then return r, g, b, db[colorKey].a end
     end
-    local c = db.barColor
-    return c.r, c.g, c.b
-end
-
-local function GetBarBGColor(db, classFilename)
-    if db.barBGClassColor then
-        local r, g, b = TUI:GetClassColor(classFilename)
-        if r then return r, g, b, db.barBGColor.a end
-    end
-    local c = db.barBGColor
+    local c = db[colorKey]
     return c.r, c.g, c.b, c.a
 end
 
-local function GetTextColor(db, classFilename)
-    if db.textClassColor then
-        local r, g, b = TUI:GetClassColor(classFilename)
-        if r then return r, g, b end
-    end
-    local c = db.textColor
-    return c.r, c.g, c.b
-end
-
-local function GetValueColor(db, classFilename)
-    if db.valueClassColor then
-        local r, g, b = TUI:GetClassColor(classFilename)
-        if r then return r, g, b end
-    end
-    local c = db.valueColor
-    return c.r, c.g, c.b
-end
-
-local function GetRankColor(db, classFilename)
-    if db.rankClassColor then
-        local r, g, b = TUI:GetClassColor(classFilename)
-        if r then return r, g, b end
-    end
-    local c = db.rankColor
-    return c.r, c.g, c.b
+local function StyleBarTexts(bar, fontPath, size, flags)
+    bar.leftText:FontTemplate(fontPath, size, flags)
+    bar.rightText:FontTemplate(fontPath, size, flags)
+    bar.pctText:FontTemplate(fontPath, size, flags)
 end
 
 local function NewWindowState(index, savedModeIndex)
@@ -918,7 +887,7 @@ local function SetupHeaderContent(win, db)
     header.reset:SetHitRectInsets(0, 0, 0, 0)
     header.reset:SetScript("OnClick", function(_, btn)
         if btn == "LeftButton" then
-            StaticPopup_Show("TRENCHYUI_METER_RESET")
+            E:StaticPopup_Show('TUI_METER_RESET')
         end
     end)
     header.reset:HookScript("OnEnter", function(self)
@@ -1061,9 +1030,7 @@ local function SetupWindowContent(win, db, parent)
 
     for j = 1, MAX_BARS do
         local bar = CreateBar(win.frame)
-        bar.leftText:FontTemplate(fontPath, db.barFontSize, flags)
-        bar.rightText:FontTemplate(fontPath, db.barFontSize, flags)
-        bar.pctText:FontTemplate(fontPath, db.barFontSize, flags)
+        StyleBarTexts(bar, fontPath, db.barFontSize, flags)
         ApplyBarIconLayout(bar, db)
         ApplyBarBorder(bar, db)
 
@@ -1281,10 +1248,10 @@ RefreshWindow = function(win)
         if topVal == 0 then topVal = 1 end
         if totalAmt == 0 then totalAmt = 1 end
 
-        local fgR, fgG, fgB = GetBarFGColor(db, ds.class)
-        local bgR, bgG, bgB, bgA = GetBarBGColor(db, ds.class)
-        local tR, tG, tB = GetTextColor(db, ds.class)
-        local vR, vG, vB = GetValueColor(db, ds.class)
+        local fgR, fgG, fgB = ClassOrColor(db, 'barClassColor', 'barColor', ds.class)
+        local bgR, bgG, bgB, bgA = ClassOrColor(db, 'barBGClassColor', 'barBGColor', ds.class)
+        local tR, tG, tB = ClassOrColor(db, 'textClassColor', 'textColor', ds.class)
+        local vR, vG, vB = ClassOrColor(db, 'valueClassColor', 'valueColor', ds.class)
 
         for i = 1, MAX_BARS do
             local bar = win.bars[i]
@@ -1400,15 +1367,15 @@ RefreshWindow = function(win)
                 bar.frame:Hide()
             else
                 bar.frame:Show()
-                local fgR, fgG, fgB = GetBarFGColor(db, td.class)
+                local fgR, fgG, fgB = ClassOrColor(db, 'barClassColor', 'barColor', td.class)
                 bar.statusbar:SetStatusBarColor(fgR, fgG, fgB)
                 bar.statusbar:SetMinMaxValues(0, maxVal)
                 bar.statusbar:SetValue(td.value)
-                local bgR, bgG, bgB, bgA = GetBarBGColor(db, td.class)
+                local bgR, bgG, bgB, bgA = ClassOrColor(db, 'barBGClassColor', 'barBGColor', td.class)
                 bar.background:SetVertexColor(bgR, bgG, bgB, bgA)
-                local tR, tG, tB = GetTextColor(db, td.class)
+                local tR, tG, tB = ClassOrColor(db, 'textClassColor', 'textColor', td.class)
                 if db.showRank then
-                    local rr, rg, rb = GetRankColor(db, td.class)
+                    local rr, rg, rb = ClassOrColor(db, 'rankClassColor', 'rankColor', td.class)
                     bar.leftText:SetText(format("|cff%02x%02x%02x%d.|r %s",
                         rr * 255, rg * 255, rb * 255, srcIdx, td.name))
                 else
@@ -1421,7 +1388,7 @@ RefreshWindow = function(win)
                 else
                     FormatValueText(bar.rightText, td.value)
                 end
-                local vR, vG, vB = GetValueColor(db, td.class)
+                local vR, vG, vB = ClassOrColor(db, 'valueClassColor', 'valueColor', td.class)
                 bar.rightText:SetTextColor(vR, vG, vB)
                 if bar._isDrill then ResetDrillBar(bar, db) end
                 if db.showClassIcon then
@@ -1499,12 +1466,12 @@ RefreshWindow = function(win)
                 if guid and classFilename then classCache[guid] = classFilename end
                 bar.frame.sourceClass = classFilename
 
-                local fgR, fgG, fgB = GetBarFGColor(db, classFilename)
+                local fgR, fgG, fgB = ClassOrColor(db, 'barClassColor', 'barColor', classFilename)
                 bar.statusbar:SetStatusBarColor(fgR, fgG, fgB)
                 bar.statusbar:SetMinMaxValues(0, session.maxAmount or 1)
                 bar.statusbar:SetValue(src.totalAmount or 0)
 
-                local bgR, bgG, bgB, bgA = GetBarBGColor(db, classFilename)
+                local bgR, bgG, bgB, bgA = ClassOrColor(db, 'barBGClassColor', 'barBGColor', classFilename)
                 bar.background:SetVertexColor(bgR, bgG, bgB, bgA)
 
                 -- Name resolution: roster cache > specIcon cache > C_DamageMeter > secret fallback
@@ -1531,10 +1498,10 @@ RefreshWindow = function(win)
                 end
                 bar.frame.sourceName = plainName or '?'
 
-                local tR, tG, tB = GetTextColor(db, classFilename)
+                local tR, tG, tB = ClassOrColor(db, 'textClassColor', 'textColor', classFilename)
                 if plainName then
                     if db.showRank then
-                        local rr, rg, rb = GetRankColor(db, classFilename)
+                        local rr, rg, rb = ClassOrColor(db, 'rankClassColor', 'rankColor', classFilename)
                         bar.leftText:SetText(format('|cff%02x%02x%02x%d.|r %s',
                             rr * 255, rg * 255, rb * 255, srcIdx, plainName))
                     else
@@ -1557,7 +1524,7 @@ RefreshWindow = function(win)
                     local rawValue = usePerSec and src.amountPerSecond or src.totalAmount
                     FormatValueText(bar.rightText, rawValue)
                 end
-                local vR, vG, vB = GetValueColor(db, classFilename)
+                local vR, vG, vB = ClassOrColor(db, 'valueClassColor', 'valueColor', classFilename)
                 bar.rightText:SetTextColor(vR, vG, vB)
                 if bar._isDrill then ResetDrillBar(bar, db) end
 
@@ -1723,9 +1690,7 @@ function TUI:UpdateMeterLayout()
         for i = 1, MAX_BARS do
             local bar = win.bars[i]
             if bar then
-                bar.leftText:FontTemplate(fontPath, db.barFontSize, flags)
-                bar.rightText:FontTemplate(fontPath, db.barFontSize, flags)
-                bar.pctText:FontTemplate(fontPath, db.barFontSize, flags)
+                StyleBarTexts(bar, fontPath, db.barFontSize, flags)
                 bar.statusbar:SetStatusBarTexture(fgTex)
                 bar.background:SetTexture(bgTex)
                 ApplyBarIconLayout(bar, db)
