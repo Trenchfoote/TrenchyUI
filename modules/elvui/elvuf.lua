@@ -519,12 +519,12 @@ local function AfterElvUIPostUpdate(element, frame, unit, aura, debuffType, text
 	local glowTarget = frame.Health or frame
 
 	if aura or debuffType then
-		local r, g, b, a = element:GetVertexColor()
+		local r, g, b = element:GetVertexColor()
 
 		element:SetVertexColor(0, 0, 0, 0)
 		if frame.AuraHightlightGlow then frame.AuraHightlightGlow:Hide() end
 
-		LCG.PixelGlow_Start(glowTarget, { r, g, b, a }, lines, speed, nil, thickness, 0, 0, false, GLOW_KEY)
+		LCG.PixelGlow_Start(glowTarget, { r, g, b, 1 }, lines, speed, nil, thickness, 0, 0, false, GLOW_KEY)
 	else
 		element:SetVertexColor(0, 0, 0, 0)
 		if frame.AuraHightlightGlow then frame.AuraHightlightGlow:Hide() end
