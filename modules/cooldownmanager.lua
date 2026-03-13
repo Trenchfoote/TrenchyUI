@@ -41,6 +41,25 @@ local function GetViewer(viewerKey)
 	return info and _G[info.global]
 end
 
+-- Per-spell glow DB helpers
+local SPELL_GLOW_DEFAULTS = { enabled = false, type = 'pixel', color = { r = 0.95, g = 0.95, b = 0.32, a = 1 }, lines = 8, speed = 0.25, thickness = 2, particles = 4, scale = 1 }
+
+local function GetSpellGlowDB(spellID)
+	local db = GetDB()
+	return db and db.spellGlow and db.spellGlow[spellID]
+end
+
+local function GetOrCreateSpellGlowDB(spellID)
+	local db = GetDB()
+	if not db then return nil end
+	if not db.spellGlow then db.spellGlow = {} end
+	if not db.spellGlow[spellID] then
+		local d = SPELL_GLOW_DEFAULTS
+		db.spellGlow[spellID] = { enabled = d.enabled, type = d.type, color = { r = d.color.r, g = d.color.g, b = d.color.b, a = d.color.a }, lines = d.lines, speed = d.speed, thickness = d.thickness, particles = d.particles, scale = d.scale }
+	end
+	return db.spellGlow[spellID]
+end
+
 -- Glow
 local function StopGlow(itemFrame)
 	if not LCG or not glowActive[itemFrame] then return end
@@ -61,28 +80,43 @@ end
 local hookedAlerts = {}
 
 local glowColor = {}    -- reusable color table for glow
+local GLOW_PREFIXES = { '_PixelGlow', '_AutoCastGlow', '_ButtonGlow', '_ProcGlow' }
 
-local function ApplyGlow(itemFrame, glowDB)
+local function ApplyGlow(itemFrame, glowDB, perSpell)
 	if not LCG then return end
 
 	local alert = itemFrame.SpellActivationAlert
-	if not alert or not alert:IsShown() then
-		StopGlow(itemFrame)
-		return
+	if not perSpell then
+		if not alert or not alert:IsShown() then
+			StopGlow(itemFrame)
+			return
+		end
 	end
 
-	alert:SetAlpha(0)
-	itemFrame.tuiAlertHidden = true
+	-- Suppress Blizzard's alert animation if it's showing
+	if alert and alert:IsShown() then
+		alert:SetAlpha(0)
+		itemFrame.tuiAlertHidden = true
+	end
 
 	-- Hook Show so we keep suppressing Blizzard's alert while glow is enabled
-	if not hookedAlerts[itemFrame] then
+	if alert and not hookedAlerts[itemFrame] then
 		hookedAlerts[itemFrame] = true
 		hooksecurefunc(alert, 'Show', function(self)
 			local vKey = styledFrames[itemFrame]
-			local vdb = vKey and GetViewerDB(vKey)
-			if vdb and vdb.glow and vdb.glow.enabled then
-				self:SetAlpha(0)
-				itemFrame.tuiAlertHidden = true
+			if vKey == 'buffIcon' then
+				local sid = itemFrame.GetBaseSpellID and itemFrame:GetBaseSpellID()
+				local sgdb = sid and GetSpellGlowDB(sid)
+				if sgdb and sgdb.enabled then
+					self:SetAlpha(0)
+					itemFrame.tuiAlertHidden = true
+				end
+			else
+				local vdb = vKey and GetViewerDB(vKey)
+				if vdb and vdb.glow and vdb.glow.enabled then
+					self:SetAlpha(0)
+					itemFrame.tuiAlertHidden = true
+				end
 			end
 		end)
 	end
@@ -97,18 +131,31 @@ local function ApplyGlow(itemFrame, glowDB)
 		glowColor[1], glowColor[2], glowColor[3], glowColor[4] = 0.95, 0.95, 0.32, 1
 	end
 
+	local fl = 0
 	if glowType == 'pixel' then
-		LCG.PixelGlow_Start(itemFrame, glowColor, glowDB.lines or 8, glowDB.speed or 0.25, glowDB.length, glowDB.thickness or 2, 0, 0, nil, 'TUI_CDM')
+		LCG.PixelGlow_Start(itemFrame, glowColor, glowDB.lines or 8, glowDB.speed or 0.25, glowDB.length, glowDB.thickness or 2, 0, 0, nil, 'TUI_CDM', fl)
 	elseif glowType == 'autocast' then
-		LCG.AutoCastGlow_Start(itemFrame, glowColor, glowDB.particles or 4, glowDB.speed or 0.25, glowDB.scale or 1, 0, 0, 'TUI_CDM')
+		LCG.AutoCastGlow_Start(itemFrame, glowColor, glowDB.particles or 4, glowDB.speed or 0.25, glowDB.scale or 1, 0, 0, 'TUI_CDM', fl)
 	elseif glowType == 'button' then
-		LCG.ButtonGlow_Start(itemFrame, glowColor, glowDB.speed or 0.25)
+		LCG.ButtonGlow_Start(itemFrame, glowColor, glowDB.speed or 0.25, fl)
 	elseif glowType == 'proc' then
 		LCG.ProcGlow_Start(itemFrame, {
 			color = glowColor,
 			startAnim = glowDB.startAnim ~= false,
 			key = 'TUI_CDM',
+			frameLevel = fl,
 		})
+	end
+
+	-- Re-anchor glow frame flush with icon edges
+	for _, prefix in ipairs(GLOW_PREFIXES) do
+		local gf = itemFrame[prefix .. 'TUI_CDM']
+		if gf then
+			gf:ClearAllPoints()
+			gf:SetPoint('TOPLEFT', itemFrame, 'TOPLEFT', 0, 0)
+			gf:SetPoint('BOTTOMRIGHT', itemFrame, 'BOTTOMRIGHT', 0, 0)
+			break
+		end
 	end
 end
 
@@ -259,6 +306,197 @@ local function HidePreview()
 	end
 end
 
+-- Glow Options Panel
+do
+	local AceGUI = LibStub('AceGUI-3.0')
+	local glowPanel, currentSpellID
+	local widgets = {}
+	local GLOW_TYPES = { pixel = 'Pixel', autocast = 'Autocast', button = 'Button', proc = 'Proc' }
+	local GLOW_TYPE_ORDER = { 'pixel', 'autocast', 'button', 'proc' }
+
+	local function RefreshBuffIconGlow()
+		local viewer = _G['BuffIconCooldownViewer']
+		if not viewer or not viewer.itemFramePool then return end
+		for frame in viewer.itemFramePool:EnumerateActive() do
+			if frame and frame:IsShown() and frame.GetBaseSpellID then
+				local sid = frame:GetBaseSpellID()
+				local sgdb = sid and GetSpellGlowDB(sid)
+				if sgdb and sgdb.enabled then
+					ApplyGlow(frame, sgdb, true)
+				else
+					StopGlow(frame)
+				end
+			end
+		end
+	end
+
+	local function UpdateVisibleSliders()
+		if not glowPanel or not currentSpellID then return end
+		local sgdb = GetOrCreateSpellGlowDB(currentSpellID)
+		if not sgdb then return end
+		local isPixel = sgdb.type == 'pixel'
+		local isAutocast = sgdb.type == 'autocast'
+		widgets.lines.frame:SetShown(isPixel)
+		widgets.thickness.frame:SetShown(isPixel)
+		widgets.particles.frame:SetShown(isAutocast)
+		widgets.scale.frame:SetShown(isAutocast)
+		glowPanel:DoLayout()
+	end
+
+	local function UpdatePanelWidgets()
+		if not glowPanel or not currentSpellID then return end
+		local sgdb = GetOrCreateSpellGlowDB(currentSpellID)
+		if not sgdb then return end
+		widgets.enable:SetValue(sgdb.enabled)
+		widgets.glowType:SetValue(sgdb.type)
+		widgets.color:SetColor(sgdb.color.r, sgdb.color.g, sgdb.color.b, sgdb.color.a or 1)
+		widgets.speed:SetValue(sgdb.speed)
+		widgets.lines:SetValue(sgdb.lines)
+		widgets.thickness:SetValue(sgdb.thickness)
+		widgets.particles:SetValue(sgdb.particles)
+		widgets.scale:SetValue(sgdb.scale)
+		UpdateVisibleSliders()
+	end
+
+	local function CreateGlowPanel()
+		local window = AceGUI:Create('Window')
+		window:SetTitle('|cffff2f3dTrenchyUI|r Glow Options')
+		window:SetWidth(300)
+		window:SetHeight(340)
+		window:SetLayout('Flow')
+		window:EnableResize(false)
+		window.frame:SetFrameStrata('DIALOG')
+
+		local enable = AceGUI:Create('CheckBox')
+		enable:SetLabel('Enable Glow')
+		enable:SetFullWidth(true)
+		enable:SetCallback('OnValueChanged', function(_, _, val)
+			local sgdb = GetOrCreateSpellGlowDB(currentSpellID)
+			if sgdb then sgdb.enabled = val; RefreshBuffIconGlow() end
+		end)
+		window:AddChild(enable)
+		widgets.enable = enable
+
+		local glowType = AceGUI:Create('Dropdown')
+		glowType:SetLabel('Type')
+		glowType:SetList(GLOW_TYPES, GLOW_TYPE_ORDER)
+		glowType:SetRelativeWidth(0.5)
+		glowType:SetCallback('OnValueChanged', function(_, _, val)
+			local sgdb = GetOrCreateSpellGlowDB(currentSpellID)
+			if sgdb then sgdb.type = val; UpdateVisibleSliders(); RefreshBuffIconGlow() end
+		end)
+		window:AddChild(glowType)
+		widgets.glowType = glowType
+
+		local color = AceGUI:Create('ColorPicker')
+		color:SetLabel('Color')
+		color:SetRelativeWidth(0.5)
+		color:SetHasAlpha(true)
+
+		local function colorChanged(_, _, r, g, b, a)
+			local sgdb = GetOrCreateSpellGlowDB(currentSpellID)
+			if sgdb then sgdb.color.r, sgdb.color.g, sgdb.color.b, sgdb.color.a = r, g, b, a; RefreshBuffIconGlow() end
+		end
+		color:SetCallback('OnValueChanged', colorChanged)
+		color:SetCallback('OnValueConfirmed', colorChanged)
+
+		window:AddChild(color)
+		widgets.color = color
+
+		local speed = AceGUI:Create('Slider')
+		speed:SetLabel('Speed')
+		speed:SetSliderValues(0.05, 2, 0.05)
+		speed:SetFullWidth(true)
+		speed:SetCallback('OnValueChanged', function(_, _, val)
+			local sgdb = GetOrCreateSpellGlowDB(currentSpellID)
+			if sgdb then sgdb.speed = val; RefreshBuffIconGlow() end
+		end)
+		window:AddChild(speed)
+		widgets.speed = speed
+
+		local lines = AceGUI:Create('Slider')
+		lines:SetLabel('Lines')
+		lines:SetSliderValues(1, 20, 1)
+		lines:SetFullWidth(true)
+		lines:SetCallback('OnValueChanged', function(_, _, val)
+			local sgdb = GetOrCreateSpellGlowDB(currentSpellID)
+			if sgdb then sgdb.lines = val; RefreshBuffIconGlow() end
+		end)
+		window:AddChild(lines)
+		widgets.lines = lines
+
+		local thickness = AceGUI:Create('Slider')
+		thickness:SetLabel('Thickness')
+		thickness:SetSliderValues(1, 8, 1)
+		thickness:SetFullWidth(true)
+		thickness:SetCallback('OnValueChanged', function(_, _, val)
+			local sgdb = GetOrCreateSpellGlowDB(currentSpellID)
+			if sgdb then sgdb.thickness = val; RefreshBuffIconGlow() end
+		end)
+		window:AddChild(thickness)
+		widgets.thickness = thickness
+
+		local particles = AceGUI:Create('Slider')
+		particles:SetLabel('Particles')
+		particles:SetSliderValues(1, 16, 1)
+		particles:SetFullWidth(true)
+		particles:SetCallback('OnValueChanged', function(_, _, val)
+			local sgdb = GetOrCreateSpellGlowDB(currentSpellID)
+			if sgdb then sgdb.particles = val; RefreshBuffIconGlow() end
+		end)
+		window:AddChild(particles)
+		widgets.particles = particles
+
+		local scale = AceGUI:Create('Slider')
+		scale:SetLabel('Scale')
+		scale:SetSliderValues(0.5, 3, 0.1)
+		scale:SetFullWidth(true)
+		scale:SetCallback('OnValueChanged', function(_, _, val)
+			local sgdb = GetOrCreateSpellGlowDB(currentSpellID)
+			if sgdb then sgdb.scale = val; RefreshBuffIconGlow() end
+		end)
+		window:AddChild(scale)
+		widgets.scale = scale
+
+		window:SetCallback('OnClose', function() glowPanel = nil end)
+		window:Hide()
+		glowPanel = window
+	end
+
+	function TUI:ShowGlowPanel(spellID)
+		if not glowPanel then CreateGlowPanel() end
+		currentSpellID = spellID
+
+		local spellInfo = C_Spell.GetSpellInfo(spellID)
+		local name = spellInfo and spellInfo.name or ('Spell ' .. spellID)
+		glowPanel:SetTitle('|cffff2f3dTrenchyUI|r ' .. name)
+
+		-- Anchor to Cooldown Settings panel
+		glowPanel.frame:ClearAllPoints()
+		local tsf = _G.CooldownViewerSettings
+		if tsf and tsf:IsShown() then
+			glowPanel.frame:SetPoint('TOPLEFT', tsf, 'TOPRIGHT', 50, 0)
+		else
+			glowPanel.frame:SetPoint('CENTER', E.UIParent, 'CENTER', 0, 100)
+		end
+
+		-- Close glow panel when Cooldown Settings closes or Edit Alert opens
+		if tsf and not tsf.tuiGlowHooked then
+			tsf:HookScript('OnHide', function() if glowPanel then glowPanel:Hide() end end)
+			tsf.tuiGlowHooked = true
+		end
+
+		local editAlert = _G.CooldownViewerSettingsEditAlert
+		if editAlert and not editAlert.tuiGlowHooked then
+			editAlert:HookScript('OnShow', function() if glowPanel then glowPanel:Hide() end end)
+			editAlert.tuiGlowHooked = true
+		end
+
+		UpdatePanelWidgets()
+		glowPanel:Show()
+	end
+end
+
 -- Blizzard CDM settings
 local function ShowBlizzardCDMSettings()
 	if not C_AddOns.IsAddOnLoaded('Blizzard_CooldownViewer') then
@@ -379,7 +617,15 @@ local function LayoutContainer(viewerKey, isCapture)
 			styledFrames[icon] = viewerKey
 		end
 
-		if useGlow then
+		if viewerKey == 'buffIcon' then
+			local sid = icon.GetBaseSpellID and icon:GetBaseSpellID()
+			local sgdb = sid and GetSpellGlowDB(sid)
+			if sgdb and sgdb.enabled then
+				ApplyGlow(icon, sgdb, true)
+			else
+				StopGlow(icon)
+			end
+		elseif useGlow then
 			ApplyGlow(icon, vGlow)
 		else
 			StopGlow(icon)
@@ -738,6 +984,22 @@ function TUI:InitCooldownManager()
 		eventFrame:SetScript('OnEvent', OnCDMEvent)
 
 		TUI:UpdateCDMVisibility()
+
+		-- Right-click context menu for buff icon glow options
+		local BUFF_CATEGORY = 2
+		local tuiMenuTitle = '|cffff2f3dTrenchyUI|r CDM'
+		Menu.ModifyMenu('MENU_COOLDOWN_SETTINGS_ITEM', function(owner, rootDescription)
+			if not owner or not owner.GetCooldownInfo then return end
+			local cdInfo = owner:GetCooldownInfo()
+			if not cdInfo or cdInfo.category ~= BUFF_CATEGORY then return end
+
+			rootDescription:CreateDivider()
+			rootDescription:CreateTitle(tuiMenuTitle)
+			rootDescription:CreateButton('Glow Options', function()
+				local spellID = owner.GetBaseSpellID and owner:GetBaseSpellID()
+				if spellID then TUI:ShowGlowPanel(spellID) end
+			end)
+		end)
 
 		SLASH_TUICDM1 = '/cdm'
 		SlashCmdList['TUICDM'] = function()

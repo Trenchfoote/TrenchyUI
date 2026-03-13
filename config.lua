@@ -92,6 +92,7 @@ TUI.defaults = {
                     glow = { enabled = false, type = 'pixel', color = { r = 0.95, g = 0.95, b = 0.32, a = 1 }, lines = 8, speed = 0.25, thickness = 2, length = nil, particles = 4, scale = 1, startAnim = true },
                 },
             },
+            spellGlow = {},
         },
         damageMeter = {
             enabled       = false,
@@ -1351,9 +1352,10 @@ function TUI:BuildConfig()
             function(_, value) selVDB().countText.yOffset = value; cdmRefresh() end
         )
 
-        -- Proc Glow group (per-viewer, inside Viewer tab)
+        -- Proc Glow group (per-viewer, inside Viewer tab) — hidden for Buff Icon
         cdmViewer.glow = ACH:Group("Proc Glow", nil, 6)
         cdmViewer.glow.inline = true
+        cdmViewer.glow.hidden = function() return cdmDB().selectedViewer == 'buffIcon' end
         local cdmGlow = cdmViewer.glow.args
 
         local glowDisabled = function() return not selVDB().glow.enabled end
