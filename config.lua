@@ -1845,6 +1845,21 @@ function TUI:BuildConfig()
         end
     end
 
+    -- Inject Click Casting shortcut button into ElvUI ActionBars config
+    do
+        local abArgs = E.Options.args.actionbar and E.Options.args.actionbar.args
+        if abArgs then
+            abArgs.clickCasting = ACH:Execute(E.NewSign .. 'Click Casting', nil, 4, function()
+                if not _G.ClickBindingFrame then
+                    C_AddOns.LoadAddOn('Blizzard_ClickBindingUI')
+                end
+                if _G.ClickBindingFrame_Toggle then
+                    _G.ClickBindingFrame_Toggle()
+                end
+            end, nil, nil, 160)
+        end
+    end
+
     root.info = ACH:Group("Information", nil, 7)
     local info = root.info.args
 

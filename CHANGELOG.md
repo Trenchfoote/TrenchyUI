@@ -3,6 +3,7 @@
 ## v0.9.4
 
 ### New Features
+- QoL: Added a Click Casting shortcut button to ElvUI's Action Bars config page — opens the Blizzard click binding UI directly
 - Datatexts: New custom datatexts inspired by the Shadow and Light ElvUI Plugin. Go check it out!
   - New custom Guild datatext with interactive tooltip — shows online members with class colors, level, zone, and click-to-whisper/invite
   - New custom Friends datatext with interactive tooltip — shows character friends and Battle.net friends grouped by game client, with click-to-whisper/invite
