@@ -65,6 +65,9 @@ TUI.defaults = {
             thickness = 2,
             length    = nil,
         },
+        fader = {
+            steadyFlight = false,
+        },
         cooldownManager = {
             enabled = false,
             hideSwipe = false,
@@ -1199,8 +1202,8 @@ function TUI:BuildConfig()
         )
 
         cdmLayout.visibleSetting = ACH:Select(
-            "Visibility", "When to show this viewer.", 7,
-            { ALWAYS = 'Always', INCOMBAT = 'In Combat', HIDDEN = 'Hidden' },
+            "Visibility", "When to show this viewer. 'Player Fader' mirrors the player unitframe's fader alpha.", 7,
+            { ALWAYS = 'Always', INCOMBAT = 'In Combat', FADER = 'Player Fader', HIDDEN = 'Hidden' },
             nil, nil,
             function() return selVDB().visibleSetting end,
             function(_, value)
@@ -1480,6 +1483,24 @@ function TUI:BuildConfig()
         function() return TUI.db.profile.pixelGlow.thickness end,
         function(_, value) TUI.db.profile.pixelGlow.thickness = value end,
         auraDisabled
+    )
+
+    root.unitframes.args.fader = ACH:Group("Fader", nil, 2)
+    root.unitframes.args.fader.inline = true
+    local ufFader = root.unitframes.args.fader.args
+
+    ufFader.steadyFlight = ACH:Toggle(
+        "Steady Flight",
+        "Extend ElvUI's Dynamic Flight fader to also fade during steady (normal) flight. Requires the Player unitframe Fader with Dynamic Flight enabled.",
+        1, nil, nil, nil,
+        function() return TUI.db.profile.fader.steadyFlight end,
+        function(_, value)
+            TUI.db.profile.fader.steadyFlight = value
+            local pf = _G.ElvUF_Player
+            if pf and pf.Fader and pf.Fader.ForceUpdate then
+                pf.Fader:ForceUpdate()
+            end
+        end
     )
 
     root.nameplates = ACH:Group("Nameplates", nil, 4)

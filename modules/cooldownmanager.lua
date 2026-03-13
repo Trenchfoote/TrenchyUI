@@ -875,6 +875,7 @@ local function ShouldShowContainer(viewerKey)
 
 	local vis = vdb.visibleSetting or 'ALWAYS'
 	if vis == 'HIDDEN' then return false end
+	if vis == 'FADER' then return true end
 	if vis == 'INCOMBAT' and not inCombat then return false end
 	return true
 end
@@ -883,15 +884,25 @@ function TUI:UpdateCDMVisibility()
 	local db = GetDB()
 	if not db or not db.enabled then return end
 
+	local playerFrame = _G.ElvUF_Player
+
 	for viewerKey in pairs(VIEWER_KEYS) do
+		local vdb = GetViewerDB(viewerKey)
 		local show = ShouldShowContainer(viewerKey)
 		local container = containers[viewerKey]
-		if container then
-			container:SetShown(show)
-		end
 		local viewer = GetViewer(viewerKey)
-		if viewer then
-			viewer:SetShown(show)
+
+		if container then container:SetShown(show) end
+		if viewer then viewer:SetShown(show) end
+
+		-- Sync alpha: FADER mirrors player frame, others reset to full
+		if vdb and vdb.visibleSetting == 'FADER' then
+			local alpha = playerFrame and playerFrame:GetAlpha() or 1
+			if container then container:SetAlpha(alpha) end
+			if viewer then viewer:SetAlpha(alpha) end
+		else
+			if container then container:SetAlpha(1) end
+			if viewer then viewer:SetAlpha(1) end
 		end
 	end
 end
@@ -984,6 +995,23 @@ function TUI:InitCooldownManager()
 		eventFrame:SetScript('OnEvent', OnCDMEvent)
 
 		TUI:UpdateCDMVisibility()
+
+		-- Mirror player frame fader alpha to FADER-mode CDM containers
+		local playerFrame = _G.ElvUF_Player
+		if playerFrame then
+			hooksecurefunc(playerFrame, 'SetAlpha', function(pf)
+				local alpha = pf:GetAlpha()
+				for viewerKey in pairs(VIEWER_KEYS) do
+					local vdb = GetViewerDB(viewerKey)
+					if vdb and vdb.visibleSetting == 'FADER' then
+						local container = containers[viewerKey]
+						if container then container:SetAlpha(alpha) end
+						local viewer = GetViewer(viewerKey)
+						if viewer then viewer:SetAlpha(alpha) end
+					end
+				end
+			end)
+		end
 
 		-- Right-click context menu for buff icon glow options
 		local BUFF_CATEGORY = 2

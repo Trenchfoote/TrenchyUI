@@ -88,7 +88,9 @@ E.PopupDialogs.TUI_METER_RESET = {
 local windows  = {}
 local testMode = false
 local meterHidden = false
+local meterFadedOut = false
 local flightTicker
+local flightFadeTimer
 
 local nameCache  = {}
 local classCache = {}
@@ -1560,21 +1562,81 @@ function TUI:SetMeterTestMode(enabled)
     TUI:RefreshMeter()
 end
 
+-- Fade helpers for flight visibility
+local function GetPlayerFaderSettings()
+    local fdb = E.db and E.db.unitframe and E.db.unitframe.units
+        and E.db.unitframe.units.player and E.db.unitframe.units.player.fader
+    if not fdb or not fdb.enable then return nil, nil end
+    return fdb.smooth, fdb.delay
+end
+
+local function FadeMeterOut(smooth)
+    for _, win in pairs(windows) do
+        if win.embedded then
+            if win.frame then E:UIFrameFadeOut(win.frame, smooth, win.frame:GetAlpha(), 0) end
+            local wdb = GetWinDB(win.index)
+            if not (wdb and wdb.headerMouseover) then
+                if win.header then E:UIFrameFadeOut(win.header, smooth, win.header:GetAlpha(), 0) end
+                if win.headerBorder then E:UIFrameFadeOut(win.headerBorder, smooth, win.headerBorder:GetAlpha(), 0) end
+            end
+        elseif win.window then
+            E:UIFrameFadeOut(win.window, smooth, win.window:GetAlpha(), 0)
+        end
+    end
+    meterFadedOut = true
+end
+
+local function FadeMeterIn(smooth)
+    for _, win in pairs(windows) do
+        if win.embedded then
+            if win.frame then E:UIFrameFadeIn(win.frame, smooth, win.frame:GetAlpha(), 1) end
+            local wdb = GetWinDB(win.index)
+            if wdb and wdb.headerMouseover then
+                if win.header then win.header:SetAlpha(0) end
+                if win.headerBorder then win.headerBorder:SetAlpha(0) end
+            else
+                if win.header then E:UIFrameFadeIn(win.header, smooth, win.header:GetAlpha(), 1) end
+                if win.headerBorder then E:UIFrameFadeIn(win.headerBorder, smooth, win.headerBorder:GetAlpha(), 1) end
+            end
+        elseif win.window then
+            E:UIFrameFadeIn(win.window, smooth, win.window:GetAlpha(), 1)
+        end
+    end
+    meterFadedOut = false
+end
+
+local function CancelFlightFade()
+    if flightFadeTimer then
+        E:CancelTimer(flightFadeTimer)
+        flightFadeTimer = nil
+    end
+end
+
 -- Hide/show all TDM windows based on pet battle and flight state
 function TUI:UpdateMeterVisibility()
     local db = TUI.db.profile.damageMeter
-    local shouldHide = false
-    if db.hideInPetBattle and C_PetBattles and C_PetBattles.IsInBattle() then
-        shouldHide = true
-    elseif db.hideInFlight and IsFlying() then
-        shouldHide = true
-    end
+    local petBattle = db.hideInPetBattle and C_PetBattles and C_PetBattles.IsInBattle()
+    local inFlight = not petBattle and db.hideInFlight and IsFlying()
+    local shouldHide = petBattle or inFlight
 
     if shouldHide == meterHidden then return end
     meterHidden = shouldHide
+    CancelFlightFade()
 
-    for _, win in pairs(windows) do
-        if shouldHide then
+    if shouldHide then
+        if inFlight then
+            local smooth, delay = GetPlayerFaderSettings()
+            if smooth and smooth > 0 then
+                if delay and delay > 0 then
+                    flightFadeTimer = E:ScheduleTimer(FadeMeterOut, delay, smooth)
+                else
+                    FadeMeterOut(smooth)
+                end
+                return
+            end
+        end
+        -- Instant hide (pet battle or no fader settings)
+        for _, win in pairs(windows) do
             if win.embedded then
                 if win.frame then win.frame:Hide() end
                 if win.header then win.header:Hide() end
@@ -1582,8 +1644,15 @@ function TUI:UpdateMeterVisibility()
             elseif win.window then
                 win.window:Hide()
             end
-        else
-            local wdb = GetWinDB(win.index)
+        end
+    else
+        if meterFadedOut then
+            local smooth = GetPlayerFaderSettings()
+            FadeMeterIn((smooth and smooth > 0) and smooth or 0)
+            return
+        end
+        -- Instant show
+        for _, win in pairs(windows) do
             if win.embedded then
                 if win.frame then win.frame:Show() end
                 if win.header then win.header:Show() end
@@ -1591,13 +1660,13 @@ function TUI:UpdateMeterVisibility()
             elseif win.window then
                 win.window:Show()
             end
-            if wdb.headerMouseover then
+            local wdb = GetWinDB(win.index)
+            if wdb and wdb.headerMouseover then
                 if win.header then win.header:SetAlpha(0) end
                 if win.headerBorder then win.headerBorder:SetAlpha(0) end
             end
         end
     end
-
 end
 
 -- Start or stop flight polling based on the hideInFlight setting

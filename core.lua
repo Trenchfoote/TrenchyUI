@@ -258,6 +258,7 @@ do -- Settings merge
 		if self.InitSoulFragments then self:InitSoulFragments() end
 		if self.InitIronfurBar then self:InitIronfurBar() end
 		if not self:IsCompatBlocked('auraHighlight') and self.InitPixelGlow then self:InitPixelGlow() end
+		if self.InitSteadyFlight then self:InitSteadyFlight() end
 		if not self:IsCompatBlocked('damageMeter') and self.InitDamageMeter then self:InitDamageMeter() end
 		if self.InitSkinBugSack then self:InitSkinBugSack() end
 		if self.InitSkinOPie then self:InitSkinOPie() end
