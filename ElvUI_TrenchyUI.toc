@@ -23,6 +23,7 @@ modules\elvui\elvuf.lua
 modules\skins\auctionator.lua
 modules\skins\bugsack.lua
 modules\skins\opie.lua
+modules\skins\cooldownviewer.lua
 modules\datatexts\guild.lua
 modules\datatexts\friends.lua
 modules\damagemeter.lua
