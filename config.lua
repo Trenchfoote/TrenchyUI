@@ -1517,8 +1517,11 @@ function TUI:BuildConfig()
     root.nameplates.args.interrupt.inline = true
     local npInt = root.nameplates.args.interrupt.args
 
+    local blinkii = '|CFF6559F1B|r|CFF7A4DEFl|r|CFF8845ECi|r|CFFA037E9n|r|CFFB32DE6k|r|CFFBC26E5i|r|CFFCB1EE3i|r'
     npInt.interruptCredit = ACH:Description(
-        "Special thanks to |CFF6559F1B|r|CFF7A4DEFl|r|CFF8845ECi|r|CFFA037E9n|r|CFFB32DE6k|r|CFFBC26E5i|r|CFFCB1EE3i|r for allowing the porting and updating of this module!",
+        "Interrupt Ready changes the color of your castbar based on whether or not your interrupt is on or off cooldown."
+        .. " If your interrupt will come off cooldown during an interruptible cast, a green marker will show when it is ready."
+        .. " Special thanks goes out to " .. blinkii .. " for originally creating this function, and allowing " .. tuiName .. " to use it!",
         1, "medium"
     )
 
@@ -1808,7 +1811,7 @@ function TUI:BuildConfig()
     do
         local abArgs = E.Options.args.actionbar and E.Options.args.actionbar.args
         if abArgs then
-            abArgs.clickCasting = ACH:Execute('Click Casting', nil, 4, function()
+            abArgs.clickCasting = ACH:Execute(E:TextGradient('Click Casting', 1.00,0.18,0.24, 0.80,0.10,0.20), nil, 4, function()
                 if not _G.ClickBindingFrame then
                     C_AddOns.LoadAddOn('Blizzard_ClickBindingUI')
                 end
