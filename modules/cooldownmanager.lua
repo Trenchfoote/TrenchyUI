@@ -738,19 +738,16 @@ function TUI:InitCooldownManager()
 		eventFrame:SetScript('OnEvent', OnCDMEvent)
 
 		TUI:UpdateCDMVisibility()
-	end)
-end
 
--- Slash command
-SLASH_TUICDM1 = '/cdm'
-SlashCmdList['TUICDM'] = function()
-	local db = GetDB()
-	if not db or not db.enabled then return end
-	if cdmDisabledByCVar then
-		E:Print('|cffff2f3dTrenchyUI|r: Cooldown Manager requires Blizzard\'s Cooldown Viewer. Re-enable it in Options > Gameplay Enhancements > Enable Cooldown Manager.')
-		return
-	end
-	OpenCDMConfig()
+		SLASH_TUICDM1 = '/cdm'
+		SlashCmdList['TUICDM'] = function()
+			if cdmDisabledByCVar then
+				E:Print('|cffff2f3dTrenchyUI|r: Cooldown Manager requires Blizzard\'s Cooldown Viewer. Re-enable it in Options > Gameplay Enhancements > Enable Cooldown Manager.')
+				return
+			end
+			OpenCDMConfig()
+		end
+	end)
 end
 
 -- Config hooks
