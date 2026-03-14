@@ -5,9 +5,6 @@
 ### Bug Fixes
 - Minimap Buttons: Fixed growth direction not working — buttons now correctly expand in the configured direction (e.g. "Up, then Left")
 - Cooldown Manager: Fixed viewer growth direction — viewers now grow from the top or bottom of the anchor instead of from center
-- Cooldown Manager: Fixed buff bars not showing when "Hide When Inactive" is disabled with visibility set to "Always"
-- Cooldown Manager: Fixed config preview text clearing actual cooldown text when closing the options panel
-- Cooldown Manager: Fixed custom option panels overlapping Blizzard's "New Alert" frame — panels now close each other automatically
 
 ### New Features
 - Cooldown Manager: Buff Bar viewer with customizable bar width, height, textures, icon toggle, spark, and full text styling for name, duration, and stacks
