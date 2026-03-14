@@ -1398,7 +1398,17 @@ function TUI:InitCooldownManager()
 	local db = GetDB()
 	if not db or not db.enabled then return end
 
-	SetCVar('cooldownViewerEnabled', 1)
+	-- Force Blizzard CDM on; warn if viewers aren't loaded yet (requires reload)
+	if GetCVarBool('cooldownViewerEnabled') ~= true then
+		SetCVar('cooldownViewerEnabled', 1)
+		if not _G['EssentialCooldownViewer'] then
+			C_Timer.After(1, function()
+				E:StaticPopup_Show('CONFIG_RL')
+			end)
+			E:Print('|cffff2f3dTrenchyUI|r: Enabled Blizzard Cooldown Manager. A reload is required.')
+			return
+		end
+	end
 
 	-- Sync our DB to reflect Blizzard's current Edit Mode HWI state
 	for _, vk in ipairs({'buffIcon', 'buffBar'}) do

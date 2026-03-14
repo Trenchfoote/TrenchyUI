@@ -2815,6 +2815,7 @@ local function SetupTrenchyUI()
     E.db.TrenchyUI.addons.skinWarpDeplete = true
     E.db.TrenchyUI.pixelGlow.enabled = true
     E.db.TrenchyUI.pixelGlow.thickness = 3
+    SetCVar('cooldownViewerEnabled', 1)
     E.db.TrenchyUI.cooldownManager.enabled = true
     E.db.TrenchyUI.cooldownManager.hideSwipe = true
     E.db.TrenchyUI.cooldownManager.selectedViewer = "utility"
