@@ -1285,7 +1285,7 @@ function TUI:BuildConfig()
             function()
                 local v = cdmDB().selectedViewer
                 if v == 'buffIcon' then return "Hide when no buff icons are active. Requires a UI reload."
-                elseif v == 'buffBar' then return "Hide when no buff bars are active."
+                elseif v == 'buffBar' then return "Hide when no buff bars are active. Requires a UI reload."
                 end
             end,
             12, nil, nil, nil,
@@ -1293,8 +1293,8 @@ function TUI:BuildConfig()
             function(_, value)
                 selVDB().hideWhenInactive = value
                 local v = cdmDB().selectedViewer
-                if v == 'buffIcon' and TUI.SetBuffIconEditModeHWI then
-                    local result = TUI:SetBuffIconEditModeHWI(value)
+                if (v == 'buffIcon' or v == 'buffBar') and TUI.SetEditModeHWI then
+                    local result = TUI:SetEditModeHWI(v, value)
                     if result == 'applied' then
                         E:StaticPopup_Show('CONFIG_RL')
                     end

@@ -269,7 +269,8 @@ end
 local function SetPreviewText(itemFrame, show, vdb)
 	local bar = itemFrame.Bar
 	if bar then
-		local hasRealName = bar.Name and bar.Name:IsShown() and (bar.Name:GetText() or '') ~= ''
+		local nameText = bar.Name and bar.Name:IsShown() and bar.Name:GetText()
+		local hasRealName = nameText and (issecretvalue(nameText) or nameText ~= '')
 		if show and vdb then
 			-- Hide preview name on bars with real buff data, but always show duration preview
 			if vdb.nameText and not hasRealName then
@@ -1105,47 +1106,45 @@ LayoutBuffBar = function(viewerKey, isCapture)
 
 	local mirroredColumns = vdb.mirroredColumns and count >= 2
 	local columnGap = vdb.columnGap or 4
+	local anchor = growUp and 'BOTTOMLEFT' or 'TOPLEFT'
+	local yDir = growUp and 1 or -1
 
 	if mirroredColumns then
 		local colW = (barW - columnGap) / 2
 		local rows = math_ceil(count / 2)
 		container:SetSize(barW, rows * barH + (rows - 1) * spacing)
 
-		for i, frame in ipairs(bars) do
-			local isOddLast = (i == count and count % 2 == 1)
-			local isLeftCol = not isOddLast and (i % 2 == 1)
-			local row = math_ceil(i / 2) - 1
+		-- Iterate by row, processing left/right pairs together
+		for row = 0, rows - 1 do
+			local li = row * 2 + 1
+			local left = bars[li]
+			local right = bars[li + 1]
+			local yOff = yDir * row * (barH + spacing)
 
-			local fw = isOddLast and barW or colW
-			frame:SetScale(1)
-			frame:SetSize(fw, barH)
-
-			if isLeftCol then
-				frame.tuiBarIconSide = 'RIGHT'
-			else
-				frame.tuiBarIconSide = 'LEFT'
+			-- Left bar: full width if unpaired (odd last), otherwise half
+			left:SetScale(1)
+			left:SetSize(right and colW or barW, barH)
+			left.tuiBarIconSide = right and 'RIGHT' or 'LEFT'
+			if isCapture or not styledFrames[left] then
+				ApplyBarStyle(left, vdb)
+				styledFrames[left] = viewerKey
+				left.tuiViewerKey = viewerKey
 			end
+			left:ClearAllPoints()
+			left:SetPoint(anchor, container, anchor, 0, yOff)
 
-			if isCapture or not styledFrames[frame] then
-				ApplyBarStyle(frame, vdb)
-				styledFrames[frame] = viewerKey
-				frame.tuiViewerKey = viewerKey
-			end
-
-			local x = (not isOddLast and not isLeftCol) and (colW + columnGap) or 0
-
-			local y
-			if growUp then
-				y = row * (barH + spacing)
-			else
-				y = -row * (barH + spacing)
-			end
-
-			frame:ClearAllPoints()
-			if growUp then
-				frame:SetPoint('BOTTOMLEFT', container, 'BOTTOMLEFT', x, y)
-			else
-				frame:SetPoint('TOPLEFT', container, 'TOPLEFT', x, y)
+			-- Right bar (absent on odd-count last row)
+			if right then
+				right:SetScale(1)
+				right:SetSize(colW, barH)
+				right.tuiBarIconSide = 'LEFT'
+				if isCapture or not styledFrames[right] then
+					ApplyBarStyle(right, vdb)
+					styledFrames[right] = viewerKey
+					right.tuiViewerKey = viewerKey
+				end
+				right:ClearAllPoints()
+				right:SetPoint(anchor, container, anchor, colW + columnGap, yOff)
 			end
 		end
 	else
@@ -1163,11 +1162,7 @@ LayoutBuffBar = function(viewerKey, isCapture)
 			end
 
 			frame:ClearAllPoints()
-			if growUp then
-				frame:SetPoint('BOTTOMLEFT', container, 'BOTTOMLEFT', 0, (i - 1) * (barH + spacing))
-			else
-				frame:SetPoint('TOPLEFT', container, 'TOPLEFT', 0, -(i - 1) * (barH + spacing))
-			end
+			frame:SetPoint(anchor, container, anchor, 0, yDir * (i - 1) * (barH + spacing))
 		end
 	end
 
@@ -1274,98 +1269,69 @@ local function HookViewer(viewerKey)
 	end
 end
 
--- Edit Mode HWI control via C_EditMode.SaveLayouts
-local function HasEditModeApis()
-	return C_EditMode and C_EditMode.GetLayouts and C_EditMode.SaveLayouts
-		and Enum and Enum.EditModeSystem and Enum.EditModeSystem.CooldownViewer
-		and Enum.EditModeCooldownViewerSystemIndices
-		and Enum.EditModeCooldownViewerSetting
-end
+-- Edit Mode HWI — read/write HideWhenInactive for CDM viewers via C_EditMode
+local function FindViewerHWISettings(systemIndex)
+	if not (C_EditMode and C_EditMode.GetLayouts and C_EditMode.SaveLayouts) then return end
+	local enums = Enum and Enum.EditModeSystem
+	if not (enums and enums.CooldownViewer and Enum.EditModeCooldownViewerSystemIndices and Enum.EditModeCooldownViewerSetting) then return end
 
-local function GetEditModeLayoutInfo()
-	if not (C_EditMode and C_EditMode.GetLayouts) then return nil end
 	local layoutInfo = C_EditMode.GetLayouts()
-	if type(layoutInfo) ~= 'table' or type(layoutInfo.layouts) ~= 'table' then return nil end
-	if type(layoutInfo.activeLayout) == 'number' and EditModePresetLayoutManager
-		and EditModePresetLayoutManager.GetCopyOfPresetLayouts then
+	if type(layoutInfo) ~= 'table' or type(layoutInfo.layouts) ~= 'table' or type(layoutInfo.activeLayout) ~= 'number' then return end
+
+	-- Preset layouts must be merged so activeLayout index resolves
+	if EditModePresetLayoutManager and EditModePresetLayoutManager.GetCopyOfPresetLayouts then
 		local presets = EditModePresetLayoutManager:GetCopyOfPresetLayouts()
 		if type(presets) == 'table' then
 			tAppendAll(presets, layoutInfo.layouts)
 			layoutInfo.layouts = presets
 		end
 	end
-	return layoutInfo
-end
 
-local function GetEditModeActiveLayout(layoutInfo)
-	if type(layoutInfo) ~= 'table' then return nil end
-	local layouts, idx = layoutInfo.layouts, layoutInfo.activeLayout
-	if type(layouts) ~= 'table' or type(idx) ~= 'number' then return nil end
-	local layout = layouts[idx]
-	if type(layout) ~= 'table' or type(layout.systems) ~= 'table' then return nil end
-	return layout
-end
+	local active = layoutInfo.layouts[layoutInfo.activeLayout]
+	if type(active) ~= 'table' or type(active.systems) ~= 'table' then return end
 
-local function UpsertEditModeSetting(settings, settingEnum, value)
-	if type(settings) ~= 'table' then return false end
-	for _, info in ipairs(settings) do
-		if info.setting == settingEnum then
-			if info.value ~= value then
-				info.value = value
-				return true
-			end
-			return false
+	for _, sys in ipairs(active.systems) do
+		if sys.system == enums.CooldownViewer
+			and sys.systemIndex == systemIndex
+			and type(sys.settings) == 'table' then
+			return sys.settings, layoutInfo
 		end
 	end
-	settings[#settings + 1] = { setting = settingEnum, value = value }
-	return true
 end
 
-function TUI:GetBuffIconEditModeHWI()
-	if not HasEditModeApis() then return nil end
-	local layoutInfo = GetEditModeLayoutInfo()
-	local activeLayout = GetEditModeActiveLayout(layoutInfo)
-	if not activeLayout then return nil end
+local VIEWER_SYSTEM_INDEX = {
+	buffIcon = Enum.EditModeCooldownViewerSystemIndices and Enum.EditModeCooldownViewerSystemIndices.BuffIcon,
+	buffBar = Enum.EditModeCooldownViewerSystemIndices and Enum.EditModeCooldownViewerSystemIndices.BuffBar,
+}
 
-	local cooldownSystem = Enum.EditModeSystem.CooldownViewer
-	local buffIconIndex = Enum.EditModeCooldownViewerSystemIndices.BuffIcon
-	local hwiSetting = Enum.EditModeCooldownViewerSetting.HideWhenInactive
-
-	for _, systemInfo in ipairs(activeLayout.systems) do
-		if systemInfo.system == cooldownSystem and systemInfo.systemIndex == buffIconIndex
-			and type(systemInfo.settings) == 'table' then
-			for _, info in ipairs(systemInfo.settings) do
-				if info.setting == hwiSetting then
-					return info.value == 1
-				end
-			end
-		end
+function TUI:GetEditModeHWI(viewerKey)
+	local sysIdx = VIEWER_SYSTEM_INDEX[viewerKey]
+	if not sysIdx then return nil end
+	local settings = FindViewerHWISettings(sysIdx)
+	if not settings then return nil end
+	local hwi = Enum.EditModeCooldownViewerSetting.HideWhenInactive
+	for _, s in ipairs(settings) do
+		if s.setting == hwi then return s.value == 1 end
 	end
 	return false
 end
 
-function TUI:SetBuffIconEditModeHWI(enabled)
-	if not HasEditModeApis() then return 'not_ready' end
-	local layoutInfo = GetEditModeLayoutInfo()
-	local activeLayout = GetEditModeActiveLayout(layoutInfo)
-	if not activeLayout then return 'not_ready' end
-
-	local changed = false
-	local cooldownSystem = Enum.EditModeSystem.CooldownViewer
-	local buffIconIndex = Enum.EditModeCooldownViewerSystemIndices.BuffIcon
-	local hwiSetting = Enum.EditModeCooldownViewerSetting.HideWhenInactive
-	local desiredValue = enabled and 1 or 0
-
-	for _, systemInfo in ipairs(activeLayout.systems) do
-		if systemInfo.system == cooldownSystem and systemInfo.systemIndex == buffIconIndex
-			and type(systemInfo.settings) == 'table' then
-			if UpsertEditModeSetting(systemInfo.settings, hwiSetting, desiredValue) then
-				changed = true
-			end
+function TUI:SetEditModeHWI(viewerKey, enabled)
+	local sysIdx = VIEWER_SYSTEM_INDEX[viewerKey]
+	if not sysIdx then return 'not_ready' end
+	local settings, layoutInfo = FindViewerHWISettings(sysIdx)
+	if not settings then return 'not_ready' end
+	local hwi = Enum.EditModeCooldownViewerSetting.HideWhenInactive
+	local val = enabled and 1 or 0
+	for _, s in ipairs(settings) do
+		if s.setting == hwi then
+			if s.value == val then return 'noop' end
+			s.value = val
+			C_EditMode.SaveLayouts(layoutInfo)
+			return 'applied'
 		end
 	end
-
-	if not changed then return 'noop' end
+	settings[#settings + 1] = { setting = hwi, value = val }
 	C_EditMode.SaveLayouts(layoutInfo)
 	return 'applied'
 end
@@ -1435,10 +1401,12 @@ function TUI:InitCooldownManager()
 	SetCVar('cooldownViewerEnabled', 1)
 
 	-- Sync our DB to reflect Blizzard's current Edit Mode HWI state
-	local buffDB = GetViewerDB('buffIcon')
-	local blizzHWI = self:GetBuffIconEditModeHWI()
-	if buffDB and blizzHWI ~= nil then
-		buffDB.hideWhenInactive = blizzHWI
+	for _, vk in ipairs({'buffIcon', 'buffBar'}) do
+		local vdb = GetViewerDB(vk)
+		local blizzHWI = self:GetEditModeHWI(vk)
+		if vdb and blizzHWI ~= nil then
+			vdb.hideWhenInactive = blizzHWI
+		end
 	end
 
 	C_Timer.After(0, function()
