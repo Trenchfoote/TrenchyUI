@@ -5,6 +5,7 @@
 ### Bug Fixes
 - Minimap Buttons: Fixed growth direction not working — buttons now correctly expand in the configured direction (e.g. "Up, then Left")
 - Cooldown Manager: Fixed viewer growth direction — viewers now grow from the top or bottom of the anchor instead of from center
+- Nameplates: Fixed interrupt marker position on reverse-fill castbars
 
 ### New Features
 - Cooldown Manager: Buff Bar viewer with customizable bar width, height, textures, icon toggle, spark, and full text styling for name, duration, and stacks

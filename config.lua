@@ -1217,7 +1217,7 @@ function TUI:BuildConfig()
             function(_, value) selVDB().spacing = value; cdmRefresh() end
         )
 
-        cdmLayout.showIcon = ACH:Toggle("Show Icon", nil, 6, nil, nil, nil,
+        cdmLayout.showIcon = ACH:Toggle(E.NewSign .. "Show Icon", nil, 6, nil, nil, nil,
             function() return selVDB().showIcon end,
             function(_, value) selVDB().showIcon = value; cdmRefresh() end
         )
@@ -1232,13 +1232,13 @@ function TUI:BuildConfig()
         )
         cdmLayout.iconGap.hidden = isIconViewer
 
-        cdmLayout.showSpark = ACH:Toggle("Show Spark", "Show the bright edge indicator on bars.", 7, nil, nil, nil,
+        cdmLayout.showSpark = ACH:Toggle(E.NewSign .. "Show Spark", "Show the bright edge indicator on bars.", 7, nil, nil, nil,
             function() return selVDB().showSpark end,
             function(_, value) selVDB().showSpark = value; cdmRefresh() end
         )
         cdmLayout.showSpark.hidden = isIconViewer
 
-        cdmLayout.mirroredColumns = ACH:Toggle("Mirrored Columns", "Split bars into two mirrored columns.", 8, nil, nil, nil,
+        cdmLayout.mirroredColumns = ACH:Toggle(E.NewSign .. "Mirrored Columns", "Split bars into two mirrored columns.", 8, nil, nil, nil,
             function() return selVDB().mirroredColumns end,
             function(_, value) selVDB().mirroredColumns = value; cdmRefresh() end
         )
@@ -1270,7 +1270,7 @@ function TUI:BuildConfig()
         )
 
         cdmLayout.visibleSetting = ACH:Select(
-            "Visibility", "When to show this viewer. 'Player Fader' mirrors the player unitframe's fader alpha.", 11,
+            E.NewSign .. "Visibility", "When to show this viewer. 'Player Fader' mirrors the player unitframe's fader alpha.", 11,
             { ALWAYS = 'Always', INCOMBAT = 'In Combat', FADER = 'Player Fader', HIDDEN = 'Hidden' },
             nil, nil,
             function() return selVDB().visibleSetting end,
@@ -1437,7 +1437,7 @@ function TUI:BuildConfig()
         )
 
         -- Proc Glow group — Essential only
-        cdmViewer.glow = ACH:Group("Proc Glow", nil, 6)
+        cdmViewer.glow = ACH:Group(E.NewSign .. "Proc Glow", nil, 6)
         cdmViewer.glow.inline = true
         cdmViewer.glow.hidden = function() local v = cdmDB().selectedViewer; return v ~= 'essential' end
         local cdmGlow = cdmViewer.glow.args
