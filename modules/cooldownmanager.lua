@@ -15,6 +15,7 @@ local VIEWER_KEYS = {
 	essential = { global = 'EssentialCooldownViewer', label = 'Essential CDs',  mover = 'TUI_CDM_Essential' },
 	utility   = { global = 'UtilityCooldownViewer',  label = 'Utility CDs',    mover = 'TUI_CDM_Utility' },
 	buffIcon  = { global = 'BuffIconCooldownViewer', label = 'Buff Icon CDs',  mover = 'TUI_CDM_BuffIcon' },
+	buffBar   = { global = 'BuffBarCooldownViewer',  label = 'Buff Bar CDs',   mover = 'TUI_CDM_BuffBar' },
 }
 
 local containers = {}   -- [viewerKey] = container frame
@@ -22,7 +23,8 @@ local styledFrames = {} -- [itemFrame] = viewerKey — tracks which frames alrea
 local glowActive = {}   -- [itemFrame] = true — tracks which frames currently have our glow
 local previewActive = false
 local inCombat = false
-local ScheduleRelayout -- forward declaration
+local ScheduleRelayout      -- forward declaration
+local ShouldShowContainer   -- forward declaration
 
 local sortFunc = function(a, b) return (a.layoutIndex or 0) < (b.layoutIndex or 0) end
 
@@ -58,6 +60,25 @@ local function GetOrCreateSpellGlowDB(spellID)
 		db.spellGlow[spellID] = { enabled = d.enabled, type = d.type, color = { r = d.color.r, g = d.color.g, b = d.color.b, a = d.color.a }, lines = d.lines, speed = d.speed, thickness = d.thickness, particles = d.particles, scale = d.scale }
 	end
 	return db.spellGlow[spellID]
+end
+
+-- Per-spell bar color helpers
+local SPELL_BAR_COLOR_DEFAULTS = { enabled = false, fgColor = { r = 0.2, g = 0.6, b = 1 }, bgColor = { r = 0.1, g = 0.1, b = 0.1, a = 0.5 } }
+
+local function GetSpellBarColorDB(spellID)
+	local db = GetDB()
+	return db and db.spellBarColor and db.spellBarColor[spellID]
+end
+
+local function GetOrCreateSpellBarColorDB(spellID)
+	local db = GetDB()
+	if not db then return nil end
+	if not db.spellBarColor then db.spellBarColor = {} end
+	if not db.spellBarColor[spellID] then
+		local d = SPELL_BAR_COLOR_DEFAULTS
+		db.spellBarColor[spellID] = { enabled = d.enabled, fgColor = { r = d.fgColor.r, g = d.fgColor.g, b = d.fgColor.b }, bgColor = { r = d.bgColor.r, g = d.bgColor.g, b = d.bgColor.b, a = d.bgColor.a } }
+	end
+	return db.spellBarColor[spellID]
 end
 
 -- Glow
@@ -243,33 +264,49 @@ end
 
 -- Preview text for config
 local function SetPreviewText(itemFrame, show, vdb)
-	-- Standalone FontString since Blizzard hides inactive cooldown text
-	if show then
-		if not itemFrame.tuiCDPreview then
-			itemFrame.tuiCDPreview = itemFrame:CreateFontString(nil, 'OVERLAY')
+	local bar = itemFrame.Bar
+	if bar then
+		if show and vdb then
+			-- Create persistent overlay FontStrings for preview (Blizzard overwrites bar.Name/Duration)
+			if vdb.nameText then
+				if not bar.tuiPreviewName then
+					bar.tuiPreviewName = bar:CreateFontString(nil, 'OVERLAY')
+				end
+				local pfs = bar.tuiPreviewName
+				StyleFontString(pfs, vdb.nameText)
+				pfs:SetText('Buff Name')
+				pfs:Show()
+			end
+			if vdb.durationText then
+				if not bar.tuiPreviewDuration then
+					bar.tuiPreviewDuration = bar:CreateFontString(nil, 'OVERLAY')
+				end
+				local pfs = bar.tuiPreviewDuration
+				StyleFontString(pfs, vdb.durationText)
+				pfs:SetText('12.5s')
+				pfs:Show()
+			end
+		else
+			if bar.tuiPreviewName then bar.tuiPreviewName:Hide() end
+			if bar.tuiPreviewDuration then bar.tuiPreviewDuration:Hide() end
 		end
-		local pfs = itemFrame.tuiCDPreview
-		local tdb = vdb and vdb.cooldownText
-		if tdb then
-			StyleFontString(pfs, tdb)
-		end
-		pfs:SetText('12')
-		pfs:Show()
-	elseif itemFrame.tuiCDPreview then
-		itemFrame.tuiCDPreview:Hide()
+		return
 	end
 
-	-- Count preview: use actual count FontString
-	local countFS = itemFrame.Count
-		or (itemFrame.ChargeCount and itemFrame.ChargeCount.Current)
-		or (itemFrame.Applications and itemFrame.Applications.Applications)
-	if countFS and countFS.SetText then
-		if show then
-			countFS:SetText('3')
-			countFS:SetAlpha(1)
-		else
-			countFS:SetText('')
+	-- Icon viewer
+	if show then
+		local tdb = vdb and vdb.cooldownText
+		if tdb then
+			if not itemFrame.tuiCDPreview then
+				itemFrame.tuiCDPreview = itemFrame:CreateFontString(nil, 'OVERLAY')
+			end
+			local pfs = itemFrame.tuiCDPreview
+			StyleFontString(pfs, tdb)
+			pfs:SetText('12')
+			pfs:Show()
 		end
+	elseif itemFrame.tuiCDPreview then
+		itemFrame.tuiCDPreview:Hide()
 	end
 end
 
@@ -280,9 +317,9 @@ local function ShowPreview()
 	for viewerKey in pairs(VIEWER_KEYS) do
 		local vdb = GetViewerDB(viewerKey)
 		local viewer = GetViewer(viewerKey)
-		if viewer and vdb then
+		if viewer and vdb and viewer.itemFramePool then
 			for frame in viewer.itemFramePool:EnumerateActive() do
-				if frame and frame.layoutIndex then
+				if frame and frame:IsShown() then
 					SetPreviewText(frame, true, vdb)
 				end
 			end
@@ -296,14 +333,16 @@ local function HidePreview()
 
 	for viewerKey in pairs(VIEWER_KEYS) do
 		local viewer = GetViewer(viewerKey)
-		if viewer then
+		if viewer and viewer.itemFramePool then
 			for frame in viewer.itemFramePool:EnumerateActive() do
-				if frame and frame.layoutIndex then
+				if frame then
 					SetPreviewText(frame, false)
 				end
 			end
 		end
 	end
+
+	ScheduleRelayout()
 end
 
 -- Glow Options Panel
@@ -463,9 +502,14 @@ do
 		glowPanel = window
 	end
 
+	function TUI:HideGlowPanel()
+		if glowPanel then glowPanel:Hide() end
+	end
+
 	function TUI:ShowGlowPanel(spellID)
 		if not glowPanel then CreateGlowPanel() end
 		currentSpellID = spellID
+		TUI:HideBarColorPanel()
 
 		local spellInfo = C_Spell.GetSpellInfo(spellID)
 		local name = spellInfo and spellInfo.name or ('Spell ' .. spellID)
@@ -487,13 +531,136 @@ do
 		end
 
 		local editAlert = _G.CooldownViewerSettingsEditAlert
-		if editAlert and not editAlert.tuiGlowHooked then
-			editAlert:HookScript('OnShow', function() if glowPanel then glowPanel:Hide() end end)
-			editAlert.tuiGlowHooked = true
+		if editAlert then
+			if not editAlert.tuiGlowHooked then
+				editAlert:HookScript('OnShow', function() if glowPanel then glowPanel:Hide() end end)
+				editAlert.tuiGlowHooked = true
+			end
+			if editAlert:IsShown() then editAlert:Hide() end
 		end
 
 		UpdatePanelWidgets()
 		glowPanel:Show()
+	end
+end
+
+local ApplyBarStyle     -- forward declaration
+local LayoutBuffBar     -- forward declaration
+
+-- Bar Color Options Panel
+do
+	local AceGUI = LibStub('AceGUI-3.0')
+	local barColorPanel, barColorSpellID
+	local bcWidgets = {}
+
+	local function RefreshBuffBarColors()
+		local viewer = _G['BuffBarCooldownViewer']
+		if not viewer or not viewer.itemFramePool then return end
+		local vdb = GetViewerDB('buffBar')
+		if not vdb then return end
+		for frame in viewer.itemFramePool:EnumerateActive() do
+			if frame and frame:IsShown() then
+				ApplyBarStyle(frame, vdb)
+			end
+		end
+	end
+
+	local function UpdateBarColorWidgets()
+		if not barColorPanel or not barColorSpellID then return end
+		local sbc = GetOrCreateSpellBarColorDB(barColorSpellID)
+		if not sbc then return end
+		bcWidgets.enable:SetValue(sbc.enabled)
+		bcWidgets.fgColor:SetColor(sbc.fgColor.r, sbc.fgColor.g, sbc.fgColor.b)
+		bcWidgets.bgColor:SetColor(sbc.bgColor.r, sbc.bgColor.g, sbc.bgColor.b, sbc.bgColor.a or 0.5)
+	end
+
+	local function CreateBarColorPanel()
+		local window = AceGUI:Create('Window')
+		window:SetTitle('|cffff2f3dTrenchyUI|r Bar Colors')
+		window:SetWidth(280)
+		window:SetHeight(180)
+		window:SetLayout('Flow')
+		window:EnableResize(false)
+		window.frame:SetFrameStrata('DIALOG')
+
+		local enable = AceGUI:Create('CheckBox')
+		enable:SetLabel('Enable Custom Colors')
+		enable:SetFullWidth(true)
+		enable:SetCallback('OnValueChanged', function(_, _, val)
+			local sbc = GetOrCreateSpellBarColorDB(barColorSpellID)
+			if sbc then sbc.enabled = val; RefreshBuffBarColors() end
+		end)
+		window:AddChild(enable)
+		bcWidgets.enable = enable
+
+		local fgColor = AceGUI:Create('ColorPicker')
+		fgColor:SetLabel('Foreground')
+		fgColor:SetRelativeWidth(0.5)
+		fgColor:SetHasAlpha(false)
+		local function fgChanged(_, _, r, g, b)
+			local sbc = GetOrCreateSpellBarColorDB(barColorSpellID)
+			if sbc then sbc.fgColor.r, sbc.fgColor.g, sbc.fgColor.b = r, g, b; RefreshBuffBarColors() end
+		end
+		fgColor:SetCallback('OnValueChanged', fgChanged)
+		fgColor:SetCallback('OnValueConfirmed', fgChanged)
+		window:AddChild(fgColor)
+		bcWidgets.fgColor = fgColor
+
+		local bgColor = AceGUI:Create('ColorPicker')
+		bgColor:SetLabel('Background')
+		bgColor:SetRelativeWidth(0.5)
+		bgColor:SetHasAlpha(true)
+		local function bgChanged(_, _, r, g, b, a)
+			local sbc = GetOrCreateSpellBarColorDB(barColorSpellID)
+			if sbc then sbc.bgColor.r, sbc.bgColor.g, sbc.bgColor.b, sbc.bgColor.a = r, g, b, a; RefreshBuffBarColors() end
+		end
+		bgColor:SetCallback('OnValueChanged', bgChanged)
+		bgColor:SetCallback('OnValueConfirmed', bgChanged)
+		window:AddChild(bgColor)
+		bcWidgets.bgColor = bgColor
+
+		window:SetCallback('OnClose', function() barColorPanel = nil end)
+		window:Hide()
+		barColorPanel = window
+	end
+
+	function TUI:HideBarColorPanel()
+		if barColorPanel then barColorPanel:Hide() end
+	end
+
+	function TUI:ShowBarColorPanel(spellID)
+		if not barColorPanel then CreateBarColorPanel() end
+		barColorSpellID = spellID
+		TUI:HideGlowPanel()
+
+		local spellInfo = C_Spell.GetSpellInfo(spellID)
+		local name = spellInfo and spellInfo.name or ('Spell ' .. spellID)
+		barColorPanel:SetTitle('|cffff2f3dTrenchyUI|r ' .. name)
+
+		barColorPanel.frame:ClearAllPoints()
+		local tsf = _G.CooldownViewerSettings
+		if tsf and tsf:IsShown() then
+			barColorPanel.frame:SetPoint('TOPLEFT', tsf, 'TOPRIGHT', 50, 0)
+		else
+			barColorPanel.frame:SetPoint('CENTER', E.UIParent, 'CENTER', 0, 100)
+		end
+
+		if tsf and not tsf.tuiBarColorHooked then
+			tsf:HookScript('OnHide', function() if barColorPanel then barColorPanel:Hide() end end)
+			tsf.tuiBarColorHooked = true
+		end
+
+		local editAlert = _G.CooldownViewerSettingsEditAlert
+		if editAlert then
+			if not editAlert.tuiBarColorHooked then
+				editAlert:HookScript('OnShow', function() if barColorPanel then barColorPanel:Hide() end end)
+				editAlert.tuiBarColorHooked = true
+			end
+			if editAlert:IsShown() then editAlert:Hide() end
+		end
+
+		UpdateBarColorWidgets()
+		barColorPanel:Show()
 	end
 end
 
@@ -541,18 +708,27 @@ local moverToViewer = {} -- configString → viewerKey mapping
 local function CreateContainer(viewerKey)
 	local info = VIEWER_KEYS[viewerKey]
 	local vdb = GetViewerDB(viewerKey)
-	local iconW = vdb and vdb.iconWidth or 30
-	local iconH = (vdb and vdb.keepSizeRatio and iconW) or (vdb and vdb.iconHeight or 30)
+
+	local w, h
+	if viewerKey == 'buffBar' then
+		w = vdb and vdb.barWidth or 200
+		h = (vdb and vdb.barHeight or 20) * 4
+	else
+		local iconW = vdb and vdb.iconWidth or 30
+		local iconH = (vdb and vdb.keepSizeRatio and iconW) or (vdb and vdb.iconHeight or 30)
+		w = iconW * 8
+		h = iconH * 2
+	end
 
 	local configStr = CDM_CONFIG_STRING .. ',' .. viewerKey
 
 	local frame = CreateFrame('Frame', info.mover .. 'Holder', E.UIParent)
-	frame:SetSize(iconW * 8, iconH * 2)
-	frame:SetPoint('CENTER', E.UIParent, 'CENTER', 0, 0)
+	frame:SetSize(w, h)
+	frame:SetPoint('TOPLEFT', E.UIParent, 'CENTER', 0, 0)
 	frame:SetFrameStrata('MEDIUM')
 	frame:SetFrameLevel(5)
 
-	E:CreateMover(frame, info.mover .. 'Mover', 'TUI ' .. info.label, nil, nil, nil, 'ALL,TRENCHYUI', nil, configStr)
+	E:CreateMover(frame, info.mover .. 'Mover', 'TUI ' .. info.label, nil, nil, nil, 'ALL,TRENCHYUI', nil, configStr, true)
 	moverToViewer[configStr] = viewerKey
 
 	containers[viewerKey] = frame
@@ -561,7 +737,28 @@ end
 
 local iconCache = {}    -- [viewerKey] = reusable table for icon collection
 
+-- Re-anchor container to its mover based on growth direction
+local function AnchorToMover(viewerKey, growUp)
+	local container = containers[viewerKey]
+	if not container then return end
+	local info = VIEWER_KEYS[viewerKey]
+	local mover = _G[info.mover .. 'Mover']
+	if not mover then return end
+
+	-- Sync mover size to container (ignoreSizeChanged prevents auto-sync)
+	mover:SetSize(container:GetSize())
+
+	container:ClearAllPoints()
+	if growUp then
+		container:SetPoint('BOTTOM', mover, 'BOTTOM')
+	else
+		container:SetPoint('TOP', mover, 'TOP')
+	end
+end
+
 local function LayoutContainer(viewerKey, isCapture)
+	if viewerKey == 'buffBar' then return LayoutBuffBar(viewerKey, isCapture) end
+
 	local container = containers[viewerKey]
 	if not container then return end
 
@@ -597,6 +794,7 @@ local function LayoutContainer(viewerKey, isCapture)
 	if count == 0 then
 		local minW = perRow * iconW + (perRow - 1) * spacing
 		container:SetSize(minW, iconH)
+		AnchorToMover(viewerKey, growUp)
 		return
 	end
 
@@ -615,6 +813,7 @@ local function LayoutContainer(viewerKey, isCapture)
 		if applyStyle or not styledFrames[icon] then
 			ApplyTextOverrides(icon, vdb, db)
 			styledFrames[icon] = viewerKey
+			icon.tuiViewerKey = viewerKey
 		end
 
 		if viewerKey == 'buffIcon' then
@@ -671,6 +870,286 @@ local function LayoutContainer(viewerKey, isCapture)
 			icon:SetPoint('TOPLEFT', container, 'TOPLEFT', x, y)
 		end
 	end
+
+	AnchorToMover(viewerKey, growUp)
+end
+
+-- Buff Bar styling — completely overrides Blizzard's bar layout
+ApplyBarStyle = function(frame, vdb)
+	local bar = frame.Bar
+	if not bar then return end
+
+	local barH = vdb.barHeight or 20
+	local showIcon = vdb.showIcon ~= false
+	local iconGap = vdb.iconGap or 2
+	local iconSide = frame.tuiBarIconSide or 'LEFT'
+
+	-- Icon sizing and anchoring
+	local icon = frame.Icon
+	if icon then
+		if showIcon then
+			icon:Show()
+			icon:ClearAllPoints()
+			icon:SetSize(barH, barH)
+			if iconSide == 'RIGHT' then
+				icon:SetPoint('RIGHT', frame, 'RIGHT', 0, 0)
+			else
+				icon:SetPoint('LEFT', frame, 'LEFT', 0, 0)
+			end
+			if icon.Icon then icon.Icon:SetAllPoints(icon) end
+		else
+			icon:Hide()
+		end
+	end
+
+	-- Bar anchoring: fill remaining space
+	bar:ClearAllPoints()
+	bar:SetReverseFill(iconSide == 'RIGHT')
+	if showIcon and icon then
+		if iconSide == 'RIGHT' then
+			bar:SetPoint('TOPLEFT', frame, 'TOPLEFT', 0, 0)
+			bar:SetPoint('BOTTOMRIGHT', icon, 'BOTTOMLEFT', -iconGap, 0)
+		else
+			bar:SetPoint('TOPLEFT', icon, 'TOPRIGHT', iconGap, 0)
+			bar:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', 0, 0)
+		end
+	else
+		bar:SetPoint('TOPLEFT', frame, 'TOPLEFT', 0, 0)
+		bar:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', 0, 0)
+	end
+
+	-- Foreground texture
+	local fgTex = LSM:Fetch('statusbar', vdb.foregroundTexture or 'ElvUI Norm')
+	local statusBarTex = bar:GetStatusBarTexture()
+	if statusBarTex then
+		statusBarTex:SetTexture(fgTex)
+		statusBarTex:ClearTextureSlice()
+		statusBarTex:SetTextureSliceMode(0)
+	end
+
+	-- Background texture
+	local bgTex = LSM:Fetch('statusbar', vdb.backgroundTexture or 'ElvUI Norm')
+	if bar.BarBG then
+		bar.BarBG:SetTexture(bgTex)
+		bar.BarBG:ClearAllPoints()
+		bar.BarBG:SetAllPoints(bar)
+	end
+
+	-- Per-spell bar color override (only touch colors when user has custom enabled)
+	local spellID = frame.GetBaseSpellID and frame:GetBaseSpellID()
+	local sbc = spellID and GetSpellBarColorDB(spellID)
+	local hasCustomColor = sbc and sbc.enabled
+
+	if hasCustomColor then
+		bar:SetStatusBarColor(sbc.fgColor.r, sbc.fgColor.g, sbc.fgColor.b)
+		if bar.BarBG then
+			local bg = sbc.bgColor
+			bar.BarBG:SetVertexColor(bg.r, bg.g, bg.b, bg.a or 0.5)
+		end
+		-- Hook to persist custom color over Blizzard updates
+		if not frame.tuiBarColorHooked then
+			frame.tuiBarColorHooked = true
+			local origSetColor = bar.SetStatusBarColor
+			hooksecurefunc(bar, 'SetStatusBarColor', function(self)
+				local sid = frame.GetBaseSpellID and frame:GetBaseSpellID()
+				local sc = sid and GetSpellBarColorDB(sid)
+				if sc and sc.enabled and not frame.tuiSettingColor then
+					frame.tuiSettingColor = true
+					origSetColor(self, sc.fgColor.r, sc.fgColor.g, sc.fgColor.b)
+					frame.tuiSettingColor = false
+				end
+			end)
+		end
+	elseif frame.tuiBarColorHooked then
+		-- Custom was disabled — clear the hook flag so Blizzard colors show through
+		frame.tuiSettingColor = false
+	end
+
+	-- Spark (Pip) toggle
+	if bar.Pip then
+		if vdb.showSpark then
+			bar.Pip:SetAlpha(1)
+			bar.Pip:Show()
+		else
+			bar.Pip:SetAlpha(0)
+			bar.Pip:Hide()
+			if not bar.Pip.tuiKilled then
+				bar.Pip.tuiKilled = true
+				hooksecurefunc(bar.Pip, 'Show', function(self) self:SetAlpha(0) end)
+			end
+		end
+	end
+	if frame.CooldownFlash then frame.CooldownFlash:Hide() end
+
+	-- Hide icon overlay texture (atlas UI-HUD-CoolDownManager-IconOverlay)
+	if icon and not frame.tuiIconOverlayKilled then
+		for _, region in next, { icon:GetRegions() } do
+			if region:IsObjectType('Texture') then
+				local atlas = region:GetAtlas()
+				if atlas == 'UI-HUD-CoolDownManager-IconOverlay' then
+					region:SetAlpha(0)
+				end
+			end
+		end
+		frame.tuiIconOverlayKilled = true
+	end
+
+	-- Name text
+	if bar.Name then
+		if vdb.showName ~= false and vdb.nameText then
+			bar.Name:Show()
+			StyleFontString(bar.Name, vdb.nameText)
+		else
+			bar.Name:Hide()
+		end
+	end
+
+	-- Duration text
+	if bar.Duration then
+		if vdb.showTimer ~= false and vdb.durationText then
+			bar.Duration:Show()
+			StyleFontString(bar.Duration, vdb.durationText)
+		else
+			bar.Duration:Hide()
+		end
+	end
+
+	-- Stacks text on icon
+	if icon and showIcon and vdb.stacksText then
+		local stackFS = icon.Applications and icon.Applications.Applications
+		if stackFS then stackFS:SetIgnoreParentScale(true); StyleFontString(stackFS, vdb.stacksText) end
+		stackFS = icon.Count
+		if stackFS then stackFS:SetIgnoreParentScale(true); StyleFontString(stackFS, vdb.stacksText) end
+		stackFS = icon.ChargeCount and icon.ChargeCount.Current
+		if stackFS then stackFS:SetIgnoreParentScale(true); StyleFontString(stackFS, vdb.stacksText) end
+	end
+
+	-- DebuffBorder suppression
+	if frame.DebuffBorder and not frame.tuiDebuffBorderKilled then
+		frame.DebuffBorder:Hide()
+		frame.DebuffBorder:SetAlpha(0)
+		hooksecurefunc(frame.DebuffBorder, 'Show', function(self) self:Hide() end)
+		frame.tuiDebuffBorderKilled = true
+	end
+end
+
+LayoutBuffBar = function(viewerKey, isCapture)
+	local container = containers[viewerKey]
+	if not container then return end
+
+	local db = GetDB()
+	if not db or not db.enabled then return end
+
+	local vdb = GetViewerDB(viewerKey)
+	if not vdb then return end
+
+	local viewer = GetViewer(viewerKey)
+	if not viewer then return end
+
+	local barW = vdb.barWidth or 200
+	local barH = vdb.barHeight or 20
+	local spacing = vdb.spacing or 2
+	local growUp = (vdb.growthDirection == 'UP')
+
+	local bars = iconCache[viewerKey]
+	if not bars then bars = {}; iconCache[viewerKey] = bars end
+	wipe(bars)
+
+	if not viewer.itemFramePool then return end
+	for frame in viewer.itemFramePool:EnumerateActive() do
+		if frame and frame:IsShown() then
+			bars[#bars + 1] = frame
+		end
+	end
+
+	table.sort(bars, sortFunc)
+
+	local count = #bars
+
+	-- Hide When Inactive: hide container when no bars active, re-show otherwise
+	if vdb.hideWhenInactive and count == 0 then
+		container:Hide()
+		if viewer then viewer:Hide() end
+	elseif ShouldShowContainer(viewerKey) then
+		container:Show()
+		if viewer then viewer:Show() end
+	end
+
+	if count == 0 then
+		container:SetSize(barW, barH)
+		AnchorToMover(viewerKey, growUp)
+		return
+	end
+
+	local mirroredColumns = vdb.mirroredColumns and count >= 2
+	local columnGap = vdb.columnGap or 4
+
+	if mirroredColumns then
+		local colW = (barW - columnGap) / 2
+		local rows = math_ceil(count / 2)
+		container:SetSize(barW, rows * barH + (rows - 1) * spacing)
+
+		for i, frame in ipairs(bars) do
+			local isOddLast = (i == count and count % 2 == 1)
+			local isLeftCol = not isOddLast and (i % 2 == 1)
+			local row = math_ceil(i / 2) - 1
+
+			local fw = isOddLast and barW or colW
+			frame:SetScale(1)
+			frame:SetSize(fw, barH)
+
+			if isLeftCol then
+				frame.tuiBarIconSide = 'RIGHT'
+			else
+				frame.tuiBarIconSide = 'LEFT'
+			end
+
+			if isCapture or not styledFrames[frame] then
+				ApplyBarStyle(frame, vdb)
+				styledFrames[frame] = viewerKey
+				frame.tuiViewerKey = viewerKey
+			end
+
+			local x = (not isOddLast and not isLeftCol) and (colW + columnGap) or 0
+
+			local y
+			if growUp then
+				y = row * (barH + spacing)
+			else
+				y = -row * (barH + spacing)
+			end
+
+			frame:ClearAllPoints()
+			if growUp then
+				frame:SetPoint('BOTTOMLEFT', container, 'BOTTOMLEFT', x, y)
+			else
+				frame:SetPoint('TOPLEFT', container, 'TOPLEFT', x, y)
+			end
+		end
+	else
+		container:SetSize(barW, count * barH + (count - 1) * spacing)
+
+		for i, frame in ipairs(bars) do
+			frame:SetScale(1)
+			frame:SetSize(barW, barH)
+			frame.tuiBarIconSide = 'LEFT'
+
+			if isCapture or not styledFrames[frame] then
+				ApplyBarStyle(frame, vdb)
+				styledFrames[frame] = viewerKey
+				frame.tuiViewerKey = viewerKey
+			end
+
+			frame:ClearAllPoints()
+			if growUp then
+				frame:SetPoint('BOTTOMLEFT', container, 'BOTTOMLEFT', 0, (i - 1) * (barH + spacing))
+			else
+				frame:SetPoint('TOPLEFT', container, 'TOPLEFT', 0, -(i - 1) * (barH + spacing))
+			end
+		end
+	end
+
+	AnchorToMover(viewerKey, growUp)
 end
 
 -- Hook setup
@@ -869,7 +1348,7 @@ function TUI:SetBuffIconEditModeHWI(enabled)
 	return 'applied'
 end
 
-local function ShouldShowContainer(viewerKey)
+ShouldShowContainer = function(viewerKey)
 	local vdb = GetViewerDB(viewerKey)
 	if not vdb then return true end
 
@@ -914,12 +1393,12 @@ function TUI:RefreshCDM()
 
 	wipe(styledFrames)
 	wipe(glowActive)
-	wipe(hookedAlerts)
-	wipe(hookedSwipes)
 
 	for viewerKey in pairs(VIEWER_KEYS) do
 		LayoutContainer(viewerKey, true)
 	end
+
+	self:UpdateCDMVisibility()
 
 	if previewActive then
 		previewActive = false
@@ -971,6 +1450,26 @@ function TUI:InitCooldownManager()
 					end
 				end)
 			end
+			if S.CooldownManager_SkinBar then
+				hooksecurefunc(S, 'CooldownManager_SkinBar', function(_, frame)
+					if styledFrames[frame] == 'buffBar' then
+						local vdb = GetViewerDB('buffBar')
+						if vdb then ApplyBarStyle(frame, vdb) end
+					end
+				end)
+			end
+			if S.CooldownManager_UpdateTextBar then
+				hooksecurefunc(S, 'CooldownManager_UpdateTextBar', function(_, bar)
+					local frame = bar:GetParent()
+					if frame and styledFrames[frame] == 'buffBar' then
+						local vdb = GetViewerDB('buffBar')
+						if vdb then
+							if bar.Name and vdb.nameText then StyleFontString(bar.Name, vdb.nameText) end
+							if bar.Duration and vdb.durationText then StyleFontString(bar.Duration, vdb.durationText) end
+						end
+					end
+				end)
+			end
 		end
 
 		-- Post-hook ElvUI cooldown text to re-apply our cooldown timer styling
@@ -1013,20 +1512,34 @@ function TUI:InitCooldownManager()
 			end)
 		end
 
-		-- Right-click context menu for buff icon glow options
-		local BUFF_CATEGORY = 2
+		-- Right-click context menu for buff CDM items
+		-- Category enum: Essential=0, Utility=1, TrackedBuff=2, TrackedBar=3
+		local CATEGORY_TRACKED_BUFF = 2
+		local CATEGORY_TRACKED_BAR = 3
 		local tuiMenuTitle = '|cffff2f3dTrenchyUI|r CDM'
+
 		Menu.ModifyMenu('MENU_COOLDOWN_SETTINGS_ITEM', function(owner, rootDescription)
 			if not owner or not owner.GetCooldownInfo then return end
 			local cdInfo = owner:GetCooldownInfo()
-			if not cdInfo or cdInfo.category ~= BUFF_CATEGORY then return end
+			if not cdInfo then return end
+			local cat = cdInfo.category
+
+			if cat ~= CATEGORY_TRACKED_BUFF and cat ~= CATEGORY_TRACKED_BAR then return end
 
 			rootDescription:CreateDivider()
 			rootDescription:CreateTitle(tuiMenuTitle)
-			rootDescription:CreateButton('Glow Options', function()
-				local spellID = owner.GetBaseSpellID and owner:GetBaseSpellID()
-				if spellID then TUI:ShowGlowPanel(spellID) end
-			end)
+
+			if cat == CATEGORY_TRACKED_BAR then
+				rootDescription:CreateButton('Bar Color Options', function()
+					local spellID = owner.GetBaseSpellID and owner:GetBaseSpellID()
+					if spellID then TUI:ShowBarColorPanel(spellID) end
+				end)
+			else
+				rootDescription:CreateButton('Glow Options', function()
+					local spellID = owner.GetBaseSpellID and owner:GetBaseSpellID()
+					if spellID then TUI:ShowGlowPanel(spellID) end
+				end)
+			end
 		end)
 
 		SLASH_TUICDM1 = '/cdm'
