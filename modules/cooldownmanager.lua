@@ -1172,18 +1172,30 @@ end
 -- Hook setup
 local layoutPending = false
 
+local function DoRelayout()
+	layoutPending = false
+	local db = GetDB()
+	if not db or not db.enabled then return end
+	for viewerKey in pairs(VIEWER_KEYS) do
+		LayoutContainer(viewerKey, false)
+	end
+	TUI:UpdateCDMVisibility()
+end
+
+local combatDeferFrame = CreateFrame('Frame')
+combatDeferFrame:SetScript('OnEvent', function(self)
+	self:UnregisterEvent('PLAYER_REGEN_ENABLED')
+	DoRelayout()
+end)
+
 function ScheduleRelayout()
 	if layoutPending then return end
 	layoutPending = true
-	C_Timer.After(0, function()
-		layoutPending = false
-		local db = GetDB()
-		if not db or not db.enabled then return end
-		for viewerKey in pairs(VIEWER_KEYS) do
-			LayoutContainer(viewerKey, false)
-		end
-		TUI:UpdateCDMVisibility()
-	end)
+	if InCombatLockdown() then
+		combatDeferFrame:RegisterEvent('PLAYER_REGEN_ENABLED')
+		return
+	end
+	C_Timer.After(0, DoRelayout)
 end
 
 local cdmDisabledByCVar = false
