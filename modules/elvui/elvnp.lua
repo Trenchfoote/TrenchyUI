@@ -281,7 +281,7 @@ do -- Interrupt Spell Detection (adapted from mMediaTag with permission from Bli
 			marker:SetSize(3, castbar:GetHeight())
 			marker:ClearAllPoints()
 			if reverseFill then
-				marker:SetPoint('RIGHT', pos:GetStatusBarTexture(), 'LEFT', 0, 0)
+				marker:SetPoint('LEFT', pos:GetStatusBarTexture(), 'LEFT', 0, 0)
 			else
 				marker:SetPoint('LEFT', pos:GetStatusBarTexture(), 'RIGHT', 0, 0)
 			end
