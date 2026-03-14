@@ -745,14 +745,21 @@ local function AnchorToMover(viewerKey, growUp)
 	local mover = _G[info.mover .. 'Mover']
 	if not mover then return end
 
-	-- Sync mover size to container (ignoreSizeChanged prevents auto-sync)
+	-- Save anchor-edge Y before resize so we can compensate for drift
+	local oldEdge = growUp and mover:GetBottom() or mover:GetTop()
+
 	mover:SetSize(container:GetSize())
+
+	-- Mover edge may have shifted depending on its own anchor (CENTER, TOP, etc.)
+	-- Offset the container to keep the growth-anchor edge at the same screen position
+	local newEdge = growUp and mover:GetBottom() or mover:GetTop()
+	local offset = (oldEdge and newEdge) and (oldEdge - newEdge) or 0
 
 	container:ClearAllPoints()
 	if growUp then
-		container:SetPoint('BOTTOM', mover, 'BOTTOM')
+		container:SetPoint('BOTTOM', mover, 'BOTTOM', 0, offset)
 	else
-		container:SetPoint('TOP', mover, 'TOP')
+		container:SetPoint('TOP', mover, 'TOP', 0, offset)
 	end
 end
 
