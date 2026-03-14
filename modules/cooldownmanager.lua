@@ -222,14 +222,17 @@ local function ApplyCountText(itemFrame, tdb)
 	if fs then fs:SetIgnoreParentScale(true); StyleFontString(fs, tdb) end
 end
 
+-- Shield pattern: store ref in cooldown.tuiText, nil cooldown.Text so ElvUI's CooldownText skips font styling
 local function ApplyCooldownText(cooldown, tdb)
 	if not cooldown or not tdb then return end
 
 	cooldown:SetHideCountdownNumbers(false)
 
-	local text = cooldown.Text or cooldown:GetRegions()
+	local text = cooldown.tuiText or cooldown.Text or cooldown:GetRegions()
 	if text and text.SetTextColor then
-		cooldown.Text = text
+		cooldown.tuiText = text
+		cooldown.Text = nil
+		text:SetIgnoreParentScale(true)
 		StyleFontString(text, tdb)
 	end
 end
@@ -266,9 +269,10 @@ end
 local function SetPreviewText(itemFrame, show, vdb)
 	local bar = itemFrame.Bar
 	if bar then
+		local hasRealName = bar.Name and bar.Name:IsShown() and (bar.Name:GetText() or '') ~= ''
 		if show and vdb then
-			-- Create persistent overlay FontStrings for preview (Blizzard overwrites bar.Name/Duration)
-			if vdb.nameText then
+			-- Hide preview name on bars with real buff data, but always show duration preview
+			if vdb.nameText and not hasRealName then
 				if not bar.tuiPreviewName then
 					bar.tuiPreviewName = bar:CreateFontString(nil, 'OVERLAY')
 				end
@@ -276,6 +280,8 @@ local function SetPreviewText(itemFrame, show, vdb)
 				StyleFontString(pfs, vdb.nameText)
 				pfs:SetText('Buff Name')
 				pfs:Show()
+			elseif bar.tuiPreviewName then
+				bar.tuiPreviewName:Hide()
 			end
 			if vdb.durationText then
 				if not bar.tuiPreviewDuration then
@@ -301,6 +307,7 @@ local function SetPreviewText(itemFrame, show, vdb)
 				itemFrame.tuiCDPreview = itemFrame:CreateFontString(nil, 'OVERLAY')
 			end
 			local pfs = itemFrame.tuiCDPreview
+			pfs:SetIgnoreParentScale(true)
 			StyleFontString(pfs, tdb)
 			pfs:SetText('12')
 			pfs:Show()
@@ -745,21 +752,29 @@ local function AnchorToMover(viewerKey, growUp)
 	local mover = _G[info.mover .. 'Mover']
 	if not mover then return end
 
-	-- Save anchor-edge Y before resize so we can compensate for drift
-	local oldEdge = growUp and mover:GetBottom() or mover:GetTop()
+	-- Save the growth-anchor edge before resize
+	local fixedEdge = growUp and mover:GetBottom() or mover:GetTop()
 
 	mover:SetSize(container:GetSize())
 
-	-- Mover edge may have shifted depending on its own anchor (CENTER, TOP, etc.)
-	-- Offset the container to keep the growth-anchor edge at the same screen position
+	-- Adjust mover position to keep the growth-anchor edge at the same screen Y
 	local newEdge = growUp and mover:GetBottom() or mover:GetTop()
-	local offset = (oldEdge and newEdge) and (oldEdge - newEdge) or 0
+	if fixedEdge and newEdge then
+		local drift = fixedEdge - newEdge
+		if drift ~= 0 then
+			local p, rel, rp, x, y = mover:GetPoint()
+			if p then
+				mover:ClearAllPoints()
+				mover:SetPoint(p, rel, rp, x, (y or 0) + drift)
+			end
+		end
+	end
 
 	container:ClearAllPoints()
 	if growUp then
-		container:SetPoint('BOTTOM', mover, 'BOTTOM', 0, offset)
+		container:SetPoint('BOTTOM', mover, 'BOTTOM')
 	else
-		container:SetPoint('TOP', mover, 'TOP', 0, offset)
+		container:SetPoint('TOP', mover, 'TOP')
 	end
 end
 
@@ -1246,7 +1261,7 @@ local function HookViewer(viewerKey)
 	hooksecurefunc(viewer, 'RefreshLayout', function()
 		local db = GetDB()
 		if not db or not db.enabled then return end
-		LayoutContainer(viewerKey, false)
+		LayoutContainer(viewerKey, true)
 	end)
 
 	local selection = viewer.Selection
@@ -1433,12 +1448,21 @@ function TUI:InitCooldownManager()
 			LayoutContainer(viewerKey, true)
 		end
 
+		-- Resolve viewerKey from a frame or its parents via styledFrames/tuiViewerKey
+		local function ResolveViewerKey(frame)
+			if not frame then return nil end
+			local key = styledFrames[frame] or frame.tuiViewerKey
+			if key then return key end
+			local parent = frame:GetParent()
+			return parent and (styledFrames[parent] or parent.tuiViewerKey) or nil
+		end
+
 		-- Post-hook ElvUI Skins to re-apply our text styling after ElvUI overrides it
 		local S = E:GetModule('Skins', true)
 		if S then
 			if S.CooldownManager_UpdateTextContainer then
 				hooksecurefunc(S, 'CooldownManager_UpdateTextContainer', function(_, itemFrame)
-					local viewerKey = styledFrames[itemFrame]
+					local viewerKey = ResolveViewerKey(itemFrame)
 					if not viewerKey then return end
 					local vdb = GetViewerDB(viewerKey)
 					if vdb then
@@ -1448,7 +1472,7 @@ function TUI:InitCooldownManager()
 			end
 			if S.CooldownManager_SkinIcon then
 				hooksecurefunc(S, 'CooldownManager_SkinIcon', function(_, itemFrame)
-					local viewerKey = styledFrames[itemFrame]
+					local viewerKey = ResolveViewerKey(itemFrame)
 					if not viewerKey then return end
 					local cdb = GetDB()
 					local vdb = GetViewerDB(viewerKey)
@@ -1459,7 +1483,8 @@ function TUI:InitCooldownManager()
 			end
 			if S.CooldownManager_SkinBar then
 				hooksecurefunc(S, 'CooldownManager_SkinBar', function(_, frame)
-					if styledFrames[frame] == 'buffBar' then
+					local viewerKey = ResolveViewerKey(frame)
+					if viewerKey == 'buffBar' then
 						local vdb = GetViewerDB('buffBar')
 						if vdb then ApplyBarStyle(frame, vdb) end
 					end
@@ -1468,7 +1493,7 @@ function TUI:InitCooldownManager()
 			if S.CooldownManager_UpdateTextBar then
 				hooksecurefunc(S, 'CooldownManager_UpdateTextBar', function(_, bar)
 					local frame = bar:GetParent()
-					if frame and styledFrames[frame] == 'buffBar' then
+					if frame and ResolveViewerKey(frame) == 'buffBar' then
 						local vdb = GetViewerDB('buffBar')
 						if vdb then
 							if bar.Name and vdb.nameText then StyleFontString(bar.Name, vdb.nameText) end
@@ -1479,16 +1504,10 @@ function TUI:InitCooldownManager()
 			end
 		end
 
-		-- Post-hook ElvUI cooldown text to re-apply our cooldown timer styling
+		-- Re-shield cooldown text after ElvUI's CooldownUpdate sets SetHideCountdownNumbers
 		hooksecurefunc(E, 'CooldownUpdate', function(_, cooldown)
-			if not cooldown then return end
-			local itemFrame = cooldown:GetParent()
-			local viewerKey = itemFrame and styledFrames[itemFrame]
-			if not viewerKey then return end
-			local vdb = GetViewerDB(viewerKey)
-			if vdb then
-				ApplyCooldownText(cooldown, vdb.cooldownText)
-			end
+			if not cooldown or not cooldown.tuiText then return end
+			cooldown:SetHideCountdownNumbers(false)
 		end)
 
 		local eventFrame = CreateFrame('Frame')
