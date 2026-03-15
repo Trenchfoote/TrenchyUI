@@ -757,10 +757,4 @@ function TUI:InitQoL()
 	if db.hideObjectiveInCombat then self:InitHideObjectiveInCombat() end
 	if self.InitMinimapButtonBar then self:InitMinimapButtonBar() end
 	if db.cursorCircle then self:InitCursorCircle() end
-
-	-- Apply ElvUI statusbar texture to widget StatusBars (ElvUI skins borders but skips texture)
-	hooksecurefunc(_G.UIWidgetTemplateStatusBarMixin, 'Setup', function(widget)
-		local bar = widget and widget.Bar
-		if bar then bar:SetStatusBarTexture(E.media.normTex) end
-	end)
 end
