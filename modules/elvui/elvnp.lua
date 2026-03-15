@@ -175,38 +175,32 @@ do -- Interrupt Spell Detection (adapted from mMediaTag with permission from Bli
 		castbar.TUI_InterruptMarker = marker
 	end
 
-	local function CancelTicker(castbar)
-		if castbar.TUI_InterruptTicker then
-			castbar.TUI_InterruptTicker:Cancel()
-			castbar.TUI_InterruptTicker = nil
-		end
-	end
-
 	local function ResetMarker(castbar)
-		CancelTicker(castbar)
 		if castbar.TUI_Clip then castbar.TUI_Clip:Hide() end
 		activeCastbars[castbar] = nil
 	end
 
-	local function ApplyInterruptColor(castbar, isNotInt, isReady)
+	-- Cache DB references at cast-check time, reuse in tick
+	local cachedReadyC, cachedOnCDC, cachedNoIntC
+
+	local function CacheColorDBs()
 		local db = TUI.db.profile.nameplates
-		local readyC = db.castbarInterruptReady
-		local onCDC = db.castbarInterruptOnCD
+		cachedReadyC = db.castbarInterruptReady
+		cachedOnCDC = db.castbarInterruptOnCD
+		cachedNoIntC = NP.db.colors.castNoInterruptColor
+	end
 
-		local iR = EvalColorBool(isReady, readyC.r, onCDC.r)
-		local iG = EvalColorBool(isReady, readyC.g, onCDC.g)
-		local iB = EvalColorBool(isReady, readyC.b, onCDC.b)
-
-		local noIntC = NP.db.colors.castNoInterruptColor
+	local function ApplyInterruptColor(castbar, isNotInt, isReady)
+		local iR = EvalColorBool(isReady, cachedReadyC.r, cachedOnCDC.r)
+		local iG = EvalColorBool(isReady, cachedReadyC.g, cachedOnCDC.g)
+		local iB = EvalColorBool(isReady, cachedReadyC.b, cachedOnCDC.b)
 		castbar:SetStatusBarColor(
-			EvalColorBool(isNotInt, noIntC.r, iR),
-			EvalColorBool(isNotInt, noIntC.g, iG),
-			EvalColorBool(isNotInt, noIntC.b, iB)
+			EvalColorBool(isNotInt, cachedNoIntC.r, iR),
+			EvalColorBool(isNotInt, cachedNoIntC.g, iG),
+			EvalColorBool(isNotInt, cachedNoIntC.b, iB)
 		)
 	end
 
-	-- Place marker once when cast starts. CD bar value = cdRemaining, static snapshot.
-	-- Ticker only updates alpha (visibility), never repositions.
 	local function PlaceMarker(castbar, unit)
 		local clip = castbar.TUI_Clip
 		local cdBar = castbar.TUI_CDBar
@@ -214,18 +208,13 @@ do -- Interrupt Spell Detection (adapted from mMediaTag with permission from Bli
 		if not clip or not cdBar or not marker then return end
 
 		local castDuration = UnitCastingDuration(unit) or UnitChannelDuration(unit)
-		if not castDuration then
-			clip:Hide()
-			return
-		end
+		if not castDuration then clip:Hide() return end
 
 		local cdDuration = C_Spell_GetSpellCooldownDuration(currentInterrupt)
-		local total = castDuration:GetTotalDuration()
 		local isChannel = castbar.channeling
 
-		-- Normal cast: fill L→R, marker at fill RIGHT edge. Channel: fill R→L, marker at fill LEFT edge.
 		cdBar:SetReverseFill(isChannel or false)
-		cdBar:SetMinMaxValues(0, total)
+		cdBar:SetMinMaxValues(0, castDuration:GetTotalDuration())
 		cdBar:SetValue(cdDuration:GetRemainingDuration())
 
 		local mc = TUI.db.profile.nameplates.castbarMarkerColor
@@ -238,45 +227,58 @@ do -- Interrupt Spell Detection (adapted from mMediaTag with permission from Bli
 			marker:SetPoint('LEFT', cdBar:GetStatusBarTexture(), 'RIGHT', 0, 0)
 		end
 
-		-- Hide if not interruptible or interrupt is ready
 		local notInt = GetNotInterruptible(castbar)
 		local onCD = EvalColorBool(cdDuration:IsZero(), 0, 1)
 		clip:SetAlpha(EvalColorBool(notInt, 0, onCD))
 		clip:Show()
 	end
 
-	-- Ticker only updates alpha — never repositions
-	local function RefreshMarkerAlpha(castbar)
-		local clip = castbar.TUI_Clip
-		if not clip then return end
-		local notInt = GetNotInterruptible(castbar)
-		local cdDuration = C_Spell_GetSpellCooldownDuration(currentInterrupt)
-		local onCD = EvalColorBool(cdDuration:IsZero(), 0, 1)
-		clip:SetAlpha(EvalColorBool(notInt, 0, onCD))
-	end
+	-- Single shared ticker: one CD lookup, updates all active castbars
+	local sharedTicker
 
-	local function TickCastbar(castbar)
-		if not castbar:IsShown() or not (castbar.casting or castbar.channeling) then
-			if castbar.TUI_WasInterrupted and castbar:IsShown() then
-				local c = NP.db.colors.castInterruptedColor
-				if c then castbar:SetStatusBarColor(c.r, c.g, c.b) end
+	local function TickAllCastbars()
+		local hasActive = false
+		local cdDuration = currentInterrupt and C_Spell_GetSpellCooldownDuration(currentInterrupt)
+
+		for cb in pairs(activeCastbars) do
+			if not cb:IsShown() or not (cb.casting or cb.channeling) then
+				if cb.TUI_WasInterrupted and cb:IsShown() then
+					local c = NP.db.colors.castInterruptedColor
+					if c then cb:SetStatusBarColor(c.r, c.g, c.b) end
+				end
+				ResetMarker(cb)
+			elseif cdDuration then
+				hasActive = true
+				local notInt = GetNotInterruptible(cb)
+				local isReady = cdDuration:IsZero()
+				ApplyInterruptColor(cb, notInt, isReady)
+				local clip = cb.TUI_Clip
+				if clip then
+					local onCD = EvalColorBool(isReady, 0, 1)
+					clip:SetAlpha(EvalColorBool(notInt, 0, onCD))
+				end
 			end
-			ResetMarker(castbar)
-			return
 		end
 
-		local cdDuration = C_Spell_GetSpellCooldownDuration(currentInterrupt)
-		ApplyInterruptColor(castbar, GetNotInterruptible(castbar), cdDuration:IsZero())
-		RefreshMarkerAlpha(castbar)
+		if not hasActive and sharedTicker then
+			sharedTicker:Cancel()
+			sharedTicker = nil
+		end
+	end
+
+	local function StartSharedTicker()
+		if not sharedTicker then
+			sharedTicker = C_Timer.NewTicker(0.1, TickAllCastbars)
+		end
 	end
 
 	local function ResetAllOverlays(interrupted)
+		local cdDuration = currentInterrupt and C_Spell_GetSpellCooldownDuration(currentInterrupt)
 		for cb in pairs(activeCastbars) do
 			if cb == interrupted then
 				ResetMarker(cb)
 			else
 				if cb.TUI_Clip then cb.TUI_Clip:Hide() end
-				local cdDuration = currentInterrupt and C_Spell_GetSpellCooldownDuration(currentInterrupt)
 				if cdDuration then
 					ApplyInterruptColor(cb, GetNotInterruptible(cb), cdDuration:IsZero())
 				end
@@ -287,6 +289,7 @@ do -- Interrupt Spell Detection (adapted from mMediaTag with permission from Bli
 	function TUI:HookCastbarInterrupt()
 		if self._hookedCastbarInterrupt then return end
 		self._hookedCastbarInterrupt = true
+		CacheColorDBs()
 
 		hooksecurefunc(NP, 'Castbar_PostCastFail', function(castbar)
 			castbar.TUI_WasInterrupted = true
@@ -310,17 +313,14 @@ do -- Interrupt Spell Detection (adapted from mMediaTag with permission from Bli
 			if not UnitCanAttack('player', unit) then return end
 			if not currentInterrupt then return end
 
+			CacheColorDBs()
 			local cdDuration = C_Spell_GetSpellCooldownDuration(currentInterrupt)
-
 			ApplyInterruptColor(castbar, GetNotInterruptible(castbar), cdDuration:IsZero())
 			activeCastbars[castbar] = unit
 
 			EnsureMarkerFrames(castbar)
 			PlaceMarker(castbar, unit)
-
-			castbar.TUI_InterruptTicker = C_Timer.NewTicker(0.1, function()
-				TickCastbar(castbar)
-			end)
+			StartSharedTicker()
 		end)
 	end
 end
