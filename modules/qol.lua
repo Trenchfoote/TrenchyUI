@@ -275,6 +275,13 @@ do -- Moveable Frames
 
 	local hookedFrames = {}
 
+	local skipFrames = {
+		HouseEditorFrame = true, HousingDashboardFrame = true, HouseFinderFrame = true,
+		HouseListFrame = true, HousingHouseSettingsFrame = true, HousingModelPreviewFrame = true,
+		HousingCornerstoneVisitorFrame = true, HousingCornerstoneHouseInfoFrame = true,
+		HousingCornerstonePurchaseFrame = true, HousingBulletinBoardFrame = true,
+	}
+
 	local function MakeMoveable(frame)
 		if hookedFrames[frame] then return end
 		if not frame.IsObjectType or not frame:IsObjectType('Frame') then return end
@@ -282,6 +289,7 @@ do -- Moveable Frames
 		if frame.mover then return end
 
 		local name = frame.GetName and frame:GetName() or 'unknown'
+		if skipFrames[name] then return end
 
 		if name == 'MailFrame' or name == 'AchievementFrame' then
 			hookedFrames[frame] = true
