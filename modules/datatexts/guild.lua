@@ -370,7 +370,7 @@ local function OnEvent(panel, event, ...)
 			panel.text:SetFormattedText(displayString, label .. ': ', #guildTable)
 		end
 	else
-		panel.text:SetText(displayString)
+		panel.text:SetText('No Guild')
 	end
 end
 
