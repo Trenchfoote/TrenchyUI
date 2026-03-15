@@ -257,6 +257,7 @@ function TUI:InitSoulFragments()
 	if class ~= 'DEMONHUNTER' then return end
 
 	C_Timer.After(0, function()
+		self:InitFakePowerFader()
 		OnSpecChanged()
 
 		local specFrame = CreateFrame('Frame')
@@ -495,6 +496,7 @@ function TUI:InitIronfurBar()
 	if class ~= 'DRUID' then return end
 
 	C_Timer.After(0, function()
+		self:InitFakePowerFader()
 		OnDruidSpecChanged()
 
 		local specFrame = CreateFrame('Frame')
@@ -553,6 +555,22 @@ function TUI:InitPixelGlow()
 			AfterElvUIPostUpdate(element, fr, ...)
 		end
 	end)
+end
+
+-- Sync fake power bar alpha with player frame fader
+do
+	local hooked = false
+	function TUI:InitFakePowerFader()
+		if hooked then return end
+		local playerFrame = _G.ElvUF_Player
+		if not playerFrame then return end
+		hooked = true
+
+		hooksecurefunc(playerFrame, 'SetAlpha', function(_, alpha)
+			if sfHolder then sfHolder:SetAlpha(alpha) end
+			if ifHolder then ifHolder:SetAlpha(alpha) end
+		end)
+	end
 end
 
 -- Steady Flight fader extension
