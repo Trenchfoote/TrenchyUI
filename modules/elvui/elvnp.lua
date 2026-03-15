@@ -19,10 +19,9 @@ function TUI:InitElvNP()
 		TextureLoadingGroupMixin.RemoveTexture(wrapper, 'updateNameUsesGetUnitName')
 	end
 
-	-- DISABLED: testing ElvUI native classification-in-instances (5db983a, 2026-03-14)
-	-- if np.classificationInstanceOnly then
-	-- 	self:HookClassificationInstanceOnly()
-	-- end
+	if np.classificationInstanceOnly then
+		self:HookClassificationInstanceOnly()
+	end
 
 	-- Pending removal based on ElvUI updates
 	if np.classificationOverThreat then

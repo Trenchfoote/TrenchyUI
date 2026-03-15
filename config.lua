@@ -65,6 +65,10 @@ TUI.defaults = {
             thickness = 2,
             length    = nil,
         },
+        fakePower = {
+            soulFragments = true,
+            ironfurBar    = true,
+        },
         fader = {
             steadyFlight = false,
         },
@@ -1659,6 +1663,32 @@ function TUI:BuildConfig()
             if pf and pf.Fader and pf.Fader.ForceUpdate then
                 pf.Fader:ForceUpdate()
             end
+        end
+    )
+
+    root.unitframes.args.fakePower = ACH:Group("Custom Class Bars", nil, 3)
+    root.unitframes.args.fakePower.inline = true
+    local fp = root.unitframes.args.fakePower.args
+
+    fp.soulFragments = ACH:Toggle(
+        "VDH: Soul Fragments",
+        "Show a Soul Fragments class bar for Vengeance Demon Hunters. Anchors to the ElvUI class bar mover.",
+        1, nil, nil, nil,
+        function() return TUI.db.profile.fakePower.soulFragments end,
+        function(_, value)
+            TUI.db.profile.fakePower.soulFragments = value
+            E:StaticPopup_Show('CONFIG_RL')
+        end
+    )
+
+    fp.ironfurBar = ACH:Toggle(
+        "Bear: Ironfur",
+        "Show an Ironfur duration bar for Guardian Druids. Anchors to the ElvUI class bar mover.",
+        2, nil, nil, nil,
+        function() return TUI.db.profile.fakePower.ironfurBar end,
+        function(_, value)
+            TUI.db.profile.fakePower.ironfurBar = value
+            E:StaticPopup_Show('CONFIG_RL')
         end
     )
 
