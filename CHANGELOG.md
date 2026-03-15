@@ -15,7 +15,6 @@
 - Nameplates: Fixed interrupt marker appearing on non-interruptible casts
 - QoL: Fixed housing edit mode interactions being blocked by moveable frames
 - Datatexts: Fixed Guild datatext showing garbled text instead of "No Guild" when not in a guild
-- Skins: Removed widget status bar skin that was overriding colors and rendering bars white
 
 ### Improvements
 - Nameplates: Improved performance in large pulls by consolidating interrupt marker processing
