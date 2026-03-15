@@ -753,22 +753,8 @@ local function AnchorToMover(viewerKey, growUp)
 	local mover = _G[info.mover .. 'Mover']
 	if not mover then return end
 
-	-- Save the growth-anchor edge before resize
-	local fixedEdge = growUp and mover:GetBottom() or mover:GetTop()
-
-	mover:SetSize(container:GetSize())
-
-	-- Adjust mover position to keep the growth-anchor edge at the same screen Y
-	local newEdge = growUp and mover:GetBottom() or mover:GetTop()
-	if fixedEdge and newEdge then
-		local drift = fixedEdge - newEdge
-		if drift ~= 0 then
-			local p, rel, rp, x, y = mover:GetPoint()
-			if p then
-				mover:ClearAllPoints()
-				mover:SetPoint(p, rel, rp, x, (y or 0) + drift)
-			end
-		end
+	if not InCombatLockdown() then
+		mover:SetSize(container:GetSize())
 	end
 
 	container:ClearAllPoints()
@@ -1182,19 +1168,9 @@ local function DoRelayout()
 	TUI:UpdateCDMVisibility()
 end
 
-local combatDeferFrame = CreateFrame('Frame')
-combatDeferFrame:SetScript('OnEvent', function(self)
-	self:UnregisterEvent('PLAYER_REGEN_ENABLED')
-	DoRelayout()
-end)
-
 function ScheduleRelayout()
 	if layoutPending then return end
 	layoutPending = true
-	if InCombatLockdown() then
-		combatDeferFrame:RegisterEvent('PLAYER_REGEN_ENABLED')
-		return
-	end
 	C_Timer.After(0, DoRelayout)
 end
 
