@@ -19,5 +19,4 @@
 ### Improvements
 - Nameplates: Improved performance in large pulls by consolidating interrupt marker processing
 - Nameplates: Friendly nameplate realm names are now hidden
-- Nameplates: Re-enabled classification-based nameplate coloring in instances
 - Profiles: Updated TrenchyUI profile with new mover positions and datatext labels
