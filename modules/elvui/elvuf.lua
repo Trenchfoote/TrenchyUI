@@ -508,6 +508,7 @@ end
 -- Pixel Glow
 local LCG = E.Libs.CustomGlow
 local GLOW_KEY = 'TUI_PixelGlow'
+local glowColor = { 1, 1, 1, 1 }
 
 local function GetPixelGlowDB()
 	local db = TUI.db and TUI.db.profile and TUI.db.profile.pixelGlow
@@ -515,44 +516,28 @@ local function GetPixelGlowDB()
 	return db.enabled, db.lines, db.speed, db.thickness
 end
 
-local function AfterElvUIPostUpdate(element, frame, unit, aura, debuffType, texture, wasFiltered, style, color)
-	if not LCG or not LCG.PixelGlow_Start then return end
-
-	local _, lines, speed, thickness = GetPixelGlowDB()
-	local glowTarget = frame.Health or frame
-
-	if aura or debuffType then
-		local r, g, b = element:GetVertexColor()
-
-		element:SetVertexColor(0, 0, 0, 0)
-		if frame.AuraHightlightGlow then frame.AuraHightlightGlow:Hide() end
-
-		LCG.PixelGlow_Start(glowTarget, { r, g, b, 1 }, lines, speed, nil, thickness, 0, 0, false, GLOW_KEY)
-	else
-		element:SetVertexColor(0, 0, 0, 0)
-		if frame.AuraHightlightGlow then frame.AuraHightlightGlow:Hide() end
-		LCG.PixelGlow_Stop(glowTarget, GLOW_KEY)
-	end
-end
-
 function TUI:InitPixelGlow()
 	local enabled = GetPixelGlowDB()
 	if not enabled then return end
+	if not LCG or not LCG.PixelGlow_Start then return end
 
-	if E.db.unitframe.debuffHighlighting == 'NONE' then
-		E.db.unitframe.debuffHighlighting = 'FILL'
-	end
+	hooksecurefunc(UF, 'PostUpdate_AuraHighlight', function(_, frame, _, aura, debuffType)
+		if not frame then return end
+		local element = frame.AuraHighlight
+		if not element then return end
 
-	hooksecurefunc(UF, 'Configure_AuraHighlight', function(_, frame)
-		if not frame or not frame.AuraHighlight then return end
+		local _, lines, speed, thickness = GetPixelGlowDB()
+		local glowTarget = frame.Health or frame
 
-		frame.AuraHighlightBackdrop = false
-		if frame.AuraHightlightGlow then frame.AuraHightlightGlow:Hide() end
-
-		local elvuiPostUpdate = frame.AuraHighlight.PostUpdate
-		frame.AuraHighlight.PostUpdate = function(element, fr, ...)
-			if elvuiPostUpdate then elvuiPostUpdate(element, fr, ...) end
-			AfterElvUIPostUpdate(element, fr, ...)
+		if aura or debuffType then
+			glowColor[1], glowColor[2], glowColor[3] = element:GetVertexColor()
+			element:SetVertexColor(0, 0, 0, 0)
+			if frame.AuraHightlightGlow then frame.AuraHightlightGlow:Hide() end
+			LCG.PixelGlow_Start(glowTarget, glowColor, lines, speed, nil, thickness, 0, 0, false, GLOW_KEY)
+		else
+			element:SetVertexColor(0, 0, 0, 0)
+			if frame.AuraHightlightGlow then frame.AuraHightlightGlow:Hide() end
+			LCG.PixelGlow_Stop(glowTarget, GLOW_KEY)
 		end
 	end)
 end
